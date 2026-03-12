@@ -1,0 +1,194 @@
+:root {
+  --ciamed-teal: #05776c;
+  --ciamed-dark: #263238;
+  --bg-light: #f5f6f8;
+}
+body {
+  background-color: var(--bg-light);
+  font-family: "Segoe UI", sans-serif;
+  overflow-x: hidden;
+}
+
+/* --- Sidebar e Header --- */
+.sidebar {
+  height: 100vh;
+  width: 60px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: var(--ciamed-dark);
+  padding-top: 60px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.sidebar a {
+  color: #b0bec5;
+  font-size: 1.2rem;
+  padding: 15px 0;
+  width: 100%;
+  text-align: center;
+  text-decoration: none;
+  transition: 0.2s;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .sidebar a:hover {
+    color: white;
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.navbar-ciamed {
+  background-color: var(--ciamed-teal);
+  height: 60px;
+  padding: 0 20px;
+  position: fixed;
+  width: 100%;
+  top: 0;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+}
+.brand-logo {
+  height: 30px;
+  margin-right: 10px;
+}
+.nav-label {
+  display: none;
+}
+
+/* --- Conteúdo Principal --- */
+.main-content {
+  margin-left: 60px;
+  margin-top: 60px;
+  padding: 30px;
+}
+.card-custom {
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  background: white;
+  transition: 0.3s;
+}
+@media (hover: hover) {
+  .card-custom:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.btn-ciamed {
+  background-color: var(--ciamed-teal);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-weight: 500;
+  width: 100%;
+  transition: 0.2s;
+}
+.btn-ciamed:hover {
+  background-color: #00796b;
+  color: white;
+}
+.btn-ciamed:disabled {
+  background-color: #b2dfdb;
+  cursor: not-allowed;
+}
+
+/* --- Customização do Accordion (Perguntas Frequentes) --- */
+.accordion-button:not(.collapsed) {
+  background-color: #e0f2f1;
+  color: var(--ciamed-teal);
+  font-weight: bold;
+  box-shadow: none;
+}
+.accordion-button:focus {
+  box-shadow: none;
+  border-color: rgba(0, 0, 0, 0.125);
+}
+
+/* --- Customização dos Tooltips --- */
+.tooltip-inner {
+  background-color: var(--ciamed-dark);
+  padding: 8px 12px;
+  font-weight: 500;
+}
+.tooltip.bs-tooltip-end .tooltip-arrow::before {
+  border-right-color: var(--ciamed-dark);
+}
+
+/* --- RESPONSIVIDADE PARA CELULARES --- */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    height: 65px;
+    top: auto;
+    bottom: 0;
+    flex-direction: row;
+    padding-top: 0;
+    justify-content: space-around;
+    z-index: 1050;
+    background-color: white;
+    border-top: 1px solid #e0e0e0;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  }
+  .sidebar a {
+    padding: 8px 0;
+    width: 100%;
+    margin: 0 !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    font-size: 1.1rem;
+  }
+  .sidebar a.active {
+    color: var(--ciamed-teal);
+  }
+  .nav-label {
+    display: block;
+    font-size: 0.65rem;
+    margin-top: 4px;
+    font-weight: 500;
+  }
+  .main-content {
+    margin-left: 0;
+    margin-top: 60px;
+    margin-bottom: 80px;
+    padding: 15px;
+  }
+  .tooltip {
+    display: none !important;
+  }
+}
+
+/* ==========================================
+           ANIMAÇÃO DE TRANSIÇÃO DE PÁGINAS (FADE IN/OUT)
+           ========================================== */
+body {
+  animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+  transition:
+    opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Classe que o JS vai colocar para a página sumir antes de trocar */
+.page-fade-out {
+  opacity: 0 !important;
+  transform: translateY(-15px) !important;
+}

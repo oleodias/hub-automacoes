@@ -1,0 +1,13 @@
+# --- CACHE DO PYTHON (Lixo reciclável) ---
+__pycache__/
+*.pyc
+
+# --- DADOS SENSÍVEIS DA EMPRESA (NÃO SUBIR!) ---
+dados/
+XML_Entrada/
+Logs/
+RELATORIOS/
+
+# --- AMBIENTES VIRTUAIS ---
+venv/
+env/
