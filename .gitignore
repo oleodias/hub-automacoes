@@ -11,3 +11,7 @@ RELATORIOS/
 # --- AMBIENTES VIRTUAIS ---
 venv/
 env/
+
+# --- CACHE DO NAVEGADOR E PLANILHAS ---
+chrome_perfil/
+*.xlsx
