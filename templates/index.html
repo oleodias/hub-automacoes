@@ -101,7 +101,7 @@
                 cursor: pointer;
                 border-bottom: 4px solid var(--ciamed-teal);
               "
-              onclick="abrirFerramenta('fiscal')"
+              onclick="window.location.href='{{ url_for('cadastro_itens') }}'"
             >
               <div class="mb-3 mt-2">
                 <i
@@ -133,7 +133,7 @@
             <div
               class="card card-custom h-100 text-center p-4 d-flex flex-column"
               style="cursor: pointer; border-bottom: 4px solid #f59e0b"
-              onclick="abrirFerramenta('mdf')"
+              onclick="window.location.href='{{ url_for('relatorio_mdf') }}'"
             >
               <div class="mb-3 mt-2">
                 <i
@@ -167,7 +167,7 @@
               <div class="mb-3 mt-2">
                 <i class="fa-solid fa-file-lines fa-3x text-secondary"></i>
               </div>
-              <h5 class="fw-bold text-dark">Cadastro de Clientes</h5>
+              <h5 class="fw-bold text-dark">Cadastro de Clientes - Público</h5>
               <p class="text-muted small mb-4">
                 Automação destinada ao Comercial Público
               </p>
@@ -178,27 +178,37 @@
           </div>
 
           <div class="col-md-4 mb-4">
-            <div class="card card-custom h-100 card-disabled">
-              <div class="card-body text-center p-4">
-                <div class="icon-wrapper mb-3">
-                  <i
-                    class="fa-solid fa-file-invoice-dollar fa-3x"
-                    style="color: #3b82f6"
-                  ></i>
-                </div>
-                <h5 class="fw-bold mb-2">Conciliação Bancária</h5>
-                <p class="text-muted small mb-4">
-                  Automação para conferência de extratos e baixas automáticas no
-                  financeiro.
-                </p>
-                <div class="status-badge status-planejamento">
-                  <i class="fa-solid fa-clock me-1"></i> Em Planejamento
-                </div>
+            <div
+              class="card card-custom h-100 text-center p-4 d-flex flex-column"
+              style="cursor: pointer; border-bottom: 4px solid #3b82f6"
+              onclick="window.location.href='{{ url_for('cadastro_fornecedor') }}'"
+            >
+              <div class="mb-3 mt-2">
+                <i
+                  class="fa-solid fa-cart-shopping fa-3x"
+                  style="color: #3b82f6"
+                ></i>
               </div>
-              <div
-                class="card-footer-color"
-                style="background-color: #3b82f6"
-              ></div>
+              <h5 class="fw-bold text-dark">
+                Cadastro de Fornecedores - Fiscal
+              </h5>
+              <p class="text-muted small mb-4">
+                Automação destinada para o cadastro de fornecedores do setor
+                fiscal via BrasilAPI.
+              </p>
+              <div class="mt-auto">
+                <span
+                  class="badge"
+                  style="
+                    background-color: rgba(59, 130, 246, 0.2);
+                    color: #1d4ed8;
+                    padding: 8px 16px;
+                  "
+                >
+                  <i class="fa-solid fa-circle-check me-1"></i>
+                  Operacional
+                </span>
+              </div>
             </div>
           </div>
 
@@ -211,10 +221,10 @@
                     style="color: #a855f7"
                   ></i>
                 </div>
-                <h5 class="fw-bold mb-2">Portal do Colaborador</h5>
+                <h5 class="fw-bold mb-2">Cadastro de Clientes - Fiscal</h5>
                 <p class="text-muted small mb-4">
-                  Extração de holerites e gestão de pontos integrada ao sistema
-                  NL.
+                  Automação destinada ao setor fiscal, com o intuito de fazer o
+                  cadastro e reativação de clientes da empresa.
                 </p>
                 <div class="status-badge status-planejamento">
                   <i class="fa-solid fa-clock me-1"></i> Em Planejamento
@@ -250,297 +260,6 @@
                 style="background-color: #ef4444"
               ></div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="tela-fiscal" style="display: none">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <h4 class="text-secondary fw-light m-0 d-flex align-items-center">
-            <button
-              class="btn btn-sm btn-light me-3 shadow-sm d-flex justify-content-center align-items-center"
-              onclick="voltarDashboard()"
-              style="
-                border-radius: 50%;
-                width: 35px;
-                height: 35px;
-                border: 1px solid #cbd5e1;
-                transition: 0.3s;
-              "
-              title="Voltar ao Painel Principal"
-            >
-              <i class="fa-solid fa-arrow-left text-secondary"></i>
-            </button>
-            Módulo: Entrada de Notas
-          </h4>
-          <span
-            class="badge"
-            style="background-color: var(--ciamed-teal); padding: 8px 15px"
-            >Versão 1.0</span
-          >
-        </div>
-
-        <div class="row mb-4">
-          <div class="col-12">
-            <div class="card card-custom p-4">
-              <h5 class="text-secondary mb-3">
-                <i class="fa-solid fa-file-import me-2"></i> Entrada de
-                Documentos
-              </h5>
-              <ul class="nav nav-tabs mb-4" id="importTabs">
-                <li class="nav-item">
-                  <button
-                    class="nav-link active"
-                    data-bs-toggle="tab"
-                    data-bs-target="#upload-pane"
-                  >
-                    <i class="fa-solid fa-laptop-file me-2"></i>Anexar XML
-                  </button>
-                </li>
-                <li class="nav-item">
-                  <button
-                    class="nav-link"
-                    data-bs-toggle="tab"
-                    data-bs-target="#sefaz-pane"
-                  >
-                    <i class="fa-solid fa-globe me-2"></i>Buscar SEFAZ
-                  </button>
-                </li>
-              </ul>
-              <div class="tab-content">
-                <div class="tab-pane fade show active" id="upload-pane">
-                  <div
-                    class="upload-area"
-                    id="dropZone"
-                    onclick="document.getElementById('fileInput').click()"
-                  >
-                    <i
-                      id="uploadIcon"
-                      class="fa-solid fa-cloud-arrow-up fa-3x mb-3"
-                      style="color: var(--ciamed-teal)"
-                    ></i>
-                    <h5 id="uploadText" class="text-secondary">
-                      Selecione ou Arraste o XML
-                    </h5>
-                    <input
-                      type="file"
-                      id="fileInput"
-                      style="display: none"
-                      accept=".xml"
-                    />
-                  </div>
-                </div>
-                <div class="tab-pane fade" id="sefaz-pane">
-                  <div class="text-center py-3">
-                    <div
-                      class="input-group mb-2 mx-auto"
-                      style="max-width: 600px"
-                    >
-                      <span class="input-group-text bg-light"
-                        ><i class="fa-solid fa-barcode"></i
-                      ></span>
-                      <input
-                        type="text"
-                        id="chaveAcesso"
-                        class="form-control"
-                        placeholder="Chave de Acesso (44 dígitos)"
-                        maxlength="44"
-                      />
-                      <button
-                        class="btn btn-ciamed px-3"
-                        style="width: auto"
-                        onclick="buscarSefaz()"
-                      >
-                        Buscar
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="row mb-4">
-          <div class="col-md-6 mb-3">
-            <div class="card card-custom p-4 h-100">
-              <div class="d-flex justify-content-between">
-                <h5>Fase 1: NCM</h5>
-                <span class="badge bg-secondary" id="badge-fase1"
-                  >Pendente</span
-                >
-              </div>
-              <div class="mt-3 mb-4">
-                <span class="status-dot bg-gray" id="dot-fase1"></span>
-                <span id="txt-fase1" class="text-muted small"
-                  >Aguardando arquivo...</span
-                >
-              </div>
-              <button
-                class="btn btn-ciamed"
-                id="btn-fase1"
-                disabled
-                onclick="rodarFase1()"
-              >
-                Validar NCMs
-              </button>
-            </div>
-          </div>
-          <div class="col-md-6 mb-3">
-            <div class="card card-custom p-4 h-100">
-              <div class="d-flex justify-content-between">
-                <h5>Fase 2: Itens</h5>
-                <span class="badge bg-secondary" id="badge-fase2"
-                  >Bloqueado</span
-                >
-              </div>
-              <div class="mt-3 mb-4">
-                <span class="status-dot bg-gray" id="dot-fase2"></span>
-                <span id="txt-fase2" class="text-muted small"
-                  >Aguardando Fase 1...</span
-                >
-              </div>
-              <button
-                class="btn btn-ciamed"
-                id="btn-fase2"
-                disabled
-                onclick="rodarFase2()"
-              >
-                Cadastrar Itens
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="card card-custom" id="container-do-log">
-          <div
-            class="card-header bg-transparent border-0 pt-3 fw-bold text-secondary d-flex justify-content-between align-items-center"
-          >
-            <div>
-              <i class="fa-solid fa-terminal me-2"></i> Console de Execução
-            </div>
-            <button
-              class="btn btn-sm text-secondary"
-              onclick="alternarTelaCheia()"
-              title="Expandir/Reduzir Terminal"
-              style="border: none; background: transparent"
-            >
-              <i class="fa-solid fa-expand fs-5 icon-expand-hover"></i>
-            </button>
-          </div>
-
-          <div class="console-log mx-3 mb-3" id="terminal">
-            <div>> Sistema Fiscal pronto para operar.</div>
-          </div>
-        </div>
-      </div>
-
-      <div id="tela-mdf" style="display: none">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <h4 class="text-secondary fw-light m-0 d-flex align-items-center">
-            <button
-              class="btn btn-sm btn-light me-3 shadow-sm d-flex justify-content-center align-items-center"
-              onclick="voltarDashboard()"
-              style="
-                border-radius: 50%;
-                width: 35px;
-                height: 35px;
-                border: 1px solid #cbd5e1;
-                transition: 0.3s;
-              "
-              title="Voltar ao Painel Principal"
-            >
-              <i class="fa-solid fa-arrow-left text-secondary"></i>
-            </button>
-            Módulo: Relatório MDF-e
-          </h4>
-        </div>
-
-        <div class="row mb-4">
-          <div class="col-md-12 mb-3">
-            <div class="card card-custom p-4 text-center">
-              <h5 class="mb-3">Extração de Dados NL</h5>
-              <p class="text-muted small mb-3">
-                Escolha o período e o robô fará o resto.
-              </p>
-              <div class="row g-2 mb-4">
-                <div
-                  class="col-12 d-flex justify-content-between align-items-center mb-1"
-                >
-                  <label class="small fw-bold text-secondary m-0"
-                    >Período de Pesquisa</label
-                  >
-                  <a
-                    href="javascript:void(0)"
-                    onclick="limparDatas()"
-                    class="text-decoration-none small text-danger"
-                    style="font-size: 0.75rem"
-                  >
-                    <i class="fa-solid fa-eraser me-1"></i>Limpar
-                  </a>
-                </div>
-                <div class="col-6 text-start">
-                  <input
-                    type="date"
-                    id="mdf-inicio"
-                    class="form-control form-control-sm border-secondary-subtle shadow-sm"
-                  />
-                </div>
-                <div class="col-6 text-start">
-                  <input
-                    type="date"
-                    id="mdf-fim"
-                    class="form-control form-control-sm border-secondary-subtle shadow-sm"
-                  />
-                </div>
-              </div>
-              <div class="mb-4">
-                <span class="status-dot bg-gray" id="dot-mdf"></span>
-                <span id="txt-mdf" class="text-muted fw-bold"
-                  >Pronto para iniciar</span
-                >
-              </div>
-              <button
-                class="btn fw-bold w-100"
-                style="
-                  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-                  color: white;
-                  border: none;
-                  padding: 12px;
-                  border-radius: 10px;
-                "
-                id="btn-mdf"
-                onclick="rodarMDF()"
-              >
-                <i class="fa-solid fa-play me-2"></i> Iniciar Extração
-              </button>
-              <button
-                class="btn btn-success fw-bold w-50 mx-auto mt-3"
-                id="btn-download-mdf"
-                onclick="baixarRelatorio()"
-                style="display: none; border-radius: 10px; padding: 12px"
-              >
-                <i class="fa-solid fa-file-excel me-2"></i> Baixar Relatório
-                (.xlsx)
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="card card-custom card-log-wrapper">
-          <div
-            class="card-header bg-transparent border-0 pt-3 fw-bold text-secondary d-flex justify-content-between align-items-center"
-          >
-            <div>
-              <i class="fa-solid fa-terminal me-2"></i> Console do Robô MDF
-            </div>
-            <i
-              class="fa-solid fa-expand fs-5 icon-expand-hover"
-              onclick="toggleExpandirLog(this)"
-            ></i>
-          </div>
-          <div class="console-log mx-3 mb-3" id="terminal-mdf">
-            <div>> Sistema MDF pronto para operar.</div>
           </div>
         </div>
       </div>

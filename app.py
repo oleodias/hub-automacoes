@@ -44,7 +44,7 @@ def verificar_horario():
     if agora.weekday() not in DIAS_UTEIS or not (HORA_INICIO <= agora.hour < HORA_FIM):
         return """
         <body style="background-color: #263238; color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; margin: 0;">
-            <img src="/static/logo_ciamed_certa.png" style="height: 60px; margin-bottom: 20px;">
+            <img src="/static/img/ciamedia.png" style="height: 60px; margin-bottom: 20px;" style="height: 60px; margin-bottom: 20px;">
             <h1 style="color: #05776c; margin-bottom: 10px;">🌙 Sistema em Repouso</h1>
             <p style="font-size: 1.2rem; color: #b0bec5; margin-bottom: 30px; text-align: center; max-width: 500px;">
                 A Central de Automação Fiscal da Ciamed opera exclusivamente em horário comercial.
@@ -193,6 +193,19 @@ def download_mdf():
         return send_file(caminho_arquivo, as_attachment=True)
     except Exception as e:
         return f"Erro ao baixar arquivo: {e}"
+    
+@app.route('/cadastro_fornecedor')
+def cadastro_fornecedor():
+    return render_template('cadastro_fornecedor.html')
+
+@app.route('/cadastro_itens')
+def cadastro_itens():
+    return render_template('cadastro_itens.html')
+
+@app.route('/relatorio_mdf')
+def relatorio_mdf():
+    return render_template('relatorio_mdf.html')
+
 # ==========================================
 # SISTEMA DE BANCO DE DADOS (JSON)
 # ==========================================
