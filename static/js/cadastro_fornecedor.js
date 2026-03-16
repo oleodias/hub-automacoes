@@ -28,6 +28,16 @@ function formatarData(dataISO) {
   return dataISO.split("-").reverse().join("/");
 }
 
+// Função para formatar o CNPJ que vem da API
+function formatarCNPJ(cnpj) {
+  if (!cnpj) return "";
+  let value = cnpj.replace(/\D/g, "");
+  return value.replace(
+    /^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2}).*/,
+    "$1.$2.$3/$4-$5",
+  );
+}
+
 // --- LÓGICA DE BUSCA NA BRASILAPI ---
 
 document.getElementById("btnConsultar").addEventListener("click", function () {
@@ -49,14 +59,24 @@ document.getElementById("btnConsultar").addEventListener("click", function () {
   txtStatus.innerText = "Consultando Receita Federal...";
   dotStatus.className = "status-dot bg-warning";
 
-  fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`)
+  // Em vez de ir na BrasilAPI, o JS pede pro seu próprio servidor Python buscar!
+  fetch(`/consulta_cnpj/${cnpj}`)
     .then((response) => response.json())
     .then((data) => {
-      if (data.message) throw new Error("CNPJ não encontrado na base.");
+      // Se o Python avisar que deu erro, a gente para por aqui
+      if (data.erro || data.message === "CNPJ não encontrado na base.") {
+        throw new Error(data.message || "Erro na consulta.");
+      }
 
-      // Preenche os campos
+      // Preenche os campos normais
       document.getElementById("razaoSocial").value = data.razao_social;
+      // PREENCHE O NOVO CAMPO DE CNPJ FORMATADO
+      document.getElementById("cnpjCapturado").value = formatarCNPJ(data.cnpj);
       document.getElementById("nomeFantasia").value = data.nome_fantasia || "";
+
+      // Preenche a Inscrição Estadual na tela
+      document.getElementById("inscricaoEstadual").value =
+        data.inscricao_estadual || "";
 
       // Novos Campos Inseridos
       document.getElementById("matrizFilial").value =
@@ -75,6 +95,9 @@ document.getElementById("btnConsultar").addEventListener("click", function () {
       document.getElementById("complemento").value = data.complemento;
       document.getElementById("cep").value = formatarCEP(data.cep);
 
+      // PREENCHE O BAIRRO
+      document.getElementById("bairro").value = data.bairro || "";
+
       // Cidade agora mostra a UF junto (Ex: VIDEIRA - SC)
       document.getElementById("cidade").value =
         `${data.municipio} - ${data.uf}`;
@@ -91,7 +114,7 @@ document.getElementById("btnConsultar").addEventListener("click", function () {
       document.getElementById("btnIniciarRobo").classList.remove("d-none");
     })
     .catch((err) => {
-      // Atualiza Interface (Erro)
+      // Atualiza Interface (Erro amigável)
       txtStatus.innerText = err.message;
       dotStatus.className = "status-dot bg-danger";
 
@@ -105,3 +128,68 @@ document.getElementById("btnConsultar").addEventListener("click", function () {
       btn.disabled = false;
     });
 });
+
+// --- LÓGICA DO ROBÔ (INTEGRAÇÃO COM PYTHON) ---
+
+function logFornecedor(mensagem) {
+  const terminal = document.getElementById("terminal-fornecedor");
+  if (!terminal) return;
+  const hora = new Date().toLocaleTimeString();
+  terminal.innerHTML += `<div><span class="log-tempo">[${hora}]</span> ${mensagem}</div>`;
+  terminal.scrollTop = terminal.scrollHeight;
+}
+
+function iniciarCadastroERP() {
+  const btn = document.getElementById("btnIniciarRobo");
+  btn.disabled = true;
+  btn.innerHTML =
+    '<i class="fa-solid fa-circle-notch fa-spin me-2"></i> Operando ERP...';
+
+  // Pega a UF separando do campo cidade (Ex: "VIDEIRA - SC" -> Pega só o "SC")
+  const cidadeUF = document.getElementById("cidade").value.split(" - ");
+  const uf = cidadeUF.length > 1 ? cidadeUF[1] : "";
+
+  // Monta o pacote de dados para enviar ao Python
+  const dados = {
+    cnpj: document.getElementById("cnpjInput").value,
+    razao_social: document.getElementById("razaoSocial").value,
+    nome_fantasia: document.getElementById("nomeFantasia").value,
+    inscricao_estadual: document.getElementById("inscricaoEstadual").value,
+    cep: document.getElementById("cep").value,
+    logradouro: document.getElementById("logradouro").value,
+    numero: document.getElementById("numero").value,
+    complemento: document.getElementById("complemento").value,
+    bairro: document.getElementById("bairro").value,
+    uf: uf,
+  };
+
+  logFornecedor(`🚀 <b>Iniciando Robô para o CNPJ: ${dados.cnpj}</b>`);
+
+  // Converte os dados e chama a rota do Python
+  const jsonString = encodeURIComponent(JSON.stringify(dados));
+  const source = new EventSource(`/run_fornecedor?dados=${jsonString}`);
+
+  source.onmessage = function (event) {
+    if (event.data === "[FIM_DO_PROCESSO]") {
+      source.close();
+      logFornecedor("🎉 <b>Processo Finalizado!</b>");
+
+      const audio = document.getElementById("audioSucesso");
+      if (audio) audio.play();
+
+      btn.innerHTML =
+        '<i class="fa-solid fa-check-double me-2"></i> Cadastro Concluído';
+      btn.classList.replace("btn-success", "btn-secondary"); // Fica cinza indicando que terminou
+    } else {
+      logFornecedor(event.data);
+    }
+  };
+
+  source.onerror = function () {
+    source.close();
+    logFornecedor("❌ <b>Erro de conexão com o servidor.</b>");
+    btn.disabled = false;
+    btn.innerHTML =
+      '<i class="fa-solid fa-rotate-right me-2"></i> Tentar Novamente';
+  };
+}

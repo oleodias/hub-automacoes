@@ -4,6 +4,7 @@ import sys
 import json
 from datetime import datetime
 import subprocess
+import requests
 
 
 
@@ -206,6 +207,36 @@ def cadastro_itens():
 def relatorio_mdf():
     return render_template('relatorio_mdf.html')
 
+@app.route('/run_fornecedor')
+def run_fornecedor():
+    # Recebe os dados do JavaScript em formato JSON
+    dados_json = request.args.get('dados', '{}')
+    
+    def generate():
+        try:
+            # Chama o robô passando os dados como argumento
+            process = subprocess.Popen(
+                [sys.executable, 'automacoes/robo_fornecedor.py', dados_json],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                encoding='utf-8'
+            )
+            
+            for line in process.stdout:
+                linha = line.strip()
+                if linha:
+                    yield f"data: {linha}\n\n"
+                    
+            process.wait()
+            
+        except Exception as e:
+            yield f"data: > ❌ Erro interno no servidor: {str(e)}\n\n"
+            yield f"data: [FIM_DO_PROCESSO]\n\n"
+
+    return Response(generate(), mimetype='text/event-stream')
+
 # ==========================================
 # SISTEMA DE BANCO DE DADOS (JSON)
 # ==========================================
@@ -279,6 +310,57 @@ def delete_chamado(id):
     chamados = [c for c in chamados if c['id'] != id]
     salvar_chamados(chamados)
     return jsonify({'status': 'ok'})
+
+@app.route('/consulta_cnpj/<cnpj>')
+def consulta_cnpj(cnpj):
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        url = f'https://publica.cnpj.ws/cnpj/{cnpj}'
+        response = requests.get(url, headers=headers, timeout=15)
+        
+        if response.status_code == 200:
+            data = response.json()
+            estabs = data.get('estabelecimento', {})
+            
+            # --- LÓGICA DA INSCRIÇÃO ESTADUAL (IE) ---
+            uf_fornecedor = estabs.get('estado', {}).get('sigla')
+            lista_ie = estabs.get('inscricoes_estaduais', [])
+            ie_ativa = ""
+
+            for item in lista_ie:
+                # REGRA: Mesma UF e Status ATIVO
+                if item.get('estado', {}).get('sigla') == uf_fornecedor and item.get('ativo') is True:
+                    ie_ativa = item.get('inscricao_estadual')
+                    break 
+
+            # Mapeia para o formato que seu JS e Robô já esperam
+            resultado = {
+                'razao_social': data.get('razao_social'),
+                'nome_fantasia': estabs.get('nome_fantasia'),
+                'cnpj': cnpj,
+                'inscricao_estadual': ie_ativa, # <--- IE Filtrada e Ativa!
+                'logradouro': f"{estabs.get('tipo_logradouro', '')} {estabs.get('logradouro', '')}".strip(),                
+                'numero': estabs.get('numero'),
+                'complemento': estabs.get('complemento'),
+                'bairro': estabs.get('bairro'),
+                'cep': estabs.get('cep'),
+                'uf': uf_fornecedor,
+                'municipio': estabs.get('cidade', {}).get('nome'),
+                'cnae_fiscal': estabs.get('atividade_principal', {}).get('id'),
+                'cnae_fiscal_descricao': estabs.get('atividade_principal', {}).get('descricao'),
+                'data_inicio_atividade': estabs.get('data_inicio_atividade'),
+                'descricao_identificador_matriz_filial': "MATRIZ" if estabs.get('tipo') == "Matriz" else "FILIAL",
+                'codigo_natureza_juridica': data.get('natureza_juridica', {}).get('id'),
+                'natureza_juridica': data.get('natureza_juridica', {}).get('descricao')
+            }
+            return jsonify(resultado)
+        else:
+            msg = "CNPJ não encontrado ou erro na API."
+            if response.status_code == 429: msg = "Muitas consultas! Aguarde 1 minuto."
+            return jsonify({'erro': True, 'message': msg}), response.status_code
+            
+    except Exception as e:
+        return jsonify({'erro': True, 'message': str(e)}), 500
 
 if __name__ == '__main__':
     print("🚀 SERVIDOR ONLINE! Acesse pelo IP da sua máquina.")

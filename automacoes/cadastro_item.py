@@ -54,7 +54,7 @@ def navegar_via_favoritos(driver):
         btn_estrela = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(@onclick, 'tab-header-menu-favoritos')]")))
         btn_estrela.click()
         time.sleep(1.5)
-        xpath_link = "//ul[@id='header-menu-favoritos']//a[contains(text(), 'Cadastro')]"
+        xpath_link = "//ul[@id='header-menu-favoritos']//a[contains(text(), 'Pessoas geral')]"
         link_cadastro = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_link)))
         link_cadastro.click()
         time.sleep(4) 
