@@ -8,7 +8,7 @@ import requests
 
 
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates_reestilizados')
 # Chave secreta para gravar a sua "Chave Mestra" no navegador
 app.secret_key = 'ciamed_super_secreta_2026'
 
