@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Controladoria - Ciamed</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" href="/static/img/logosvg.svg" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css_reestilizados/home_claude.css') }}"
+    />
+  </head>
+
+  <body>
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <a
+        href="/"
+        data-bs-toggle="tooltip"
+        data-bs-placement="right"
+        title="Início"
+        class="active"
+      >
+        <i class="fa-solid fa-house"></i>
+      </a>
+      <a
+        href="https://www.ciamed.com.br/home.html"
+        target="_blank"
+        data-bs-toggle="tooltip"
+        data-bs-placement="right"
+        title="Site Oficial"
+        class="mt-md-auto"
+      >
+        <i class="fa-solid fa-globe"></i>
+      </a>
+      <a
+        href="/admin"
+        target="_blank"
+        data-bs-toggle="tooltip"
+        data-bs-placement="right"
+        title="Painel Admin"
+      >
+        <i class="fa-solid fa-circle-user"></i>
+      </a>
+      <a
+        href="/suporte"
+        target="_blank"
+        data-bs-toggle="tooltip"
+        data-bs-placement="right"
+        title="Suporte"
+      >
+        <i class="fa-solid fa-comments"></i>
+      </a>
+      <a
+        href="javascript:void(0)"
+        onclick="abrirSobre()"
+        data-bs-toggle="tooltip"
+        data-bs-placement="right"
+        title="Sobre"
+      >
+        <i class="fa-regular fa-circle-question"></i>
+      </a>
+    </div>
+
+    <!-- NAVBAR -->
+    <nav class="navbar-ciamed">
+      <img src="/static/img/ciamedia.png" alt="Ciamed" class="brand-logo" />
+      <span class="divider-text">Hub de Automações</span>
+    </nav>
+
+    <!-- MAIN -->
+    <div class="main-content">
+      <div id="tela-dashboard">
+        <!-- HEADER -->
+        <div class="section-header">
+          <div class="eyebrow">Central de Automações</div>
+          <h3>Módulos de Inteligência</h3>
+          <p>
+            Selecione o módulo que deseja operar. Apenas automações operacionais
+            estão disponíveis para acesso.
+          </p>
+        </div>
+
+        <!-- STATS -->
+        <div class="stats-row">
+          <div class="stat-item">
+            <div
+              class="stat-icon"
+              style="background: var(--teal-dim); color: var(--teal)"
+            >
+              <i class="fa-solid fa-bolt"></i>
+            </div>
+            <div>
+              <div class="stat-value">3</div>
+              <div class="stat-label">Automações Ativas</div>
+            </div>
+          </div>
+          <div class="stat-item">
+            <div
+              class="stat-icon"
+              style="background: var(--amber-dim); color: var(--amber)"
+            >
+              <i class="fa-solid fa-screwdriver-wrench"></i>
+            </div>
+            <div>
+              <div class="stat-value">3</div>
+              <div class="stat-label">Em Planejamento</div>
+            </div>
+          </div>
+          <div class="stat-item">
+            <div
+              class="stat-icon"
+              style="background: var(--blue-dim); color: var(--blue)"
+            >
+              <i class="fa-solid fa-layer-group"></i>
+            </div>
+            <div>
+              <div class="stat-value">6</div>
+              <div class="stat-label">Total de Módulos</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARDS -->
+        <div class="cards-grid">
+          <!-- Card 1: Cadastro de Itens -->
+          <div
+            class="auto-card clickable"
+            onclick="window.location.href='{{ url_for('cadastro_itens') }}'"
+          >
+            <div class="card-accent-line" style="background: var(--teal)"></div>
+            <div
+              class="auto-card::before"
+              style="background: var(--teal)"
+            ></div>
+            <div
+              class="card-icon-wrap"
+              style="background: var(--teal-dim); color: var(--teal)"
+            >
+              <i class="fa-solid fa-pencil"></i>
+            </div>
+            <div class="card-title">Cadastro de Itens</div>
+            <div class="card-desc">
+              Triagem de NCMs, consulta Sefaz e cadastro automático de itens no
+              ERP.
+            </div>
+            <div class="badge-status badge-operational">
+              <span class="dot"></span> Operacional
+            </div>
+          </div>
+
+          <!-- Card 2: Relatório MDF-e -->
+          <div
+            class="auto-card clickable"
+            onclick="window.location.href='{{ url_for('relatorio_mdf') }}'"
+          >
+            <div
+              class="card-accent-line"
+              style="background: var(--amber)"
+            ></div>
+            <div
+              class="card-icon-wrap"
+              style="background: var(--amber-dim); color: var(--amber)"
+            >
+              <i class="fa-solid fa-truck-fast"></i>
+            </div>
+            <div class="card-title">Relatório MDF-e</div>
+            <div class="card-desc">
+              Extração automática de datas e notas de MDFs do sistema NL.
+            </div>
+            <div class="badge-status badge-operational">
+              <span class="dot"></span> Operacional
+            </div>
+          </div>
+
+          <!-- Card 3: Cadastro Clientes Público (planejamento) -->
+          <div class="auto-card disabled">
+            <div
+              class="card-icon-wrap"
+              style="
+                background: rgba(74, 90, 114, 0.15);
+                color: var(--text-muted);
+              "
+            >
+              <i class="fa-solid fa-file-lines"></i>
+            </div>
+            <div class="card-title">Cadastro de Clientes — Público</div>
+            <div class="card-desc">
+              Automação destinada ao Comercial Público.
+            </div>
+            <div class="badge-status badge-planning">
+              <span class="dot"></span> Em Planejamento
+            </div>
+          </div>
+
+          <!-- Card 4: Cadastro de Fornecedores -->
+          <div
+            class="auto-card clickable"
+            onclick="window.location.href='{{ url_for('cadastro_fornecedor') }}'"
+          >
+            <div class="card-accent-line" style="background: var(--blue)"></div>
+            <div
+              class="card-icon-wrap"
+              style="background: var(--blue-dim); color: var(--blue)"
+            >
+              <i class="fa-solid fa-cart-shopping"></i>
+            </div>
+            <div class="card-title">Cadastro de Fornecedores — Fiscal</div>
+            <div class="card-desc">
+              Cadastro de fornecedores do setor fiscal via BrasilAPI.
+            </div>
+            <div class="badge-status badge-operational">
+              <span class="dot"></span> Operacional
+            </div>
+          </div>
+
+          <!-- Card 5: Cadastro Clientes Fiscal (planejamento) -->
+          <div class="auto-card disabled">
+            <div
+              class="card-icon-wrap"
+              style="background: var(--purple-dim); color: var(--purple)"
+            >
+              <i class="fa-solid fa-users-gear"></i>
+            </div>
+            <div class="card-title">Cadastro de Clientes — Fiscal</div>
+            <div class="card-desc">
+              Cadastro e reativação de clientes da empresa para o setor fiscal.
+            </div>
+            <div class="badge-status badge-planning">
+              <span class="dot"></span> Em Planejamento
+            </div>
+          </div>
+
+          <!-- Card 6: Inventário Inteligente (planejamento) -->
+          <div class="auto-card disabled">
+            <div
+              class="card-icon-wrap"
+              style="background: var(--red-dim); color: var(--red)"
+            >
+              <i class="fa-solid fa-boxes-stacked"></i>
+            </div>
+            <div class="card-title">Inventário Inteligente</div>
+            <div class="card-desc">
+              Robô para auditoria de estoque e cruzamento de dados físicos vs
+              sistema.
+            </div>
+            <div class="badge-status badge-planning">
+              <span class="dot"></span> Em Planejamento
+            </div>
+          </div>
+        </div>
+        <!-- /CARDS -->
+      </div>
+
+      <!-- FOOTER -->
+      <div class="footer">
+        <p>
+          © 2026 Leonardo Dias &nbsp;·&nbsp; Ciamed Distribuidora de
+          Medicamentos®
+        </p>
+        <span class="footer-badge">v1.0.1</span>
+      </div>
+    </div>
+    <!-- /MAIN -->
+
+    <!-- MODAL SOBRE -->
+    <div
+      class="modal fade"
+      id="sobreModal"
+      tabindex="-1"
+      aria-labelledby="sobreModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="sobreModalLabel">
+              <i class="fa-solid fa-robot me-2" style="color: var(--teal)"></i>
+              Automação Fiscal Ciamed
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="text-center mb-4">
+              <div
+                class="badge-status badge-operational"
+                style="margin: 0 auto"
+              >
+                <span class="dot"></span> Versão 1.0.1
+              </div>
+            </div>
+            <h6>
+              <i
+                class="fa-solid fa-bullseye me-2"
+                style="color: var(--teal)"
+              ></i
+              >Missão do Sistema
+            </h6>
+            <p class="text-muted mb-4" style="text-align: justify">
+              Ferramenta desenvolvida para eliminar o trabalho manual e
+              repetitivo na entrada de Notas Fiscais. O robô atua validando NCMs
+              e automatizando o cadastro de novos itens diretamente no ERP.
+            </p>
+            <h6>
+              <i class="fa-solid fa-code me-2" style="color: var(--teal)"></i
+              >Autoria & Desenvolvimento
+            </h6>
+            <div class="author-block mt-2">
+              <div class="name">Leonardo Dias</div>
+              <div class="role">Controladoria · 2026</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <audio id="audioSucesso" preload="auto">
+      <source src="../static/somnotificação.wav" type="audio/mpeg" />
+    </audio>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+
+    <script>
+      /* Tooltips */
+      document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
+        new bootstrap.Tooltip(el, { trigger: "hover" });
+      });
+
+      /* Active sidebar link */
+      document.querySelectorAll(".sidebar a").forEach((a) => {
+        if (a.href === window.location.href) a.classList.add("active");
+      });
+    </script>
+  </body>
+</html>

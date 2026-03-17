@@ -4,382 +4,63 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Fornecedores - Hub Ciamed</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
     <link rel="icon" href="/static/img/logosvg.svg" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}" />
-    <style>
-      :root {
-        --bg-base:       #090d14;
-        --bg-surface:    #0f1623;
-        --bg-card:       #131c2e;
-        --bg-card-hover: #182236;
-        --border:        rgba(255,255,255,0.06);
-        --border-hover:  rgba(255,255,255,0.13);
-        --teal:          #0ee6b8;
-        --teal-dim:      rgba(14,230,184,0.10);
-        --amber:         #f59e0b;
-        --amber-dim:     rgba(245,158,11,0.10);
-        --blue:          #3b82f6;
-        --blue-dim:      rgba(59,130,246,0.10);
-        --green:         #34d399;
-        --green-dim:     rgba(52,211,153,0.10);
-        --text-primary:  #e8edf5;
-        --text-secondary:#7a8ba3;
-        --text-muted:    #4a5a72;
-        --sidebar-w:     64px;
-        --nav-h:         64px;
-        --font-head:     'Syne', sans-serif;
-        --font-body:     'DM Sans', sans-serif;
-        --font-mono:     'Courier New', monospace;
-        --radius-card:   14px;
-        --radius-sm:     8px;
-        --transition:    0.22s cubic-bezier(.4,0,.2,1);
-      }
-      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-      body {
-        background: var(--bg-base);
-        color: var(--text-primary);
-        font-family: var(--font-body);
-        font-size: 15px;
-        line-height: 1.6;
-        min-height: 100vh;
-        overflow-x: hidden;
-        animation: pageEnter 0.35s ease forwards;
-      }
-      @keyframes pageEnter {
-        from { opacity: 0; transform: translateY(10px); }
-        to   { opacity: 1; transform: translateY(0); }
-      }
-      body::before {
-        content: '';
-        position: fixed; inset: 0;
-        background-image:
-          linear-gradient(rgba(14,230,184,0.015) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(14,230,184,0.015) 1px, transparent 1px);
-        background-size: 48px 48px;
-        pointer-events: none; z-index: 0;
-      }
-
-      /* SIDEBAR */
-      .sidebar {
-        position: fixed; left: 0; top: 0; bottom: 0;
-        width: var(--sidebar-w);
-        background: var(--bg-surface);
-        border-right: 1px solid var(--border);
-        display: flex; flex-direction: column;
-        align-items: center; padding: 20px 0; gap: 6px; z-index: 100;
-      }
-      .sidebar::after {
-        content: ''; position: absolute;
-        top: 0; right: -1px; bottom: 0; width: 1px;
-        background: linear-gradient(180deg, transparent, var(--teal), transparent);
-        opacity: 0.35;
-      }
-      .sidebar a {
-        width: 42px; height: 42px;
-        display: flex; align-items: center; justify-content: center;
-        color: var(--text-muted); border-radius: var(--radius-sm);
-        text-decoration: none; font-size: 16px;
-        transition: var(--transition);
-      }
-      .sidebar a:hover { color: var(--teal); background: var(--teal-dim); }
-      .sidebar a.mt-md-auto { margin-top: auto; }
-
-      /* NAVBAR */
-      .navbar-ciamed {
-        position: fixed; top: 0;
-        left: var(--sidebar-w); right: 0;
-        height: var(--nav-h);
-        background: rgba(9,13,20,0.85);
-        backdrop-filter: blur(20px);
-        border-bottom: 1px solid var(--border);
-        display: flex; align-items: center;
-        padding: 0 32px; z-index: 99;
-      }
-      .brand-logo { height: 32px; }
-      .divider-text {
-        font-family: var(--font-body);
-        font-weight: 300; font-size: 13px;
-        letter-spacing: 0.08em;
-        color: var(--text-muted);
-        border-left: 1px solid var(--border-hover);
-        padding-left: 16px; margin-left: 16px;
-        text-transform: uppercase;
-      }
-
-      /* MAIN */
-      .main-content {
-        margin-left: var(--sidebar-w);
-        padding-top: calc(var(--nav-h) + 36px);
-        padding-bottom: 60px;
-        padding-left: 40px; padding-right: 40px;
-        position: relative; z-index: 1;
-        max-width: 1200px;
-      }
-
-      /* PAGE HEADER */
-      .page-header {
-        display: flex; align-items: center;
-        justify-content: space-between;
-        margin-bottom: 32px;
-        opacity: 0; transform: translateY(14px);
-        animation: fadeUp 0.45s 0.05s ease forwards;
-      }
-      .page-header .left { display: flex; align-items: center; gap: 14px; }
-      .btn-back {
-        width: 36px; height: 36px;
-        background: var(--bg-surface);
-        border: 1px solid var(--border-hover);
-        border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        color: var(--text-secondary);
-        cursor: pointer; transition: var(--transition);
-        flex-shrink: 0;
-      }
-      .btn-back:hover { color: var(--teal); border-color: var(--teal); background: var(--teal-dim); }
-      .page-title {
-        font-family: var(--font-head);
-        font-size: 18px; font-weight: 600;
-        color: var(--text-primary);
-      }
-      .page-title span {
-        font-size: 13px; font-weight: 400;
-        color: var(--text-secondary); display: block;
-        margin-top: 1px;
-      }
-      .badge-api {
-        font-size: 11px; font-weight: 500;
-        letter-spacing: 0.08em;
-        color: var(--teal);
-        background: var(--teal-dim);
-        border: 1px solid rgba(14,230,184,0.2);
-        padding: 5px 14px; border-radius: 100px;
-      }
-
-      /* CARD */
-      .card-dark {
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-card);
-        padding: 24px;
-        opacity: 0; transform: translateY(16px);
-        animation: fadeUp 0.45s ease forwards;
-      }
-      .card-dark:nth-child(1) { animation-delay: 0.10s; }
-      .card-dark:nth-child(2) { animation-delay: 0.18s; }
-      .card-dark:nth-child(3) { animation-delay: 0.26s; }
-      .card-title-row {
-        display: flex; align-items: center; gap: 10px;
-        margin-bottom: 20px;
-        padding-bottom: 16px;
-        border-bottom: 1px solid var(--border);
-      }
-      .card-title-row i { color: var(--teal); font-size: 14px; }
-      .card-title-row h5 {
-        font-family: var(--font-head);
-        font-size: 14px; font-weight: 600;
-        color: var(--text-primary); margin: 0;
-        letter-spacing: 0.02em;
-      }
-
-      /* CNPJ SEARCH */
-      .search-wrap {
-        display: flex; flex-direction: column;
-        align-items: center; gap: 16px;
-        padding: 8px 0 4px;
-      }
-      .search-wrap p {
-        font-size: 13px; color: var(--text-secondary);
-        text-align: center; max-width: 380px;
-      }
-      .input-dark-group {
-        display: flex; gap: 8px;
-        width: 100%; max-width: 420px;
-      }
-      .input-dark {
-        flex: 1;
-        background: var(--bg-surface);
-        border: 1px solid var(--border-hover);
-        border-radius: var(--radius-sm);
-        padding: 10px 14px;
-        color: var(--text-primary);
-        font-family: var(--font-body);
-        font-size: 14px;
-        transition: var(--transition);
-        outline: none;
-      }
-      .input-dark::placeholder { color: var(--text-muted); }
-      .input-dark:focus { border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-dim); }
-      .btn-teal {
-        background: var(--teal);
-        color: #090d14;
-        border: none;
-        border-radius: var(--radius-sm);
-        padding: 10px 20px;
-        font-family: var(--font-head);
-        font-weight: 600; font-size: 13px;
-        cursor: pointer; transition: var(--transition);
-        white-space: nowrap;
-      }
-      .btn-teal:hover { filter: brightness(1.1); transform: translateY(-1px); }
-      .btn-teal:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
-
-      /* STATUS ROW */
-      .status-row {
-        display: flex; align-items: center; gap: 10px;
-        padding: 12px 16px;
-        background: var(--bg-surface);
-        border-radius: var(--radius-sm);
-        border: 1px solid var(--border);
-        width: 100%; max-width: 420px;
-      }
-      .status-dot {
-        width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-      }
-      .bg-gray { background: var(--text-muted); }
-      .bg-success-glow { background: var(--green); animation: pulse 2s infinite; }
-      .bg-warning-glow { background: var(--amber); }
-      .status-row span { font-size: 13px; color: var(--text-secondary); }
-
-      @keyframes pulse {
-        0%,100% { opacity:1; transform:scale(1); }
-        50%      { opacity:0.5; transform:scale(0.8); }
-      }
-
-      /* FORM GRID */
-      .form-grid { display: grid; gap: 14px; }
-      .form-row { display: grid; gap: 14px; }
-      .form-row.cols-12-1 { grid-template-columns: 1fr; }
-      .form-row.cols-9-3  { grid-template-columns: 3fr 1fr; }
-      .form-row.cols-4-4-4 { grid-template-columns: 1fr 1fr 1fr; }
-      .form-row.cols-3-7-2 { grid-template-columns: 1.2fr 3fr 1fr; }
-      .form-row.cols-3-4-5 { grid-template-columns: 1.2fr 1.6fr 2fr; }
-
-      .form-field { display: flex; flex-direction: column; gap: 5px; }
-      .form-field label {
-        font-size: 11px; font-weight: 500;
-        letter-spacing: 0.08em; text-transform: uppercase;
-        color: var(--text-muted);
-      }
-      .form-field input, .form-field select {
-        background: var(--bg-surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        padding: 9px 12px;
-        color: var(--text-primary);
-        font-family: var(--font-body);
-        font-size: 13px;
-        outline: none; transition: var(--transition);
-      }
-      .form-field input[readonly] {
-        color: var(--text-secondary);
-        cursor: default;
-      }
-      .form-field input:not([readonly]):focus {
-        border-color: var(--teal);
-        box-shadow: 0 0 0 3px var(--teal-dim);
-      }
-
-      /* BTN INICIAR */
-      .btn-iniciar {
-        width: 100%; padding: 13px;
-        background: linear-gradient(135deg, #10b981, #059669);
-        color: #fff; border: none;
-        border-radius: var(--radius-sm);
-        font-family: var(--font-head);
-        font-weight: 600; font-size: 14px;
-        cursor: pointer; transition: var(--transition);
-        margin-top: 20px; display: none;
-        letter-spacing: 0.02em;
-      }
-      .btn-iniciar:hover { filter: brightness(1.1); transform: translateY(-1px); }
-
-      /* CONSOLE */
-      .console-wrap {
-        background: #050810;
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        padding: 16px;
-        font-family: var(--font-mono);
-        font-size: 12px;
-        color: #4ade80;
-        min-height: 130px;
-        max-height: 260px;
-        overflow-y: auto;
-        line-height: 1.7;
-      }
-      .console-wrap::-webkit-scrollbar { width: 4px; }
-      .console-wrap::-webkit-scrollbar-track { background: transparent; }
-      .console-wrap::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 4px; }
-      .console-header {
-        display: flex; align-items: center;
-        justify-content: space-between;
-        margin-bottom: 12px;
-      }
-      .console-header .label {
-        display: flex; align-items: center; gap: 8px;
-        font-family: var(--font-head);
-        font-size: 12px; font-weight: 600;
-        letter-spacing: 0.08em; text-transform: uppercase;
-        color: var(--text-secondary);
-      }
-      .console-header .label i { color: var(--teal); }
-      .icon-expand-hover {
-        color: var(--text-muted); cursor: pointer;
-        transition: var(--transition); font-size: 14px;
-      }
-      .icon-expand-hover:hover { color: var(--teal); }
-
-      /* MODAL */
-      .modal-content {
-        background: var(--bg-surface) !important;
-        border: 1px solid var(--border-hover) !important;
-        border-radius: 16px !important;
-        box-shadow: 0 32px 64px rgba(0,0,0,0.6) !important;
-        color: var(--text-primary) !important;
-      }
-      .modal-header {
-        background: transparent !important;
-        border-bottom: 1px solid var(--border) !important;
-        padding: 20px 24px !important;
-      }
-      .modal-title {
-        font-family: var(--font-head) !important;
-        font-size: 16px !important; font-weight: 600 !important;
-        color: var(--text-primary) !important;
-      }
-      .modal-body { padding: 24px !important; }
-      .btn-close { filter: invert(1) !important; opacity: 0.5 !important; }
-
-      @keyframes fadeUp {
-        to { opacity: 1; transform: translateY(0); }
-      }
-
-      @media (max-width: 768px) {
-        .main-content { padding-left: 20px; padding-right: 20px; }
-        .form-row.cols-9-3, .form-row.cols-4-4-4,
-        .form-row.cols-3-7-2, .form-row.cols-3-4-5 { grid-template-columns: 1fr; }
-      }
-    </style>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css_reestilizados/cadastro_fornecedor_claude.css') }}"
+    />
   </head>
   <body>
     <!-- SIDEBAR -->
     <div class="sidebar">
-      <a href="/" data-bs-toggle="tooltip" data-bs-placement="right" title="Início">
+      <a
+        href="/"
+        data-bs-toggle="tooltip"
+        data-bs-placement="right"
+        title="Início"
+      >
         <i class="fa-solid fa-house"></i>
       </a>
-      <a href="https://www.ciamed.com.br/home.html" target="_blank"
-         data-bs-toggle="tooltip" data-bs-placement="right" title="Site Oficial" class="mt-md-auto">
+      <a
+        href="https://www.ciamed.com.br/home.html"
+        target="_blank"
+        data-bs-toggle="tooltip"
+        data-bs-placement="right"
+        title="Site Oficial"
+        class="mt-md-auto"
+      >
         <i class="fa-solid fa-globe"></i>
       </a>
-      <a href="/admin" target="_blank" data-bs-toggle="tooltip" data-bs-placement="right" title="Painel Admin">
+      <a
+        href="/admin"
+        target="_blank"
+        data-bs-toggle="tooltip"
+        data-bs-placement="right"
+        title="Painel Admin"
+      >
         <i class="fa-solid fa-circle-user"></i>
       </a>
-      <a href="/suporte" target="_blank" data-bs-toggle="tooltip" data-bs-placement="right" title="Suporte">
+      <a
+        href="/suporte"
+        target="_blank"
+        data-bs-toggle="tooltip"
+        data-bs-placement="right"
+        title="Suporte"
+      >
         <i class="fa-solid fa-comments"></i>
       </a>
     </div>
@@ -392,32 +73,44 @@
 
     <!-- MAIN -->
     <div class="main-content">
-
       <!-- PAGE HEADER -->
       <div class="page-header">
         <div class="left">
-          <button class="btn-back" onclick="window.location.href='/'" title="Voltar ao Painel">
-            <i class="fa-solid fa-arrow-left" style="font-size:13px;"></i>
+          <button
+            class="btn-back"
+            onclick="window.location.href = '/'"
+            title="Voltar ao Painel"
+          >
+            <i class="fa-solid fa-arrow-left" style="font-size: 13px"></i>
           </button>
           <div class="page-title">
             Cadastro de Fornecedores
             <span>Módulo Fiscal · Integração BrasilAPI</span>
           </div>
         </div>
-        <span class="badge-api"><i class="fa-solid fa-plug me-1"></i>BrasilAPI</span>
+        <span class="badge-api"
+          ><i class="fa-solid fa-plug me-1"></i>BrasilAPI</span
+        >
       </div>
 
       <!-- BUSCA CNPJ -->
-      <div class="card-dark" style="margin-bottom:20px; animation-delay:0.10s;">
+      <div class="card-dark" style="margin-bottom: 20px; animation-delay: 0.1s">
         <div class="card-title-row">
           <i class="fa-solid fa-magnifying-glass"></i>
           <h5>Busca Automática — Receita Federal</h5>
         </div>
         <div class="search-wrap">
-          <p>Digite o CNPJ para buscar os dados antes de iniciar a automação.</p>
+          <p>
+            Digite o CNPJ para buscar os dados antes de iniciar a automação.
+          </p>
           <div class="input-dark-group">
-            <input type="text" id="cnpjInput" class="input-dark"
-                   placeholder="00.000.000/0000-00" maxlength="18" />
+            <input
+              type="text"
+              id="cnpjInput"
+              class="input-dark"
+              placeholder="00.000.000/0000-00"
+              maxlength="18"
+            />
             <button class="btn-teal" type="button" id="btnConsultar">
               <i class="fa-solid fa-search me-1"></i> Buscar
             </button>
@@ -430,7 +123,10 @@
       </div>
 
       <!-- REVISÃO DE DADOS -->
-      <div class="card-dark" style="margin-bottom:20px; animation-delay:0.18s;">
+      <div
+        class="card-dark"
+        style="margin-bottom: 20px; animation-delay: 0.18s"
+      >
         <div class="card-title-row">
           <i class="fa-solid fa-list-check"></i>
           <h5>Revisão de Dados</h5>
@@ -443,7 +139,12 @@
             </div>
             <div class="form-field">
               <label>Tipo</label>
-              <input type="text" id="matrizFilial" readonly style="text-align:center;" />
+              <input
+                type="text"
+                id="matrizFilial"
+                readonly
+                style="text-align: center"
+              />
             </div>
           </div>
           <div class="form-row cols-4-4-4">
@@ -457,7 +158,12 @@
             </div>
             <div class="form-field">
               <label>Data de Abertura</label>
-              <input type="text" id="dataAbertura" readonly style="text-align:center;" />
+              <input
+                type="text"
+                id="dataAbertura"
+                readonly
+                style="text-align: center"
+              />
             </div>
           </div>
           <div class="form-row cols-9-3">
@@ -510,35 +216,46 @@
             </div>
           </div>
         </form>
-        <button class="btn-iniciar" id="btnIniciarRobo" onclick="iniciarCadastroERP()">
+        <button
+          class="btn-iniciar"
+          id="btnIniciarRobo"
+          onclick="iniciarCadastroERP()"
+        >
           <i class="fa-solid fa-play me-2"></i> Iniciar Cadastro no ERP
         </button>
       </div>
 
       <!-- CONSOLE -->
-      <div class="card-dark" style="animation-delay:0.26s;">
+      <div class="card-dark" style="animation-delay: 0.26s">
         <div class="console-header">
           <div class="label">
             <i class="fa-solid fa-terminal"></i> Console do Robô Fornecedores
           </div>
-          <i class="fa-solid fa-expand icon-expand-hover" onclick="toggleExpandirLog(this)"></i>
+          <i
+            class="fa-solid fa-expand icon-expand-hover"
+            onclick="toggleExpandirLog(this)"
+          ></i>
         </div>
         <div class="console-wrap" id="terminal-fornecedor">
           <div>> Sistema de Fornecedores pronto para operar.</div>
         </div>
       </div>
-
     </div>
 
     <audio id="audioSucesso" preload="auto">
-      <source src="{{ url_for('static', filename='som_notificacao.wav') }}" type="audio/wav" />
+      <source
+        src="{{ url_for('static', filename='som_notificacao.wav') }}"
+        type="audio/wav"
+      />
     </audio>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/index.js') }}"></script>
     <script src="{{ url_for('static', filename='js/cadastro_fornecedor.js') }}"></script>
     <script>
-      document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+      document
+        .querySelectorAll('[data-bs-toggle="tooltip"]')
+        .forEach((el) => new bootstrap.Tooltip(el));
     </script>
   </body>
 </html>
