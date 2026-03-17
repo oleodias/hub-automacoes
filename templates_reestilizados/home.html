@@ -187,27 +187,7 @@
             </div>
           </div>
 
-          <!-- Card 3: Cadastro Clientes Público (planejamento) -->
-          <div class="auto-card disabled">
-            <div
-              class="card-icon-wrap"
-              style="
-                background: rgba(74, 90, 114, 0.15);
-                color: var(--text-muted);
-              "
-            >
-              <i class="fa-solid fa-file-lines"></i>
-            </div>
-            <div class="card-title">Cadastro de Clientes — Público</div>
-            <div class="card-desc">
-              Automação destinada ao Comercial Público.
-            </div>
-            <div class="badge-status badge-planning">
-              <span class="dot"></span> Em Planejamento
-            </div>
-          </div>
-
-          <!-- Card 4: Cadastro de Fornecedores -->
+          <!-- Card 3: Cadastro de Fornecedores -->
           <div
             class="auto-card clickable"
             onclick="window.location.href='{{ url_for('cadastro_fornecedor') }}'"
@@ -228,7 +208,43 @@
             </div>
           </div>
 
-          <!-- Card 5: Cadastro Clientes Fiscal (planejamento) -->
+          <!-- Card 4: Inventário Inteligente (planejamento) -->
+
+          <div class="auto-card disabled">
+            <div
+              class="card-icon-wrap"
+              style="background: var(--red-dim); color: var(--red)"
+            >
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </div>
+            <div class="card-title">Consulta CNPJ</div>
+            <div class="card-desc">
+              Robô programado para consultar todas as informações de um cnpj,
+              sendo isso relevante para vários setores da empresa.
+            </div>
+            <div class="badge-status badge-planning">
+              <span class="dot"></span> Em Breve
+            </div>
+          </div>
+
+          <!-- Card 5: Cadastro Clientes Público (planejamento) -->
+          <div class="auto-card disabled">
+            <div
+              class="card-icon-wrap"
+              style="background: rgba(74, 90, 114, 0.15)"
+            >
+              <i class="fa-solid fa-file-lines"></i>
+            </div>
+            <div class="card-title">Cadastro de Clientes — Público</div>
+            <div class="card-desc">
+              Automação destinada ao Comercial Público.
+            </div>
+            <div class="badge-status badge-planning">
+              <span class="dot"></span> Em Planejamento
+            </div>
+          </div>
+
+          <!-- Card 6: Cadastro Clientes Fiscal (planejamento) -->
           <div class="auto-card disabled">
             <div
               class="card-icon-wrap"
@@ -239,24 +255,6 @@
             <div class="card-title">Cadastro de Clientes — Fiscal</div>
             <div class="card-desc">
               Cadastro e reativação de clientes da empresa para o setor fiscal.
-            </div>
-            <div class="badge-status badge-planning">
-              <span class="dot"></span> Em Planejamento
-            </div>
-          </div>
-
-          <!-- Card 6: Inventário Inteligente (planejamento) -->
-          <div class="auto-card disabled">
-            <div
-              class="card-icon-wrap"
-              style="background: var(--red-dim); color: var(--red)"
-            >
-              <i class="fa-solid fa-boxes-stacked"></i>
-            </div>
-            <div class="card-title">Inventário Inteligente</div>
-            <div class="card-desc">
-              Robô para auditoria de estoque e cruzamento de dados físicos vs
-              sistema.
             </div>
             <div class="badge-status badge-planning">
               <span class="dot"></span> Em Planejamento

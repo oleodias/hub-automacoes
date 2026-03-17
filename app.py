@@ -333,12 +333,19 @@ def consulta_cnpj(cnpj):
                     ie_ativa = item.get('inscricao_estadual')
                     break 
 
+                # Pega o bloco do Simples Nacional (se for nulo, cria um dicionário vazio)
+            simples = data.get('simples') or {}
+            
+            # A API retorna 'Sim' ou 'Não'. Vamos deixar bonitão em maiúsculo:
+            status_mei = "SIM" if simples.get('mei') == 'Sim' else "NÃO"
+
             # Mapeia para o formato que seu JS e Robô já esperam
             resultado = {
                 'razao_social': data.get('razao_social'),
                 'nome_fantasia': estabs.get('nome_fantasia'),
                 'cnpj': cnpj,
-                'inscricao_estadual': ie_ativa, # <--- IE Filtrada e Ativa!
+                'inscricao_estadual': ie_ativa,
+                'mei': status_mei,
                 'logradouro': f"{estabs.get('tipo_logradouro', '')} {estabs.get('logradouro', '')}".strip(),                
                 'numero': estabs.get('numero'),
                 'complemento': estabs.get('complemento'),

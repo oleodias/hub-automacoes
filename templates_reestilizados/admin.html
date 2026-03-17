@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Painel Admin - Ciamed</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="icon" href="/static/img/logosvg.svg" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/admin.css') }}"
+    />
+  </head>
+  <body>
+    <div id="loginScreen">
+      <svg
+        class="bg-svg-left"
+        xmlns="http://www.w3.org/2000/svg"
+        xmlns:xlink="http://www.w3.org/1999/xlink"
+        version="1.1"
+        id="line-green"
+        x="0px"
+        y="0px"
+        viewBox="0 0 300 400"
+        xml:space="preserve"
+      >
+        <path
+          style="
+            fill: none;
+            stroke: #3cb6c2;
+            stroke-width: 1.5;
+            stroke-miterlimit: 22.9256;
+          "
+          d="M22.115,400.014V382l-21.163-0.023 M0.951,294.578l63.576-115.931v0.019l0.063-0.121L187.11,381.698l-67.995-0.133l0.054,18.449 M299.828,400.014l-63.835-109.043 L66.596,0.44 M62.613,0.44L0.951,106.805"
+        />
+      </svg>
+      <div class="login-card">
+        <div class="login-icon-box">
+          <i class="fa-solid fa-circle-user fa-2x text-white"></i>
+        </div>
+        <h3 class="fw-bold mb-2">Acesso Administrativo</h3>
+        <p class="text-white-50 mb-4 small">
+          Identifique-se para acessar o painel de controle da Controladoria.
+        </p>
+        <div class="form-group text-start">
+          <label for="senhaAdmin" class="text-white-50 small fw-bold mb-2 ps-1"
+            >SENHA</label
+          >
+          <input
+            type="password"
+            id="senhaAdmin"
+            class="login-input"
+            onkeypress="verificarEnter(event)"
+            autocomplete="off"
+          />
+        </div>
+        <p
+          id="erroLogin"
+          class="text-danger fw-bold d-none mb-3 bg-white p-2 rounded bg-opacity-10"
+        >
+          <i class="fa-solid fa-triangle-exclamation me-2"></i> Senha incorreta!
+        </p>
+        <button class="btn-login" onclick="tentarLogin()">
+          Entrar <i class="fa-solid fa-arrow-right ms-2"></i>
+        </button>
+        <a href="/" class="link-voltar"
+          ><i class="fa-solid fa-arrow-left me-2"></i> Voltar ao site
+          principal</a
+        >
+      </div>
+    </div>
+
+    <div id="dashboardScreen">
+      <nav class="navbar-ciamed justify-content-between">
+        <div class="d-flex align-items-center text-white fw-bold fs-4">
+          <i class="fa-solid fa-circle-user me-2"></i
+          ><span class="fs-5 fw-light">Admin | Gestão de Chamados</span>
+        </div>
+        <div class="text-white small d-none d-md-block">
+          <i class="fa-solid fa-user-tie me-1"></i> Leonardo Dias
+        </div>
+      </nav>
+
+      <div class="sidebar">
+        <a href="/" title="Início"><i class="fa-solid fa-house"></i></a>
+        <a
+          href="javascript:void(0)"
+          onclick="carregarChamados()"
+          title="Atualizar"
+          ><i class="fa-solid fa-rotate-right"></i
+        ></a>
+        <a
+          href="javascript:void(0)"
+          onclick="sairPainel()"
+          title="Sair"
+          style="color: #e53935"
+          ><i class="fa-solid fa-power-off"></i
+        ></a>
+      </div>
+
+      <div class="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="text-secondary fw-light mb-0">Tickets de Suporte</h4>
+          <span class="badge bg-secondary fs-6" id="contadorTickets"
+            >0 Chamados</span
+          >
+        </div>
+
+        <div
+          class="filter-bar d-flex flex-wrap justify-content-between align-items-center"
+        >
+          <div class="btn-group mb-2 mb-md-0" role="group" id="grupoFiltros">
+            <button
+              type="button"
+              class="btn btn-outline-secondary btn-filter active"
+              onclick="aplicarFiltro('todos', this)"
+            >
+              Todos
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-secondary btn-filter"
+              onclick="aplicarFiltro('pendente', this)"
+            >
+              Pendentes
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-secondary btn-filter"
+              onclick="aplicarFiltro('analise', this)"
+            >
+              Em Análise
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-secondary btn-filter"
+              onclick="aplicarFiltro('resolvido', this)"
+            >
+              Resolvidos
+            </button>
+          </div>
+
+          <div class="d-flex align-items-center">
+            <i class="fa-solid fa-arrow-down-short-wide me-2 text-muted"></i>
+            <select
+              class="form-select w-auto border-secondary-subtle text-secondary"
+              id="seletorOrdem"
+              onchange="mudarOrdem(this.value)"
+            >
+              <option value="desc">Mais Recentes</option>
+              <option value="asc">Mais Antigos</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="ticketsContainer"></div>
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+  </body>
+</html>

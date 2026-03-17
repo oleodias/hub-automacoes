@@ -125,18 +125,44 @@
         </div>
 
         <!-- CONSOLE -->
-        <div class="card-dark" style="animation-delay: 0.18s">
-          <div class="console-header">
-            <div class="console-label">
-              <i class="fa-solid fa-terminal"></i> Console do Robô MDF
+        <!-- CONSOLE -->
+        <!-- CONSOLE NOVO -->
+        <div class="term-wrap">
+          <div class="term-titlebar">
+            <div class="term-titlebar-left">
+              <div class="term-dots">
+                <div class="dot dot-r"></div>
+                <div class="dot dot-y"></div>
+                <div class="dot dot-g"></div>
+              </div>
+              <div class="term-tab">
+                Console do Robô MDF
+                <div class="term-status-pill">
+                  <div class="term-pulse-dot"></div>
+                  ao vivo
+                </div>
+              </div>
             </div>
-            <i
-              class="fa-solid fa-expand icon-expand-hover"
-              onclick="toggleExpandirLog(this)"
-            ></i>
+            <div class="term-actions">
+              <button class="term-btn" id="btnCopiarLog" onclick="copiarLog()">
+                Copiar log
+              </button>
+            </div>
           </div>
-          <div class="console-wrap" id="terminal-mdf">
-            <div>> Sistema MDF pronto para operar.</div>
+          <div class="term-body" id="terminal-mdf">
+            <div class="log-line log-muted">
+              <span class="log-time">--:--:--</span>
+              <span class="log-prefix">·</span>
+              <span class="log-text">> Sistema MDF pronto para operar.</span>
+            </div>
+          </div>
+          <div class="term-footer">
+            <span class="term-footer-info">
+              processo:
+              <span id="footerProc" class="term-footer-highlight">–</span>
+              &nbsp;|&nbsp; linhas:
+              <span id="footerLines" class="term-footer-highlight">1</span>
+            </span>
           </div>
         </div>
       </div>
@@ -150,6 +176,6 @@
     </audio>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/index.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/relatorio_mdf.js') }}"></script>
+    <script src="{{ url_for('static', filename='js_reestilizados/relatorio_mdf_claudee.js') }}"></script>
   </body>
 </html>
