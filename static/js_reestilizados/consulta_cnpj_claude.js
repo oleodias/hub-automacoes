@@ -1,5 +1,5 @@
-document.getElementById("printDateTime").textContent =
-  new Date().toLocaleString("pt-BR");
+const dtEl = document.getElementById("printDateTime");
+if (dtEl) dtEl.textContent = new Date().toLocaleString("pt-BR");
 
 document
   .querySelectorAll('[data-bs-toggle="tooltip"]')
