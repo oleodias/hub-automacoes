@@ -9,8 +9,19 @@ document.addEventListener("DOMContentLoaded", () => {
 function addLogLine(tipo, texto) {
   const body = document.getElementById("terminal-mdf");
   if (!body) return;
-  const prefixos = { ok: "✓", error: "✗", warn: "!", info: "i", muted: "·", default: "›" };
-  const agora = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const prefixos = {
+    ok: "✓",
+    error: "✗",
+    warn: "!",
+    info: "i",
+    muted: "·",
+    default: "›",
+  };
+  const agora = new Date().toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
   const linha = document.createElement("div");
   linha.className = "log-line log-" + tipo;
   linha.innerHTML = `<span class="log-time">${agora}</span><span class="log-prefix">${prefixos[tipo] || "›"}</span><span class="log-text">${texto}</span>`;
@@ -22,7 +33,9 @@ function addLogLine(tipo, texto) {
 
 function copiarLog() {
   const linhas = document.querySelectorAll("#terminal-mdf .log-text");
-  const texto = Array.from(linhas).map((l) => l.textContent).join("\n");
+  const texto = Array.from(linhas)
+    .map((l) => l.textContent)
+    .join("\n");
   navigator.clipboard.writeText(texto).then(() => {
     const btn = document.getElementById("btnCopiarLog");
     if (!btn) return;
@@ -39,8 +52,16 @@ function copiarLog() {
 
 function preencherDatasMDF() {
   const dataHoje = new Date();
-  const ultimoDiaMesPassado = new Date(dataHoje.getFullYear(), dataHoje.getMonth(), 0);
-  const primeiroDiaMesPassado = new Date(ultimoDiaMesPassado.getFullYear(), ultimoDiaMesPassado.getMonth(), 1);
+  const ultimoDiaMesPassado = new Date(
+    dataHoje.getFullYear(),
+    dataHoje.getMonth(),
+    0,
+  );
+  const primeiroDiaMesPassado = new Date(
+    ultimoDiaMesPassado.getFullYear(),
+    ultimoDiaMesPassado.getMonth(),
+    1,
+  );
 
   const formatarDataInput = (data) => {
     const ano = data.getFullYear();
@@ -96,7 +117,10 @@ function rodarMDF() {
     if (event.data === "[FIM_DO_PROCESSO]") {
       source.close();
       const audio = document.getElementById("audioSucesso");
-      if (audio) { audio.volume = 0.5; audio.play(); }
+      if (audio) {
+        audio.volume = 0.5;
+        audio.play();
+      }
       addLogLine("ok", "Processo finalizado com sucesso! Planilha gerada.");
       addLogLine("default", "─────────────────────────────────");
       if (footerProc) footerProc.textContent = "concluído";
@@ -120,7 +144,10 @@ function rodarMDF() {
 
   source.onerror = function () {
     source.close();
-    addLogLine("error", "Erro de conexão. O processo pode ter sido interrompido.");
+    addLogLine(
+      "error",
+      "Erro de conexão. O processo pode ter sido interrompido.",
+    );
     if (footerProc) footerProc.textContent = "erro";
     document.getElementById("dot-mdf").className = "status-dot bg-red";
     document.getElementById("txt-mdf").innerText = "Erro de Conexão";
@@ -132,15 +159,17 @@ function rodarMDF() {
 
 let navegarLivremente = false;
 
-window.addEventListener("beforeunload", (event) => {
+/* window.addEventListener("beforeunload", (event) => {
   if (navegarLivremente) return;
   event.preventDefault();
   event.returnValue = "";
-});
+}); */
 
 function baixarRelatorio() {
   navegarLivremente = true;
   addLogLine("info", "Iniciando download do relatório...");
   window.location.href = "/download_mdf";
-  setTimeout(() => { navegarLivremente = false; }, 1000);
+  setTimeout(() => {
+    navegarLivremente = false;
+  }, 1000);
 }

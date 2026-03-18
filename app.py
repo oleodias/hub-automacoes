@@ -369,6 +369,26 @@ def consulta_cnpj(cnpj):
     except Exception as e:
         return jsonify({'erro': True, 'message': str(e)}), 500
 
+@app.route('/api/cnpj_completo/<cnpj>')
+def api_cnpj_completo(cnpj):
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        url = f'https://publica.cnpj.ws/cnpj/{cnpj}'
+        response = requests.get(url, headers=headers, timeout=15)
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            msg = "CNPJ não encontrado."
+            if response.status_code == 429:
+                msg = "Muitas consultas! Aguarde 1 minuto."
+            return jsonify({'erro': True, 'message': msg}), response.status_code
+    except Exception as e:
+        return jsonify({'erro': True, 'message': str(e)}), 500
+
+@app.route('/consulta_cnpj_completa')
+def consulta_cnpj_completa():
+    return render_template('consulta_cnpj.html')
+
 if __name__ == '__main__':
     print("🚀 SERVIDOR ONLINE! Acesse pelo IP da sua máquina.")
     app.run(host='0.0.0.0', port=5000, debug=True)
