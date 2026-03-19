@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 import os
 import sys
 import json
-from datetime import datetime
+from datetime import datetime, time
 import subprocess
 import requests
 
@@ -21,8 +21,8 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # ==========================================
 # PORTEIRO DIGITAL (CONTROLE DE HORÁRIO)
 # ==========================================
-HORA_INICIO = 7  # 07:00
-HORA_FIM = 18    # 18:00
+HORA_INICIO = time(6, 50)   # 07:00
+HORA_FIM = time(18, 40)    # 18:40
 DIAS_UTEIS = [0, 1, 2, 3, 4] # 0 = Segunda, 4 = Sexta
 
 @app.before_request
@@ -42,7 +42,7 @@ def verificar_horario():
 
     # 4. Trava do Relógio para o resto da empresa
     agora = datetime.now()
-    if agora.weekday() not in DIAS_UTEIS or not (HORA_INICIO <= agora.hour < HORA_FIM):
+    if agora.weekday() not in DIAS_UTEIS or not (HORA_INICIO <= agora.time() < HORA_FIM):
         return """
         <body style="background-color: #263238; color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; margin: 0;">
             <img src="/static/img/ciamedia.png" style="height: 60px; margin-bottom: 20px;" style="height: 60px; margin-bottom: 20px;">

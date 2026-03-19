@@ -169,7 +169,7 @@ def main():
             for _ in range(3):
                 try:
                     # Usando o ID que você forneceu:
-                    campo_ie = wait.until(EC.presence_of_element_located((By.ID, "subFrmPsJuridicas:txtNumInscMun")))
+                    campo_ie = wait.until(EC.presence_of_element_located((By.ID, "subFrmPsJuridicas:numInscEst")))
                     
                     # Limpeza Bruta (JS + Teclado)
                     driver.execute_script("arguments[0].value = '';", campo_ie)
