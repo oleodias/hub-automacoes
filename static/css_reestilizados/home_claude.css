@@ -116,11 +116,6 @@ body::before {
   background: var(--teal-dim);
 }
 
-.sidebar a.active {
-  color: var(--teal);
-  background: var(--teal-dim);
-}
-
 .sidebar a.mt-md-auto {
   margin-top: auto;
 }

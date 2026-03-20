@@ -1,0 +1,263 @@
+{% extends "base.html" %} {% block title %}Cadastro de Clientes - Hub Ciamed{%
+endblock %} {% block css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css_reestilizados/cadastro_clientes_claude.css') }}"
+/>
+{% endblock %} {% block navbar_title %}Hub de Automações {% endblock %} {% block
+content %}
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div class="left">
+    <button
+      class="btn-back"
+      onclick="window.location.href = '/'"
+      title="Voltar ao Painel"
+    >
+      <i class="fa-solid fa-arrow-left" style="font-size: 13px"></i>
+    </button>
+    <div class="page-title">
+      Cadastro e Reativação de Clientes
+      <span>Módulo Comercial & Fiscal · Ficha Cadastral + Receita Federal</span>
+    </div>
+  </div>
+  <span class="badge-api">
+    <i class="fa-solid fa-users-gear me-1"></i> Clientes
+  </span>
+</div>
+
+<!-- CARD 1: UPLOAD DA FICHA -->
+<div class="card-dark" style="margin-bottom: 20px; animation-delay: 0.1s">
+  <div class="card-title-row">
+    <i class="fa-solid fa-file-excel" style="color: #10b981"></i>
+    <h5>Upload da Ficha Cadastral</h5>
+  </div>
+
+  <div
+    class="upload-zone"
+    id="dropZoneCliente"
+    onclick="document.getElementById('fileFichaCliente').click()"
+  >
+    <i class="fa-solid fa-cloud-arrow-up upload-icon" id="uploadIcon"></i>
+    <div class="upload-text" id="uploadText">
+      Arraste a Ficha (.xlsx) ou clique para selecionar
+    </div>
+    <div class="upload-hint">
+      Somente arquivos Excel da Ficha Cadastral Ciamed
+    </div>
+    <input
+      type="file"
+      id="fileFichaCliente"
+      style="display: none"
+      accept=".xlsx,.xls"
+    />
+  </div>
+
+  <div class="status-row" style="margin-top: 16px">
+    <span class="status-dot bg-gray" id="dot-cliente"></span>
+    <span id="txt-cliente">Aguardando upload da ficha...</span>
+  </div>
+</div>
+
+<!-- CARD 2: REVISÃO DE DADOS -->
+<div class="card-dark" style="margin-bottom: 20px; animation-delay: 0.18s">
+  <div class="card-title-row">
+    <i class="fa-solid fa-user-check" style="color: var(--blue)"></i>
+    <h5>Revisão de Dados</h5>
+    <span id="badgeTipoCadastro" class="badge-tipo">Aguardando Ficha...</span>
+  </div>
+
+  <form id="formRevisaoCliente" class="form-grid">
+    <!-- SEÇÃO: DADOS FISCAIS -->
+    <div class="secao-label teal">
+      <i class="fa-solid fa-building me-2"></i>Dados Fiscais & Endereço
+    </div>
+
+    <div class="form-row cols-4-4-4">
+      <div class="form-field">
+        <label>CNPJ</label>
+        <input type="text" id="cliCnpj" readonly />
+      </div>
+      <div class="form-field">
+        <label>Inscrição Estadual (IE)</label>
+        <input type="text" id="cliIe" readonly />
+      </div>
+      <div class="form-field">
+        <label>Cód. Cliente (Reativação)</label>
+        <input type="text" id="cliCodigo" readonly />
+      </div>
+    </div>
+
+    <div class="form-row cols-12-1">
+      <div class="form-field">
+        <label>Razão Social</label>
+        <input type="text" id="cliRazao" readonly />
+      </div>
+    </div>
+
+    <div class="form-row cols-3-7-2">
+      <div class="form-field">
+        <label>CEP</label>
+        <input type="text" id="cliCep" readonly />
+      </div>
+      <div class="form-field">
+        <label>Logradouro</label>
+        <input type="text" id="cliLogradouro" readonly />
+      </div>
+      <div class="form-field">
+        <label>Número</label>
+        <input type="text" id="cliNumero" readonly />
+      </div>
+    </div>
+
+    <div class="form-row cols-12-1">
+      <div class="form-field">
+        <label>CNAE Principal</label>
+        <input type="text" id="cliCnae" readonly />
+      </div>
+    </div>
+
+    <!-- SEÇÃO: CONTATOS -->
+    <div class="secao-label amber">
+      <i class="fa-solid fa-address-book me-2"></i>Matriz de Contatos
+    </div>
+
+    <div class="form-row cols-12-1">
+      <div class="form-field">
+        <label>E-mail para envio de XML</label>
+        <input type="text" id="cliEmailXml" readonly />
+      </div>
+    </div>
+
+    <div class="contatos-grid">
+      <div class="contatos-header">
+        <span>Setor</span>
+        <span>Nome</span>
+        <span>Telefone</span>
+        <span>E-mail</span>
+      </div>
+      <div class="contato-row">
+        <span class="contato-setor">Compras</span>
+        <input type="text" id="ctoComprasNome" class="input-dark" readonly />
+        <input type="text" id="ctoComprasTel" class="input-dark" readonly />
+        <input type="text" id="ctoComprasEmail" class="input-dark" readonly />
+      </div>
+      <div class="contato-row">
+        <span class="contato-setor">Recebimento</span>
+        <input type="text" id="ctoRecNome" class="input-dark" readonly />
+        <input type="text" id="ctoRecTel" class="input-dark" readonly />
+        <input type="text" id="ctoRecEmail" class="input-dark" readonly />
+      </div>
+      <div class="contato-row">
+        <span class="contato-setor">Financeiro</span>
+        <input type="text" id="ctoFinNome" class="input-dark" readonly />
+        <input type="text" id="ctoFinTel" class="input-dark" readonly />
+        <input type="text" id="ctoFinEmail" class="input-dark" readonly />
+      </div>
+      <div class="contato-row">
+        <span class="contato-setor">Farmacêutico</span>
+        <input type="text" id="ctoFarmaNome" class="input-dark" readonly />
+        <input type="text" id="ctoFarmaTel" class="input-dark" readonly />
+        <input type="text" id="ctoFarmaEmail" class="input-dark" readonly />
+      </div>
+    </div>
+
+    <!-- SEÇÃO: COMERCIAL -->
+    <div class="secao-label purple">
+      <i class="fa-solid fa-boxes-packing me-2"></i>Comercial & Logística
+    </div>
+
+    <div class="form-row cols-6-6">
+      <div class="form-field">
+        <label>Regra de Faturamento</label>
+        <input
+          type="text"
+          id="cliRegraFat"
+          readonly
+          placeholder="Caixa ou Unitário?"
+        />
+      </div>
+      <div class="form-field">
+        <label>Forma de Captação</label>
+        <input type="text" id="cliCaptacao" readonly />
+      </div>
+    </div>
+
+    <div class="form-row cols-6-6">
+      <div class="form-field">
+        <label>Vendedor</label>
+        <input type="text" id="cliVendedor" readonly />
+      </div>
+      <div class="form-field">
+        <label>Representante</label>
+        <input type="text" id="cliRepresentante" readonly />
+      </div>
+    </div>
+  </form>
+
+  <!-- BOTÕES DE AÇÃO -->
+  <div class="botoes-acao">
+    <button
+      class="btn-iniciar btn-novo"
+      id="btnAprovarNovo"
+      disabled
+      onclick="iniciarCadastroNovo()"
+    >
+      <i class="fa-solid fa-play me-2"></i> Iniciar Cadastro NOVO
+    </button>
+    <button
+      class="btn-iniciar btn-reativacao"
+      id="btnAprovarReativacao"
+      disabled
+      onclick="iniciarReativacao()"
+    >
+      <i class="fa-solid fa-rotate me-2"></i> Iniciar REATIVAÇÃO
+    </button>
+  </div>
+</div>
+
+<!-- CONSOLE -->
+<div class="term-wrap">
+  <div class="term-titlebar">
+    <div class="term-titlebar-left">
+      <div class="term-dots">
+        <div class="dot dot-r"></div>
+        <div class="dot dot-y"></div>
+        <div class="dot dot-g"></div>
+      </div>
+      <div class="term-tab">
+        Console do Robô de Clientes
+        <div class="term-status-pill">
+          <div class="term-pulse-dot"></div>
+          ao vivo
+        </div>
+      </div>
+    </div>
+    <div class="term-actions">
+      <button class="term-btn" id="btnCopiarLog" onclick="copiarLog()">
+        <i class="fa-regular fa-copy"></i> Copiar log
+      </button>
+    </div>
+  </div>
+  <div class="term-body" id="terminal-cliente">
+    <div class="log-line log-muted">
+      <span class="log-time">--:--:--</span>
+      <span class="log-prefix">·</span>
+      <span class="log-text"
+        >> Sistema de Clientes pronto. Aguardando ficha cadastral...</span
+      >
+    </div>
+  </div>
+  <div class="term-footer">
+    <span class="term-footer-info">
+      processo:
+      <span id="footerProc" class="term-footer-highlight">–</span> &nbsp;|&nbsp;
+      linhas: <span id="footerLines" class="term-footer-highlight">1</span>
+    </span>
+  </div>
+</div>
+
+{% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='js_reestilizados/cadastro_clientes_claudee.js') }}"></script>
+{% endblock %}

@@ -138,7 +138,11 @@ content %}
       </div>
     </div>
 
-    <div class="auto-card disabled">
+    <div
+      class="auto-card clickable"
+      onclick="window.location.href='{{ url_for('cadastro_clientes') }}'"
+    >
+      <div class="card-accent-line" style="background: var(--purple)"></div>
       <div
         class="card-icon-wrap"
         style="background: var(--purple-dim); color: var(--purple)"
@@ -149,8 +153,8 @@ content %}
       <div class="card-desc">
         Cadastro e reativação de clientes da empresa para o setor fiscal.
       </div>
-      <div class="badge-status badge-planning">
-        <span class="dot"></span> Em Planejamento
+      <div class="badge-status badge-operational">
+        <span class="dot"></span> Operacional
       </div>
     </div>
 

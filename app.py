@@ -7,7 +7,8 @@ import subprocess
 import requests
 import threading
 import time as time_module
-
+from werkzeug.utils import secure_filename
+from automacoes.leitor_ficha import processar_ficha_cliente
 # ── SISTEMA DE FILA ──────────────────────
 _lock_execucao = threading.Lock()
 _fila = []
@@ -286,6 +287,39 @@ def run_fornecedor():
         finally:
             finalizar_execucao()
     return Response(generate(), mimetype='text/event-stream')
+
+@app.route('/cadastro_clientes')
+def cadastro_clientes():
+    return render_template('cadastro_clientes.html')
+
+@app.route('/api/upload_ficha_cliente', methods=['POST'])
+def upload_ficha_cliente():
+    if 'file' not in request.files:
+        return jsonify({"erro": True, "mensagem": "Nenhum arquivo enviado."}), 400
+        
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"erro": True, "mensagem": "Arquivo vazio."}), 400
+
+    if file and (file.filename.endswith('.xlsx') or file.filename.endswith('.xls')):
+        # Cria uma pasta segura para salvar se não existir
+        pasta_uploads = os.path.join(app.root_path, 'uploads')
+        os.makedirs(pasta_uploads, exist_ok=True)
+        
+        filename = secure_filename(file.filename)
+        caminho_salvo = os.path.join(pasta_uploads, filename)
+        file.save(caminho_salvo)
+        
+        # Chama o nosso robô para ler a ficha e bater na API!
+        resultado = processar_ficha_cliente(caminho_salvo)
+        
+        # Opcional: Apagar a ficha do servidor após extrair para economizar espaço
+        if os.path.exists(caminho_salvo):
+            os.remove(caminho_salvo)
+            
+        return jsonify(resultado)
+    else:
+        return jsonify({"erro": True, "mensagem": "Formato inválido. Envie um arquivo Excel (.xlsx ou .xls)"}), 400
 
 # ==========================================
 # SISTEMA DE BANCO DE DADOS (JSON)
