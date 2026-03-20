@@ -5,8 +5,58 @@ import json
 from datetime import datetime, time
 import subprocess
 import requests
+import threading
+import time as time_module
 
+# ── SISTEMA DE FILA ──────────────────────
+_lock_execucao = threading.Lock()
+_fila = []
+_em_execucao = None
 
+def _gerar_id():
+    return f"{int(time_module.time() * 1000)}"
+
+def entrar_na_fila():
+    global _fila
+    with _lock_execucao:
+        meu_id = _gerar_id()
+        _fila.append(meu_id)
+        return meu_id
+
+def minha_vez(meu_id):
+    global _em_execucao, _fila
+    with _lock_execucao:
+        if _em_execucao is not None:
+            return False
+        return bool(_fila and _fila[0] == meu_id)
+
+def iniciar_execucao(meu_id):
+    global _em_execucao, _fila
+    with _lock_execucao:
+        _em_execucao = meu_id
+        if meu_id in _fila:
+            _fila.remove(meu_id)
+
+def finalizar_execucao():
+    global _em_execucao
+    with _lock_execucao:
+        _em_execucao = None
+
+def sair_da_fila(meu_id):
+    global _fila
+    with _lock_execucao:
+        if meu_id in _fila:
+            _fila.remove(meu_id)
+
+def posicao_na_fila(meu_id):
+    global _fila, _em_execucao
+    with _lock_execucao:
+        if _em_execucao == meu_id:
+            return 0
+        if meu_id in _fila:
+            return _fila.index(meu_id) + 1
+        return -1
+# ─────────────────────────────────────────
 
 app = Flask(__name__, template_folder='templates_reestilizados')
 # Chave secreta para gravar a sua "Chave Mestra" no navegador
@@ -21,7 +71,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # ==========================================
 # PORTEIRO DIGITAL (CONTROLE DE HORÁRIO)
 # ==========================================
-HORA_INICIO = time(6, 50)   # 07:00
+HORA_INICIO = time(6, 50)   # 06:50
 HORA_FIM = time(18, 40)    # 18:40
 DIAS_UTEIS = [0, 1, 2, 3, 4] # 0 = Segunda, 4 = Sexta
 
@@ -101,90 +151,90 @@ def upload_file():
 # ROTAS DOS ROBÔS (FASES)
 # ==========================================
 
-@app.route('/run_fase1', methods=['GET']) # ⚠️ Mudou para GET!
+@app.route('/run_fase1', methods=['GET'])
 def rota_fase1():
+    meu_id = request.args.get('fila_id', '')
     def gerar_logs():
-        # Usamos o nome exato do seu arquivo: fase1_ncm.py
-        comando = [sys.executable, "-X", "utf8", "-u", "automacoes/fase1_ncm.py"]       
-        processo = subprocess.Popen(
-            comando, 
-            stdout=subprocess.PIPE, 
-            stderr=subprocess.STDOUT, 
-            text=True, 
-            encoding='utf-8', 
-            bufsize=1
-        )
-        
-        for linha in iter(processo.stdout.readline, ''):
-            linha_limpa = linha.strip()
-            if not linha_limpa:
-                linha_limpa = " " 
-                
-            yield f"data: {linha_limpa}\n\n"
-            
-        processo.stdout.close()
-        processo.wait()
-        
-        yield "data: [FIM_DO_PROCESSO]\n\n"
-        
+        tentativas = 0
+        while not minha_vez(meu_id):
+            tentativas += 1
+            if tentativas > 120:
+                yield "data: ❌ Timeout na fila. Tente novamente.\n\n"
+                sair_da_fila(meu_id)
+                return
+            yield f"data: [FILA] posição {posicao_na_fila(meu_id)}\n\n"
+            time_module.sleep(1)
+        iniciar_execucao(meu_id)
+        yield "data: [FILA_LIBERADA]\n\n"
+        try:
+            comando = [sys.executable, "-X", "utf8", "-u", "automacoes/fase1_ncm.py"]
+            processo = subprocess.Popen(comando, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', bufsize=1)
+            for linha in iter(processo.stdout.readline, ''):
+                linha_limpa = linha.strip()
+                if not linha_limpa: linha_limpa = " "
+                yield f"data: {linha_limpa}\n\n"
+            processo.stdout.close()
+            processo.wait()
+            yield "data: [FIM_DO_PROCESSO]\n\n"
+        finally:
+            finalizar_execucao()
     return Response(gerar_logs(), mimetype='text/event-stream')
 
-@app.route('/run_fase2', methods=['GET']) # ⚠️ Mudou para GET por causa da transmissão ao vivo!
+@app.route('/run_fase2', methods=['GET'])
 def run_fase2():
+    meu_id = request.args.get('fila_id', '')
     def gerar_logs():
-        # O "-X utf8" força o Windows a entender os Emojis! 
-        # O "-u" força a mandar a mensagem na mesma hora.
-        comando = [sys.executable, "-X", "utf8", "-u", "automacoes/fase2_item.py"]       
-        
-        # Popen abre o robô em segundo plano
-        processo = subprocess.Popen(
-            comando, 
-            stdout=subprocess.PIPE, 
-            stderr=subprocess.STDOUT, 
-            text=True, 
-            encoding='utf-8', # <--- Avisa o Flask para ler em UTF-8 também
-            bufsize=1
-        )
-        
-        # Fica lendo linha por linha do terminal em tempo real
-        for linha in iter(processo.stdout.readline, ''):
-            linha_limpa = linha.strip()
-            if not linha_limpa:
-                linha_limpa = " " # Mantém linhas em branco visíveis
-                
-            yield f"data: {linha_limpa}\n\n"
-            
-        processo.stdout.close()
-        processo.wait()
-        
-        yield "data: [FIM_DO_PROCESSO]\n\n"
-        
-    # Retorna o transmissor ao vivo (SSE)
+        tentativas = 0
+        while not minha_vez(meu_id):
+            tentativas += 1
+            if tentativas > 120:
+                yield "data: ❌ Timeout na fila. Tente novamente.\n\n"
+                sair_da_fila(meu_id)
+                return
+            yield f"data: [FILA] posição {posicao_na_fila(meu_id)}\n\n"
+            time_module.sleep(1)
+        iniciar_execucao(meu_id)
+        yield "data: [FILA_LIBERADA]\n\n"
+        try:
+            comando = [sys.executable, "-X", "utf8", "-u", "automacoes/fase2_item.py"]
+            processo = subprocess.Popen(comando, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', bufsize=1)
+            for linha in iter(processo.stdout.readline, ''):
+                linha_limpa = linha.strip()
+                if not linha_limpa: linha_limpa = " "
+                yield f"data: {linha_limpa}\n\n"
+            processo.stdout.close()
+            processo.wait()
+            yield "data: [FIM_DO_PROCESSO]\n\n"
+        finally:
+            finalizar_execucao()
     return Response(gerar_logs(), mimetype='text/event-stream')
 
 @app.route('/run_mdf', methods=['GET'])
 def rota_mdf():
-    # Pega as datas que o Javascript enviou
+    meu_id = request.args.get('fila_id', '')
     data_inicio = request.args.get('inicio', '01/01/2026')
     data_fim = request.args.get('fim', '31/01/2026')
-
     def gerar_logs():
-        # Passamos as datas como argumentos extras para o robô
-        processo = subprocess.Popen(
-            ['python', '-u', 'automacoes/robo_mdf.py', data_inicio, data_fim], 
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            encoding='utf-8',
-            bufsize=1
-        )
-        
-        for linha in iter(processo.stdout.readline, ''):
-            if linha:
-                yield f"data: {linha.strip()}\n\n"
-        processo.stdout.close()
-        processo.wait()
-        
+        tentativas = 0
+        while not minha_vez(meu_id):
+            tentativas += 1
+            if tentativas > 120:
+                yield "data: ❌ Timeout na fila. Tente novamente.\n\n"
+                sair_da_fila(meu_id)
+                return
+            yield f"data: [FILA] posição {posicao_na_fila(meu_id)}\n\n"
+            time_module.sleep(1)
+        iniciar_execucao(meu_id)
+        yield "data: [FILA_LIBERADA]\n\n"
+        try:
+            processo = subprocess.Popen(['python', '-u', 'automacoes/robo_mdf.py', data_inicio, data_fim], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', bufsize=1)
+            for linha in iter(processo.stdout.readline, ''):
+                if linha: yield f"data: {linha.strip()}\n\n"
+            processo.stdout.close()
+            processo.wait()
+            yield "data: [FIM_DO_PROCESSO]\n\n"
+        finally:
+            finalizar_execucao()
     return Response(gerar_logs(), mimetype='text/event-stream')
 
 @app.route('/download_mdf')
@@ -209,32 +259,32 @@ def relatorio_mdf():
 
 @app.route('/run_fornecedor')
 def run_fornecedor():
-    # Recebe os dados do JavaScript em formato JSON
+    meu_id = request.args.get('fila_id', '')
     dados_json = request.args.get('dados', '{}')
-    
     def generate():
+        tentativas = 0
+        while not minha_vez(meu_id):
+            tentativas += 1
+            if tentativas > 120:
+                yield "data: ❌ Timeout na fila. Tente novamente.\n\n"
+                sair_da_fila(meu_id)
+                return
+            yield f"data: [FILA] posição {posicao_na_fila(meu_id)}\n\n"
+            time_module.sleep(1)
+        iniciar_execucao(meu_id)
+        yield "data: [FILA_LIBERADA]\n\n"
         try:
-            # Chama o robô passando os dados como argumento
-            process = subprocess.Popen(
-                [sys.executable, 'automacoes/robo_fornecedor.py', dados_json],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1,
-                encoding='utf-8'
-            )
-            
+            process = subprocess.Popen([sys.executable, 'automacoes/robo_fornecedor.py', dados_json], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, encoding='utf-8')
             for line in process.stdout:
                 linha = line.strip()
-                if linha:
-                    yield f"data: {linha}\n\n"
-                    
+                if linha: yield f"data: {linha}\n\n"
             process.wait()
-            
+            yield "data: [FIM_DO_PROCESSO]\n\n"
         except Exception as e:
-            yield f"data: > ❌ Erro interno no servidor: {str(e)}\n\n"
-            yield f"data: [FIM_DO_PROCESSO]\n\n"
-
+            yield f"data: ❌ Erro interno: {str(e)}\n\n"
+            yield "data: [FIM_DO_PROCESSO]\n\n"
+        finally:
+            finalizar_execucao()
     return Response(generate(), mimetype='text/event-stream')
 
 # ==========================================
@@ -316,7 +366,7 @@ def consulta_cnpj(cnpj):
     try:
         headers = {'User-Agent': 'Mozilla/5.0'}
         url = f'https://publica.cnpj.ws/cnpj/{cnpj}'
-        response = requests.get(url, headers=headers, timeout=15)
+        response = requests.get(url, headers=headers, timeout=30)
         
         if response.status_code == 200:
             data = response.json()
@@ -372,22 +422,55 @@ def consulta_cnpj(cnpj):
 @app.route('/api/cnpj_completo/<cnpj>')
 def api_cnpj_completo(cnpj):
     try:
+        # 1. FAXINA NO CNPJ: Tira ponto, barra e traço e deixa só os números puros
+        cnpj_limpo = cnpj.replace('.', '').replace('/', '').replace('-', '')
+        
         headers = {'User-Agent': 'Mozilla/5.0'}
-        url = f'https://publica.cnpj.ws/cnpj/{cnpj}'
-        response = requests.get(url, headers=headers, timeout=15)
+        
+        # 2. Manda a URL com o CNPJ limpo para a API
+        url = f'https://publica.cnpj.ws/cnpj/{cnpj_limpo}'
+        
+        # 3. Paciência de monge: 45 segundos de timeout
+        response = requests.get(url, headers=headers, timeout=45)
+        
         if response.status_code == 200:
             return jsonify(response.json())
         else:
             msg = "CNPJ não encontrado."
             if response.status_code == 429:
-                msg = "Muitas consultas! Aguarde 1 minuto."
+                msg = "Muitas consultas! Aguarde 1 minuto e tente novamente."
             return jsonify({'erro': True, 'message': msg}), response.status_code
+            
+    # 4. Tratamento elegante para quando a API demora demais
+    except requests.exceptions.Timeout:
+        return jsonify({'erro': True, 'message': "A API da Receita Federal demorou muito para responder. Por favor, aguarde uns segundos e tente novamente!"}), 504
+        
+    # 5. Tratamento para qualquer outro erro (ex: internet caiu)
     except Exception as e:
-        return jsonify({'erro': True, 'message': str(e)}), 500
-
+        return jsonify({'erro': True, 'message': f"Erro de comunicação: {str(e)}"}), 500
+    
 @app.route('/consulta_cnpj_completa')
 def consulta_cnpj_completa():
     return render_template('consulta_cnpj.html')
+
+@app.route('/fila/entrar', methods=['POST'])
+def fila_entrar():
+    meu_id = entrar_na_fila()
+    return jsonify({'id': meu_id, 'posicao': posicao_na_fila(meu_id)})
+
+@app.route('/fila/status/<meu_id>')
+def fila_status(meu_id):
+    pos = posicao_na_fila(meu_id)
+    return jsonify({
+        'posicao': pos,
+        'minha_vez': pos == 1 and _em_execucao is None,
+        'em_execucao': _em_execucao is not None
+    })
+
+@app.route('/fila/sair/<meu_id>', methods=['POST'])
+def fila_sair(meu_id):
+    sair_da_fila(meu_id)
+    return jsonify({'ok': True})
 
 if __name__ == '__main__':
     print("🚀 SERVIDOR ONLINE! Acesse pelo IP da sua máquina.")

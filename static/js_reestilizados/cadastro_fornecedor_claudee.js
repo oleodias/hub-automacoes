@@ -160,15 +160,14 @@ document.getElementById("btnConsultar").addEventListener("click", function () {
 
 // --- LÓGICA DO ROBÔ ---
 
-function iniciarCadastroERP() {
+async function iniciarCadastroERP() {
   const btn = document.getElementById("btnIniciarRobo");
   btn.disabled = true;
   btn.innerHTML =
-    '<i class="fa-solid fa-circle-notch fa-spin me-2"></i> Operando ERP...';
+    '<i class="fa-solid fa-circle-notch fa-spin me-2"></i> Aguardando fila...';
 
   const cidadeUF = document.getElementById("cidade").value.split(" - ");
   const uf = cidadeUF.length > 1 ? cidadeUF[1] : "";
-
   const dados = {
     cnpj: document.getElementById("cnpjInput").value,
     razao_social: document.getElementById("razaoSocial").value,
@@ -185,13 +184,49 @@ function iniciarCadastroERP() {
   const footerProc = document.getElementById("footerProc");
   if (footerProc) footerProc.textContent = "robo_fornecedor.py";
 
+  const resp = await fetch("/fila/entrar", { method: "POST" });
+  const { id: filaId, posicao } = await resp.json();
+
   addLogLine("default", "─────────────────────────────────");
-  addLogLine("info", `Iniciando robô para CNPJ: ${dados.cnpj}`);
+  if (posicao > 1) {
+    addLogLine(
+      "warn",
+      `Sistema ocupado. Você é o ${posicao}º na fila. Aguardando automaticamente...`,
+    );
+  } else {
+    addLogLine("info", `Iniciando robô para CNPJ: ${dados.cnpj}`);
+  }
 
   const jsonString = encodeURIComponent(JSON.stringify(dados));
-  const source = new EventSource(`/run_fornecedor?dados=${jsonString}`);
+  const source = new EventSource(
+    `/run_fornecedor?fila_id=${filaId}&dados=${jsonString}`,
+  );
 
   source.onmessage = function (event) {
+    if (event.data.startsWith("[FILA]")) {
+      const pos = event.data.match(/posição (\d+)/);
+      if (pos) {
+        const terminal = document.getElementById("terminal-fornecedor");
+        const ultimaLinha = terminal
+          ? terminal.querySelector(".log-line:last-child .log-text")
+          : null;
+        if (
+          ultimaLinha &&
+          ultimaLinha.textContent.startsWith("Aguardando na fila")
+        ) {
+          ultimaLinha.textContent = `Aguardando na fila... posição ${pos[1]}`;
+        } else {
+          addLogLine("muted", `Aguardando na fila... posição ${pos[1]}`);
+        }
+      }
+      return;
+    }
+    if (event.data === "[FILA_LIBERADA]") {
+      addLogLine("info", "Fila liberada! Iniciando agora...");
+      btn.innerHTML =
+        '<i class="fa-solid fa-circle-notch fa-spin me-2"></i> Operando ERP...';
+      return;
+    }
     if (event.data === "[FIM_DO_PROCESSO]") {
       source.close();
       const audio = document.getElementById("audioSucesso");
@@ -201,18 +236,15 @@ function iniciarCadastroERP() {
       if (footerProc) footerProc.textContent = "concluído";
       btn.innerHTML =
         '<i class="fa-solid fa-check-double me-2"></i> Cadastro Concluído';
-    } else {
-      const msg = event.data;
-      if (msg.includes("✅") || msg.toLowerCase().includes("cadastrado")) {
-        addLogLine("ok", msg);
-      } else if (msg.includes("❌") || msg.toLowerCase().includes("erro")) {
-        addLogLine("error", msg);
-      } else if (msg.includes("⚠️")) {
-        addLogLine("warn", msg);
-      } else {
-        addLogLine("default", msg);
-      }
+      return;
     }
+    const msg = event.data;
+    if (msg.includes("✅") || msg.toLowerCase().includes("cadastrado"))
+      addLogLine("ok", msg);
+    else if (msg.includes("❌") || msg.toLowerCase().includes("erro"))
+      addLogLine("error", msg);
+    else if (msg.includes("⚠️")) addLogLine("warn", msg);
+    else addLogLine("default", msg);
   };
 
   source.onerror = function () {
@@ -222,5 +254,6 @@ function iniciarCadastroERP() {
     btn.disabled = false;
     btn.innerHTML =
       '<i class="fa-solid fa-rotate-right me-2"></i> Tentar Novamente';
+    fetch(`/fila/sair/${filaId}`, { method: "POST" });
   };
 }

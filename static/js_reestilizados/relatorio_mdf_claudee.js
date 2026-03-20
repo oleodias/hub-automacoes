@@ -87,10 +87,9 @@ function limparDatas() {
 
 // --- ROBÔ MDF ---
 
-function rodarMDF() {
+async function rodarMDF() {
   const inicioRaw = document.getElementById("mdf-inicio").value;
   const fimRaw = document.getElementById("mdf-fim").value;
-
   if (!inicioRaw || !fimRaw) {
     addLogLine("warn", "Selecione as datas de início e fim antes de começar!");
     return;
@@ -99,21 +98,55 @@ function rodarMDF() {
   const formatar = (d) => d.split("-").reverse().join("/");
   const inicio = formatar(inicioRaw);
   const fim = formatar(fimRaw);
-
   const footerProc = document.getElementById("footerProc");
   if (footerProc) footerProc.textContent = "robo_mdf.py";
 
   document.getElementById("btn-mdf").disabled = true;
   document.getElementById("btn-download-mdf").style.display = "none";
   document.getElementById("dot-mdf").className = "status-dot bg-yellow";
-  document.getElementById("txt-mdf").innerText = "Robô operando...";
+  document.getElementById("txt-mdf").innerText = "Aguardando fila...";
+
+  const resp = await fetch("/fila/entrar", { method: "POST" });
+  const { id: filaId, posicao } = await resp.json();
 
   addLogLine("default", "─────────────────────────────────");
-  addLogLine("info", `Iniciando extração: ${inicio} até ${fim}...`);
+  if (posicao > 1) {
+    addLogLine(
+      "warn",
+      `Sistema ocupado. Você é o ${posicao}º na fila. Aguardando automaticamente...`,
+    );
+  } else {
+    addLogLine("info", `Iniciando extração: ${inicio} até ${fim}...`);
+  }
 
-  const source = new EventSource(`/run_mdf?inicio=${inicio}&fim=${fim}`);
+  const source = new EventSource(
+    `/run_mdf?fila_id=${filaId}&inicio=${inicio}&fim=${fim}`,
+  );
 
   source.onmessage = function (event) {
+    if (event.data.startsWith("[FILA]")) {
+      const pos = event.data.match(/posição (\d+)/);
+      if (pos) {
+        const terminal = document.getElementById("terminal-mdf");
+        const ultimaLinha = terminal
+          ? terminal.querySelector(".log-line:last-child .log-text")
+          : null;
+        if (
+          ultimaLinha &&
+          ultimaLinha.textContent.startsWith("Aguardando na fila")
+        ) {
+          ultimaLinha.textContent = `Aguardando na fila... posição ${pos[1]}`;
+        } else {
+          addLogLine("muted", `Aguardando na fila... posição ${pos[1]}`);
+        }
+      }
+      return;
+    }
+    if (event.data === "[FILA_LIBERADA]") {
+      addLogLine("info", "Fila liberada! Iniciando agora...");
+      document.getElementById("txt-mdf").innerText = "Robô operando...";
+      return;
+    }
     if (event.data === "[FIM_DO_PROCESSO]") {
       source.close();
       const audio = document.getElementById("audioSucesso");
@@ -128,18 +161,15 @@ function rodarMDF() {
       document.getElementById("txt-mdf").innerText = "Concluído!";
       document.getElementById("btn-mdf").disabled = false;
       document.getElementById("btn-download-mdf").style.display = "flex";
-    } else {
-      const msg = event.data;
-      if (msg.includes("✅") || msg.toLowerCase().includes("sucesso")) {
-        addLogLine("ok", msg);
-      } else if (msg.includes("❌") || msg.toLowerCase().includes("erro")) {
-        addLogLine("error", msg);
-      } else if (msg.includes("⚠️") || msg.toLowerCase().includes("aviso")) {
-        addLogLine("warn", msg);
-      } else {
-        addLogLine("default", msg);
-      }
+      return;
     }
+    const msg = event.data;
+    if (msg.includes("✅") || msg.toLowerCase().includes("sucesso"))
+      addLogLine("ok", msg);
+    else if (msg.includes("❌") || msg.toLowerCase().includes("erro"))
+      addLogLine("error", msg);
+    else if (msg.includes("⚠️")) addLogLine("warn", msg);
+    else addLogLine("default", msg);
   };
 
   source.onerror = function () {
@@ -152,6 +182,7 @@ function rodarMDF() {
     document.getElementById("dot-mdf").className = "status-dot bg-red";
     document.getElementById("txt-mdf").innerText = "Erro de Conexão";
     document.getElementById("btn-mdf").disabled = false;
+    fetch(`/fila/sair/${filaId}`, { method: "POST" });
   };
 }
 

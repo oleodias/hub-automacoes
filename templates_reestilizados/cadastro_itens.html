@@ -1,243 +1,164 @@
-<!doctype html>
-<html lang="pt-br">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cadastro de Itens - Hub Ciamed</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="icon" href="/static/img/logosvg.svg" />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css_reestilizados/cadastro_itens_claude.css') }}"
-    />
-  </head>
-  <body>
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-      <a href="/"><i class="fa-solid fa-house"></i></a>
-      <a
-        href="https://www.ciamed.com.br/home.html"
-        target="_blank"
-        class="mt-md-auto"
+{% extends "base.html" %} {% block title %}Cadastro de Itens - Hub Ciamed{%
+endblock %} {% block css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css_reestilizados/cadastro_itens_claude.css') }}"
+/>
+{% endblock %} {% block navbar_title %}Hub de Automações{% endblock %} {% block
+content %}
+<div id="tela-fiscal">
+  <div class="page-header">
+    <div class="left">
+      <button
+        class="btn-back"
+        onclick="window.location.href = '/'"
+        title="Voltar"
       >
-        <i class="fa-solid fa-globe"></i>
-      </a>
-      <a href="/admin" target="_blank"
-        ><i class="fa-solid fa-circle-user"></i
-      ></a>
-      <a href="/suporte" target="_blank"
-        ><i class="fa-solid fa-comments"></i
-      ></a>
+        <i class="fa-solid fa-arrow-left" style="font-size: 13px"></i>
+      </button>
+      <div class="page-title">
+        Cadastro de Itens
+        <span>Módulo Fiscal · Entrada de Notas</span>
+      </div>
+    </div>
+    <span class="badge-ver">Versão 1.0</span>
+  </div>
+
+  <div class="card-dark" style="margin-bottom: 20px; animation-delay: 0.1s">
+    <div class="card-title-row">
+      <i class="fa-solid fa-file-import"></i>
+      <h5>Entrada de Documentos</h5>
     </div>
 
-    <!-- NAVBAR -->
-    <nav class="navbar-ciamed">
-      <img src="/static/img/ciamedia.png" alt="Ciamed" class="brand-logo" />
-      <span class="divider-text">Hub de Automações</span>
-    </nav>
-
-    <!-- MAIN -->
-    <div class="main-content">
-      <div id="tela-fiscal">
-        <!-- HEADER -->
-        <div class="page-header">
-          <div class="left">
-            <button
-              class="btn-back"
-              onclick="window.location.href = '/'"
-              title="Voltar"
-            >
-              <i class="fa-solid fa-arrow-left" style="font-size: 13px"></i>
-            </button>
-            <div class="page-title">
-              Cadastro de Itens
-              <span>Módulo Fiscal · Entrada de Notas</span>
-            </div>
-          </div>
-          <span class="badge-ver">Versão 1.0</span>
-        </div>
-
-        <!-- ENTRADA DE DOCUMENTOS -->
-        <div
-          class="card-dark"
-          style="margin-bottom: 20px; animation-delay: 0.1s"
+    <ul class="nav tabs-dark" id="importTabs">
+      <li class="nav-item">
+        <button
+          class="nav-link active"
+          data-bs-toggle="tab"
+          data-bs-target="#upload-pane"
         >
-          <div class="card-title-row">
-            <i class="fa-solid fa-file-import"></i>
-            <h5>Entrada de Documentos</h5>
-          </div>
+          <i class="fa-solid fa-laptop-file me-2"></i>Anexar XML
+        </button>
+      </li>
+      <li class="nav-item">
+        <button
+          class="nav-link"
+          data-bs-toggle="tab"
+          data-bs-target="#sefaz-pane"
+        >
+          <i class="fa-solid fa-globe me-2"></i>Buscar SEFAZ
+        </button>
+      </li>
+    </ul>
 
-          <ul class="nav tabs-dark" id="importTabs">
-            <li class="nav-item">
-              <button
-                class="nav-link active"
-                data-bs-toggle="tab"
-                data-bs-target="#upload-pane"
-              >
-                <i class="fa-solid fa-laptop-file me-2"></i>Anexar XML
-              </button>
-            </li>
-            <li class="nav-item">
-              <button
-                class="nav-link"
-                data-bs-toggle="tab"
-                data-bs-target="#sefaz-pane"
-              >
-                <i class="fa-solid fa-globe me-2"></i>Buscar SEFAZ
-              </button>
-            </li>
-          </ul>
-
-          <div class="tab-content">
-            <div class="tab-pane fade show active" id="upload-pane">
-              <div
-                class="upload-area"
-                id="dropZone"
-                onclick="document.getElementById('fileInput').click()"
-              >
-                <i id="uploadIcon" class="fa-solid fa-cloud-arrow-up"></i>
-                <h5 id="uploadText">Selecione ou Arraste o XML</h5>
-                <input
-                  type="file"
-                  id="fileInput"
-                  style="display: none"
-                  accept=".xml"
-                />
-              </div>
-            </div>
-            <div class="tab-pane fade" id="sefaz-pane">
-              <div
-                style="display: flex; justify-content: center; padding: 16px 0"
-              >
-                <div class="sefaz-wrap">
-                  <div class="input-icon-wrap">
-                    <i class="fa-solid fa-barcode"></i>
-                  </div>
-                  <input
-                    type="text"
-                    id="chaveAcesso"
-                    class="input-dark"
-                    placeholder="Chave de Acesso (44 dígitos)"
-                    maxlength="44"
-                  />
-                  <button class="btn-teal" onclick="buscarSefaz()">
-                    Buscar
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+    <div class="tab-content">
+      <div class="tab-pane fade show active" id="upload-pane">
+        <div
+          class="upload-area"
+          id="dropZone"
+          onclick="document.getElementById('fileInput').click()"
+        >
+          <i id="uploadIcon" class="fa-solid fa-cloud-arrow-up"></i>
+          <h5 id="uploadText">Selecione ou Arraste o XML</h5>
+          <input
+            type="file"
+            id="fileInput"
+            style="display: none"
+            accept=".xml"
+          />
         </div>
-
-        <!-- FASES -->
-        <div class="fase-grid" style="margin-bottom: 20px">
-          <div class="card-dark fase-card" style="animation-delay: 0.18s">
-            <div class="fase-card-header">
-              <h5>Fase 1 — NCM</h5>
-              <span class="badge-fase badge-pendente" id="badge-fase1"
-                >Pendente</span
-              >
+      </div>
+      <div class="tab-pane fade" id="sefaz-pane">
+        <div style="display: flex; justify-content: center; padding: 16px 0">
+          <div class="sefaz-wrap">
+            <div class="input-icon-wrap">
+              <i class="fa-solid fa-barcode"></i>
             </div>
-            <div class="status-row-sm">
-              <span class="status-dot bg-gray" id="dot-fase1"></span>
-              <span id="txt-fase1">Aguardando arquivo...</span>
-            </div>
-            <button
-              class="btn-fase"
-              id="btn-fase1"
-              disabled
-              onclick="rodarFase1()"
-            >
-              <i class="fa-solid fa-shield-halved me-2"></i>Validar NCMs
-            </button>
-          </div>
-          <div class="card-dark fase-card" style="animation-delay: 0.24s">
-            <div class="fase-card-header">
-              <h5>Fase 2 — Itens</h5>
-              <span class="badge-fase badge-bloqueado" id="badge-fase2"
-                >Bloqueado</span
-              >
-            </div>
-            <div class="status-row-sm">
-              <span class="status-dot bg-gray" id="dot-fase2"></span>
-              <span id="txt-fase2">Aguardando Fase 1...</span>
-            </div>
-            <button
-              class="btn-fase"
-              id="btn-fase2"
-              disabled
-              onclick="rodarFase2()"
-            >
-              <i class="fa-solid fa-database me-2"></i>Cadastrar Itens
-            </button>
-          </div>
-        </div>
-
-        <!-- CONSOLE -->
-        <!-- CONSOLE -->
-        <!-- CONSOLE NOVO -->
-        <div class="term-wrap" id="container-do-log">
-          <div class="term-titlebar">
-            <div class="term-titlebar-left">
-              <div class="term-dots">
-                <div class="dot dot-r"></div>
-                <div class="dot dot-y"></div>
-                <div class="dot dot-g"></div>
-              </div>
-              <div class="term-tab">
-                Console de Execução
-                <div class="term-status-pill">
-                  <div class="term-pulse-dot"></div>
-                  ao vivo
-                </div>
-              </div>
-            </div>
-            <div class="term-actions">
-              <button class="term-btn" id="btnCopiarLog" onclick="copiarLog()">
-                Copiar log
-              </button>
-            </div>
-          </div>
-          <div class="term-body" id="terminal">
-            <div class="log-line log-muted">
-              <span class="log-time">--:--:--</span>
-              <span class="log-prefix">·</span>
-              <span class="log-text">> Sistema Fiscal pronto para operar.</span>
-            </div>
-          </div>
-          <div class="term-footer">
-            <span class="term-footer-info">
-              processo:
-              <span id="footerProc" class="term-footer-highlight">–</span>
-              &nbsp;|&nbsp; linhas:
-              <span id="footerLines" class="term-footer-highlight">1</span>
-            </span>
+            <input
+              type="text"
+              id="chaveAcesso"
+              class="input-dark"
+              placeholder="Chave de Acesso (44 dígitos)"
+              maxlength="44"
+            />
+            <button class="btn-teal" onclick="buscarSefaz()">Buscar</button>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <audio id="audioSucesso" preload="auto">
-      <source
-        src="{{ url_for('static', filename='som_notificacao.wav') }}"
-        type="audio/wav"
-      />
-    </audio>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ url_for('static', filename='js/index.js') }}"></script>
-    <script src="{{ url_for('static', filename='js_reestilizados/cadastro_itens_claudee.js') }}"></script>
-  </body>
-</html>
+  <div class="fase-grid" style="margin-bottom: 20px">
+    <div class="card-dark fase-card" style="animation-delay: 0.18s">
+      <div class="fase-card-header">
+        <h5>Fase 1 — NCM</h5>
+        <span class="badge-fase badge-pendente" id="badge-fase1">Pendente</span>
+      </div>
+      <div class="status-row-sm">
+        <span class="status-dot bg-gray" id="dot-fase1"></span>
+        <span id="txt-fase1">Aguardando arquivo...</span>
+      </div>
+      <button class="btn-fase" id="btn-fase1" disabled onclick="rodarFase1()">
+        <i class="fa-solid fa-shield-halved me-2"></i>Validar NCMs
+      </button>
+    </div>
+    <div class="card-dark fase-card" style="animation-delay: 0.24s">
+      <div class="fase-card-header">
+        <h5>Fase 2 — Itens</h5>
+        <span class="badge-fase badge-bloqueado" id="badge-fase2"
+          >Bloqueado</span
+        >
+      </div>
+      <div class="status-row-sm">
+        <span class="status-dot bg-gray" id="dot-fase2"></span>
+        <span id="txt-fase2">Aguardando Fase 1...</span>
+      </div>
+      <button class="btn-fase" id="btn-fase2" disabled onclick="rodarFase2()">
+        <i class="fa-solid fa-database me-2"></i>Cadastrar Itens
+      </button>
+    </div>
+  </div>
+
+  <div class="term-wrap" id="container-do-log">
+    <div class="term-titlebar">
+      <div class="term-titlebar-left">
+        <div class="term-dots">
+          <div class="dot dot-r"></div>
+          <div class="dot dot-y"></div>
+          <div class="dot dot-g"></div>
+        </div>
+        <div class="term-tab">
+          Console de Execução
+          <div class="term-status-pill">
+            <div class="term-pulse-dot"></div>
+            ao vivo
+          </div>
+        </div>
+      </div>
+      <div class="term-actions">
+        <button class="term-btn" id="btnCopiarLog" onclick="copiarLog()">
+          Copiar log
+        </button>
+      </div>
+    </div>
+    <div class="term-body" id="terminal">
+      <div class="log-line log-muted">
+        <span class="log-time">--:--:--</span>
+        <span class="log-prefix">·</span>
+        <span class="log-text">> Sistema Fiscal pronto para operar.</span>
+      </div>
+    </div>
+    <div class="term-footer">
+      <span class="term-footer-info">
+        processo:
+        <span id="footerProc" class="term-footer-highlight">–</span>
+        &nbsp;|&nbsp; linhas:
+        <span id="footerLines" class="term-footer-highlight">1</span>
+      </span>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
+<script src="{{ url_for('static', filename='js_reestilizados/cadastro_itens_claudee.js') }}"></script>
+{% endblock %}

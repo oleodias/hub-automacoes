@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Hub de Automações - Ciamed{% endblock %}</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" href="/static/img/logosvg.svg" />
+
+    <style>
+      /* 1. PROÍBE O NAVEGADOR DE ROLAR A TELA INTEIRA */
+      html,
+      body {
+        margin: 0 !important;
+        padding: 0 !important;
+        height: 100vh !important; /* Trava a altura na tela do monitor */
+        overflow: hidden !important; /* Corta o scroll do corpo inteiro */
+        background: #090d14 !important; /* Garante o fundo escuro do painel */
+      }
+
+      /* 2. A MÁGICA: DELEGA O SCROLL APENAS PARA O CONTEÚDO CENTRAL */
+      .main-content {
+        position: relative !important;
+        height: 100vh !important;
+        overflow-y: auto !important; /* A barra de rolagem vai nascer APENAS aqui */
+        box-sizing: border-box !important;
+        /* Como o conteúdo rola, ele passa por baixo da navbar */
+      }
+
+      /* 3. BLINDA A SIDEBAR (Fundo, borda e posição) */
+      .sidebar {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        bottom: 0 !important;
+        width: 64px !important;
+        z-index: 9999 !important;
+        background: #0f1623 !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
+      }
+
+      /* 4. BLINDA A NAVBAR (Efeito vidro, borda e posição) */
+      .navbar-ciamed {
+        position: fixed !important;
+        top: 0 !important;
+        left: 64px !important;
+        right: 0 !important;
+        height: 64px !important;
+        z-index: 9998 !important;
+        background: rgba(9, 13, 20, 0.95) !important;
+        backdrop-filter: blur(20px) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+      }
+    </style>
+
+    {% block css %}{% endblock %}
+  </head>
+
+  <body>
+    <div class="sidebar">
+      <a
+        href="/"
+        data-bs-toggle="tooltip"
+        data-bs-placement="right"
+        title="Início"
+      >
+        <i class="fa-solid fa-house"></i>
+      </a>
+      <a
+        href="https://www.ciamed.com.br/home.html"
+        target="_blank"
+        data-bs-toggle="tooltip"
+        data-bs-placement="right"
+        title="Site Oficial"
+        class="mt-md-auto"
+      >
+        <i class="fa-solid fa-globe"></i>
+      </a>
+      <a
+        href="/admin"
+        target="_blank"
+        data-bs-toggle="tooltip"
+        data-bs-placement="right"
+        title="Painel Admin"
+      >
+        <i class="fa-solid fa-circle-user"></i>
+      </a>
+      <a
+        href="/suporte"
+        target="_blank"
+        data-bs-toggle="tooltip"
+        data-bs-placement="right"
+        title="Suporte"
+      >
+        <i class="fa-solid fa-comments"></i>
+      </a>
+      <a
+        href="javascript:void(0)"
+        onclick="abrirSobre()"
+        data-bs-toggle="tooltip"
+        data-bs-placement="right"
+        title="Sobre"
+      >
+        <i class="fa-regular fa-circle-question"></i>
+      </a>
+    </div>
+
+    <nav class="navbar-ciamed">
+      <img src="/static/img/ciamedia.png" alt="Ciamed" class="brand-logo" />
+      <span class="divider-text"
+        >{% block navbar_title %}Hub de Automações{% endblock %}</span
+      >
+    </nav>
+
+    <div class="main-content">{% block content %}{% endblock %}</div>
+
+    <div
+      class="modal fade"
+      id="sobreModal"
+      tabindex="-1"
+      aria-labelledby="sobreModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="sobreModalLabel">
+              <i class="fa-solid fa-robot me-2" style="color: var(--teal)"></i>
+              Automação Fiscal Ciamed
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="text-center mb-4">
+              <div
+                class="badge-status badge-operational"
+                style="margin: 0 auto"
+              >
+                <span class="dot"></span> Versão 1.0.1
+              </div>
+            </div>
+            <h6>
+              <i
+                class="fa-solid fa-bullseye me-2"
+                style="color: var(--teal)"
+              ></i
+              >Missão do Sistema
+            </h6>
+            <p class="text-muted mb-4" style="text-align: justify">
+              Ferramenta desenvolvida para eliminar o trabalho manual e
+              repetitivo na entrada de Notas Fiscais. O robô atua validando NCMs
+              e automatizando o cadastro de novos itens diretamente no ERP.
+            </p>
+            <h6>
+              <i class="fa-solid fa-code me-2" style="color: var(--teal)"></i
+              >Autoria & Desenvolvimento
+            </h6>
+            <div class="author-block mt-2">
+              <div class="name">Leonardo Dias</div>
+              <div class="role">Controladoria · 2026</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <audio id="audioSucesso" preload="auto">
+      <source src="/static/audio/somnotificacao.wav" type="audio/wav" />
+    </audio>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      // Tooltips
+      document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
+        new bootstrap.Tooltip(el, { trigger: "hover" });
+      });
+
+      // Modal Sobre
+      function abrirSobre() {
+        new bootstrap.Modal(document.getElementById("sobreModal")).show();
+      }
+
+      // Sidebar: marca link ativo automaticamente (Substitui aquele código quebrado!)
+      document.querySelectorAll(".sidebar a").forEach((a) => {
+        if (a.href === window.location.href) a.classList.add("active");
+      });
+    </script>
+
+    {% block scripts %}{% endblock %}
+  </body>
+</html>
