@@ -7,8 +7,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const dropZone = document.getElementById("dropZoneCliente");
   const fileInput = document.getElementById("fileFichaCliente");
 
-  dropZone.addEventListener("click", () => fileInput.click());
-
+  dropZone.addEventListener("click", (e) => {
+    // Bloqueia o "efeito bolha": só aciona se o clique não tiver vindo do próprio input!
+    if (e.target !== fileInput) {
+      fileInput.click();
+    }
+  });
   dropZone.addEventListener("dragover", (e) => {
     e.preventDefault();
     dropZone.style.borderColor = "var(--teal)";
@@ -40,6 +44,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 2. Enviar a Ficha para o Backend (Python)
 async function enviarFicha(file) {
+  // === NOVO: Muda o visual da caixa de upload na hora! ===
+  const uploadText = document.getElementById("uploadText");
+  const uploadIcon = document.getElementById("uploadIcon");
+
+  uploadText.innerHTML = `Arquivo <span style="color: var(--teal); font-weight: bold;">${file.name}</span> carregado!`;
+  uploadIcon.className = "fa-solid fa-file-circle-check upload-icon";
+  uploadIcon.style.color = "var(--teal)";
+  // ========================================================
+
   logConsole(`Lendo arquivo: ${file.name}...`, "info");
   document.getElementById("txt-cliente").innerText =
     "Lendo ficha e cruzando dados com a Receita Federal...";
@@ -84,6 +97,7 @@ function preencherTela(data) {
   document.getElementById("cliIe").value = data.inscricao_estadual || "";
   document.getElementById("cliCodigo").value = data.codigo_cliente || "";
   document.getElementById("cliRazao").value = data.razao_social || "";
+  document.getElementById("cliFantasia").value = data.nome_fantasia || "";
   document.getElementById("cliCep").value = data.cep || "";
   document.getElementById("cliLogradouro").value = data.logradouro || "";
   document.getElementById("cliNumero").value = data.numero || "";

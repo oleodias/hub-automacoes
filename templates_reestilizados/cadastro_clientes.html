@@ -34,14 +34,10 @@ content %}
     <h5>Upload da Ficha Cadastral</h5>
   </div>
 
-  <div
-    class="upload-zone"
-    id="dropZoneCliente"
-    onclick="document.getElementById('fileFichaCliente').click()"
-  >
+  <div class="upload-zone" id="dropZoneCliente">
     <i class="fa-solid fa-cloud-arrow-up upload-icon" id="uploadIcon"></i>
     <div class="upload-text" id="uploadText">
-      Arraste a Ficha (.xlsx) ou clique para selecionar
+      Arraste aqui a Ficha Cadastral ou clique para selecionar
     </div>
     <div class="upload-hint">
       Somente arquivos Excel da Ficha Cadastral Ciamed
@@ -74,6 +70,17 @@ content %}
       <i class="fa-solid fa-building me-2"></i>Dados Fiscais & Endereço
     </div>
 
+    <div class="form-row cols-6-6">
+      <div class="form-field">
+        <label>Razão Social</label>
+        <input type="text" id="cliRazao" readonly />
+      </div>
+      <div class="form-field">
+        <label>Nome Fantasia</label>
+        <input type="text" id="cliFantasia" readonly />
+      </div>
+    </div>
+
     <div class="form-row cols-4-4-4">
       <div class="form-field">
         <label>CNPJ</label>
@@ -86,13 +93,6 @@ content %}
       <div class="form-field">
         <label>Cód. Cliente (Reativação)</label>
         <input type="text" id="cliCodigo" readonly />
-      </div>
-    </div>
-
-    <div class="form-row cols-12-1">
-      <div class="form-field">
-        <label>Razão Social</label>
-        <input type="text" id="cliRazao" readonly />
       </div>
     </div>
 

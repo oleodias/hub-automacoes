@@ -21,10 +21,15 @@ def processar_ficha_cliente(caminho_arquivo):
         tipo_cadastro = "NOVO" if is_novo else "REATIVACAO" if is_reativacao else "DESCONHECIDO"
         codigo_cliente = str(planilha['AG242'].value or "").strip() if tipo_cadastro == "REATIVACAO" else ""
 
-        # 4. Lendo Regras de Faturamento
+        # 4. Lendo Regras de Faturamento (Blindagem Ciamed: Unitário é o padrão absoluto)
         fat_caixa = str(planilha['E197'].value or "").strip().upper() == 'X'
         fat_unitario = str(planilha['E202'].value or "").strip().upper() == 'X'
-        regra_faturamento = "Caixa" if fat_caixa else "Unitário" if fat_unitario else "Não informada"
+        
+        # Se marcou APENAS Caixa, fica Caixa. Qualquer outra situação (marcou os dois, nenhum, ou só Unitário) fica Unitário.
+        if fat_caixa and not fat_unitario:
+            regra_faturamento = "Caixa"
+        else:
+            regra_faturamento = "Unitário"
 
         # 5. Montando o pacote de dados EXCEL
         dados = {
