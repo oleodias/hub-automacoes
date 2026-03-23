@@ -15,3 +15,7 @@ env/
 # --- CACHE DO NAVEGADOR E PLANILHAS ---
 chrome_perfil/
 *.xlsx
+
+cloudflared.exe
+__pycache__/
+uploads/
