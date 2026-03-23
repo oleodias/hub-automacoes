@@ -100,6 +100,9 @@ function preencherTela(data) {
   document.getElementById("cliFantasia").value = data.nome_fantasia || "";
   document.getElementById("cliCep").value = data.cep || "";
   document.getElementById("cliLogradouro").value = data.logradouro || "";
+  document.getElementById("cliComplemento").value = data.complemento || "";
+  document.getElementById("cliBairro").value = data.bairro || "";
+  document.getElementById("cliUf").value = data.estado || ""; // O leitor_ficha usa "estado"
   document.getElementById("cliNumero").value = data.numero || "";
   document.getElementById("cliCnae").value = data.cnae_principal || "";
 
@@ -223,4 +226,48 @@ function copiarLog() {
       btn.classList.remove("copied");
     }, 2000);
   });
+}
+
+async function iniciarCadastroNovo() {
+  const btn = document.getElementById("btnAprovarNovo");
+  btn.innerHTML =
+    '<i class="fa-solid fa-circle-notch fa-spin me-2"></i> Ligando Robô...';
+  btn.disabled = true;
+
+  const pacoteDeDados = {
+    cnpj_limpo: document.getElementById("cliCnpj")?.value || "",
+    razao_social: document.getElementById("cliRazao")?.value || "",
+    nome_fantasia: document.getElementById("cliFantasia")?.value || "",
+    inscricao_estadual: document.getElementById("cliIe")?.value || "",
+    cep: document.getElementById("cliCep")?.value || "",
+    logradouro: document.getElementById("cliLogradouro")?.value || "",
+    numero: document.getElementById("cliNumero")?.value || "",
+    complemento: document.getElementById("cliComplemento")?.value || "",
+    bairro: document.getElementById("cliBairro")?.value || "",
+    uf: document.getElementById("cliUf")?.value || "RS",
+    cnae_principal_descricao:
+      document.getElementById("cliCnae")?.value || "Varejista",
+  };
+
+  try {
+    const resposta = await fetch("/iniciar_cadastro_novo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(pacoteDeDados),
+    });
+
+    const resultado = await resposta.json();
+
+    if (resultado.status === "Sucesso") {
+      logConsole("✅ " + resultado.msg, "ok");
+    } else {
+      logConsole("❌ Erro no robô: " + resultado.msg, "error");
+    }
+  } catch (error) {
+    logConsole("❌ Erro de conexão com o servidor.", "error");
+  } finally {
+    btn.innerHTML =
+      '<i class="fa-solid fa-play me-2"></i> Iniciar Cadastro NOVO';
+    btn.disabled = false;
+  }
 }

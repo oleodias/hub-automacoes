@@ -8,7 +8,9 @@ import requests
 import threading
 import time as time_module
 from werkzeug.utils import secure_filename
-from automacoes.leitor_ficha import processar_ficha_cliente
+from automacoes.clientes.leitor_ficha import processar_ficha_cliente
+from automacoes.clientes import cadastro_novo 
+
 # ── SISTEMA DE FILA ──────────────────────
 _lock_execucao = threading.Lock()
 _fila = []
@@ -320,6 +322,15 @@ def upload_ficha_cliente():
         return jsonify(resultado)
     else:
         return jsonify({"erro": True, "mensagem": "Formato inválido. Envie um arquivo Excel (.xlsx ou .xls)"}), 400
+    
+@app.route('/iniciar_cadastro_novo', methods=['POST'])
+def iniciar_cadastro_novo():
+    dados_do_cliente = request.json  # Pega os dados que o JavaScript mandou
+    
+    # Aciona o motor do robô que acabamos de criar!
+    resultado = cadastro_novo.executar(dados_do_cliente)
+    
+    return jsonify(resultado) # Devolve pra tela se deu Sucesso ou Erro
 
 # ==========================================
 # SISTEMA DE BANCO DE DADOS (JSON)
