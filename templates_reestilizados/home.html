@@ -25,7 +25,7 @@ content %}
         <i class="fa-solid fa-bolt"></i>
       </div>
       <div>
-        <div class="stat-value">4</div>
+        <div class="stat-value">5</div>
         <div class="stat-label">Automações Ativas</div>
       </div>
     </div>
@@ -49,7 +49,7 @@ content %}
         <i class="fa-solid fa-layer-group"></i>
       </div>
       <div>
-        <div class="stat-value">6</div>
+        <div class="stat-value">7</div>
         <div class="stat-label">Total de Módulos</div>
       </div>
     </div>
@@ -159,37 +159,45 @@ content %}
     </div>
 
     <div class="auto-card disabled">
-      <div class="card-icon-wrap" style="background: rgba(74, 90, 114, 0.15)">
+      <div class="card-accent-line" style="background: var(--orange)"></div>
+      <div
+        class="card-icon-wrap"
+        style="background: var(--orange-dim); color: var(--orange)"
+      >
         <i class="fa-solid fa-file-lines"></i>
       </div>
       <div class="card-title">Cadastro de Clientes — Público</div>
       <div class="card-desc">Automação destinada ao Comercial Público.</div>
       <div class="badge-status badge-planning">
-        <span class="dot"></span> Em Planejamento
+        <span class="dot"></span> Em planejamento
       </div>
     </div>
 
     <div class="auto-card disabled">
-      <div class="card-icon-wrap" style="background: rgba(74, 90, 114, 0.15)">
-        <i class="fa-solid fa-file-lines"></i>
+      <div class="card-accent-line" style="background: var(--pink)"></div>
+      <div
+        class="card-icon-wrap"
+        style="background: var(--pink-dim); color: var(--pink)"
+      >
+        <i class="fa-solid fa-dollar-sign"></i>
       </div>
-      <div class="card-title">Lançamento de Notas Fiscais</div>
+      <div class="card-title">Lançamentos de Notas Fiscais</div>
       <div class="card-desc">
-        Automação destinada ao lançamento de notas de compra para do sistema.
+        Lançamento automatizado de notas fiscais de compra.
       </div>
       <div class="badge-status badge-planning">
-        <span class="dot"></span> Em Planejamento
+        <span class="dot"></span> Em planejamento
       </div>
     </div>
   </div>
-</div>
 
-<div class="footer">
-  <p>
-    © 2026 Leonardo Dias &nbsp;·&nbsp; Ciamed Distribuidora de Medicamentos®
-  </p>
-  <span class="footer-badge">v1.0.1</span>
+  <div class="footer">
+    <p>
+      © 2026 Leonardo Dias &nbsp;·&nbsp; Ciamed Distribuidora de Medicamentos®
+    </p>
+    <span class="footer-badge">v1.0.1</span>
+  </div>
+  {% endblock %} {% block scripts %}
+  <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+  {% endblock %}
 </div>
-{% endblock %} {% block scripts %}
-<script src="{{ url_for('static', filename='js/index.js') }}"></script>
-{% endblock %}

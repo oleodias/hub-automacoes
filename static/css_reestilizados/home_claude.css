@@ -16,7 +16,11 @@
   --purple: #a855f7;
   --purple-dim: rgba(168, 85, 247, 0.12);
   --red: #ef4444;
+  --pink: #ec4899;
+  --pink-dim: rgba(236, 72, 153, 0.1);
   --red-dim: rgba(239, 68, 68, 0.12);
+  --orange: #f97316;
+  --orange-dim: rgba(249, 115, 22, 0.1);
   --text-primary: #e8edf5;
   --text-secondary: #7a8ba3;
   --text-muted: #4a5a72;
