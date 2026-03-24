@@ -138,10 +138,18 @@ content %}
       <i class="fa-solid fa-address-book me-2"></i>Matriz de Contatos
     </div>
 
-    <div class="form-row cols-12-1">
+    <div
+      class="form-row"
+      style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px"
+    >
       <div class="form-field">
         <label>E-mail para envio de XML</label>
-        <input type="text" id="cliEmailXml" readonly />
+        <input type="text" id="cliEmailXml" class="input-dark" readonly />
+      </div>
+
+      <div class="form-field">
+        <label>Telefone da Empresa</label>
+        <input type="text" id="cliTelefone" class="input-dark" readonly />
       </div>
     </div>
 

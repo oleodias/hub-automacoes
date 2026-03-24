@@ -27,9 +27,9 @@ def processar_ficha_cliente(caminho_arquivo):
         
         # Se marcou APENAS Caixa, fica Caixa. Qualquer outra situação (marcou os dois, nenhum, ou só Unitário) fica Unitário.
         if fat_caixa and not fat_unitario:
-            regra_faturamento = "Caixa"
+            regra_faturamento = "CAIXA"
         else:
-            regra_faturamento = "Unitário"
+            regra_faturamento = "UNITÁRIO"
 
         # 5. Montando o pacote de dados EXCEL
         dados = {
@@ -42,6 +42,7 @@ def processar_ficha_cliente(caminho_arquivo):
             
             # Matriz de Contatos
             "email_xml": str(planilha['BM93'].value or "").strip(),
+            "telefone_empresa": str(planilha['AL93'].value or "").strip(),
             
             "compras_nome": str(planilha['L99'].value or "").strip(),
             "compras_tel": str(planilha['AL99'].value or "").strip(),
@@ -87,6 +88,7 @@ def processar_ficha_cliente(caminho_arquivo):
                 dados["bairro"] = end.get("bairro", "")
                 dados["cidade"] = end.get("cidade", {}).get("nome", "")
                 dados["estado"] = end.get("estado", {}).get("sigla", "")
+                
                 
                 # CNAE Principal
                 dados["cnae_principal"] = end.get("atividade_principal", {}).get("descricao", "")

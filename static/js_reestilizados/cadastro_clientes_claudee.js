@@ -108,6 +108,7 @@ function preencherTela(data) {
 
   // --- Contatos ---
   document.getElementById("cliEmailXml").value = data.email_xml || "";
+  document.getElementById("cliTelefone").value = data.telefone_empresa || "";
 
   document.getElementById("ctoComprasNome").value = data.compras_nome || "";
   document.getElementById("ctoComprasTel").value = data.compras_tel || "";
@@ -234,12 +235,42 @@ async function iniciarCadastroNovo() {
     '<i class="fa-solid fa-circle-notch fa-spin me-2"></i> Ligando Robô...';
   btn.disabled = true;
 
+  // 1. LENDO OS CONTATOS DA TELA
+  const contatos_da_tela = [
+    {
+      codigo: "30", // Compras
+      nome: document.getElementById("ctoComprasNome")?.value || "",
+      tel: document.getElementById("ctoComprasTel")?.value || "",
+      email: document.getElementById("ctoComprasEmail")?.value || "",
+    },
+    {
+      codigo: "35", // Recebimento
+      nome: document.getElementById("ctoRecNome")?.value || "",
+      tel: document.getElementById("ctoRecTel")?.value || "",
+      email: document.getElementById("ctoRecEmail")?.value || "",
+    },
+    {
+      codigo: "50", // Financeiro
+      nome: document.getElementById("ctoFinNome")?.value || "",
+      tel: document.getElementById("ctoFinTel")?.value || "",
+      email: document.getElementById("ctoFinEmail")?.value || "",
+    },
+    {
+      codigo: "20", // Farmacêutico
+      nome: document.getElementById("ctoFarmaNome")?.value || "",
+      tel: document.getElementById("ctoFarmaTel")?.value || "",
+      email: document.getElementById("ctoFarmaEmail")?.value || "",
+    },
+  ];
+
+  // 2. EMPACOTANDO TUDO PARA O PYTHON
   const pacoteDeDados = {
     cnpj_limpo: document.getElementById("cliCnpj")?.value || "",
     razao_social: document.getElementById("cliRazao")?.value || "",
     nome_fantasia: document.getElementById("cliFantasia")?.value || "",
     inscricao_estadual: document.getElementById("cliIe")?.value || "",
     cep: document.getElementById("cliCep")?.value || "",
+    regra_faturamento: document.getElementById("cliRegraFat")?.value || "",
     logradouro: document.getElementById("cliLogradouro")?.value || "",
     numero: document.getElementById("cliNumero")?.value || "",
     complemento: document.getElementById("cliComplemento")?.value || "",
@@ -247,8 +278,14 @@ async function iniciarCadastroNovo() {
     uf: document.getElementById("cliUf")?.value || "RS",
     cnae_principal_descricao:
       document.getElementById("cliCnae")?.value || "Varejista",
+    telefone_empresa: document.getElementById("cliTelefone")?.value || "",
+
+    // AQUI VÃO OS CONTATOS!
+    email_xml: document.getElementById("cliEmailXml")?.value || "",
+    contatos_da_tela: contatos_da_tela,
   };
 
+  // 3. ENVIANDO PARA O SERVIDOR
   try {
     const resposta = await fetch("/iniciar_cadastro_novo", {
       method: "POST",
