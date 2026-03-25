@@ -510,8 +510,116 @@ def executar(dados_cliente):
 
         print("> 📍 Chegamos na nova página! O que temos para preencher aqui?")
 
+# ================================================================
+        # FASE 6: PREENCHIMENTO DA ABA DE OBSERVAÇÕES
+        # ================================================================
+        print("> 📝 Analisando e adicionando Observações...")
+
+        # 1. Criando a "Lista de Tarefas" do robô
+        observacoes_para_adicionar = []
+
+        # -- OBSERVAÇÃO 1: Fixo (Roche) --
+        observacoes_para_adicionar.append({
+            "codigo": "300",
+            "texto": "FATURISTA: QUANDO ITEM ROCHE ENVIAR LAUDO."
+        })
+
+        # -- OBSERVAÇÃO 2: CNAE Limpo --
+        cnae_cru = str(dados_cliente.get('cnae_principal_descricao', ''))
+        
+        # Lógica para limpar os números (ex: "4771-7/02 - Comércio" vira "Comércio")
+        if " - " in cnae_cru:
+            cnae_limpo = cnae_cru.split(" - ", 1)[1].strip().upper()
+        else:
+            import re
+            cnae_limpo = re.sub(r'^[\d\.\-\/\s]+', '', cnae_cru).strip().upper()
+
+        if cnae_limpo:
+            observacoes_para_adicionar.append({
+                "codigo": "150",
+                "texto": cnae_limpo
+            })
+
+        # -- OBSERVAÇÃO 3: Regra de Faturamento (Condicional) --
+        regra_faturamento = str(dados_cliente.get("regra_faturamento", "")).upper()
+        if "CAIXA" in regra_faturamento:
+            observacoes_para_adicionar.append({
+                "codigo": "200",
+                "texto": "OBRIGATÓRIO FATURAR PEDIDO EM CAIXA!"
+            })
+        else:
+            print("   - ℹ️ Regra Unitário detectada. Ignorando observação de Caixa.")
+
+        # 2. O Loop Trator: O Ritual de Inserção
+        for obs in observacoes_para_adicionar:
+            print(f"   - ➕ Inserindo Observação [{obs['codigo']}]: {obs['texto'][:30]}...")
+            try:
+                # PASSO A: Clicar em Adicionar
+                btn_add_obs = wait.until(EC.element_to_be_clickable((By.ID, "btnAdicionarObservacoes")))
+                driver.execute_script("arguments[0].click();", btn_add_obs)
+                time.sleep(1.5) # Espera a janela de cadastro abrir
+
+                # PASSO B: Preencher Código e dar TAB
+                campo_cod_obs = wait.until(EC.presence_of_element_located((By.ID, "subFrm_observacoes:lovCodTipoObservacao_txtCod")))
+                campo_cod_obs.clear()
+                campo_cod_obs.send_keys(obs['codigo'])
+                campo_cod_obs.send_keys(Keys.TAB)
+                time.sleep(1) # Respiro para o ERP carregar a descrição do código
+
+                # PASSO C: Forçar clique na área de texto e digitar
+                campo_txt_obs = wait.until(EC.presence_of_element_located((By.ID, "subFrm_observacoes:txtObservacao")))
+                
+                # O TRUQUE DO JS AQUI: Foca e clica antes de enviar o texto
+                driver.execute_script("arguments[0].focus(); arguments[0].click();", campo_txt_obs)
+                time.sleep(0.5)
+                
+                campo_txt_obs.clear()
+                campo_txt_obs.send_keys(obs['texto'])
+
+                # PASSO D: Clicar em APLICAR para concluir esta observação
+                btn_aplicar_obs = driver.find_element(By.ID, "subFrm_observacoes:btnAplicar_observacoes")
+                driver.execute_script("arguments[0].click();", btn_aplicar_obs)
+                
+                # PASSO E: Esperar o ERP processar antes de recomeçar o loop!
+                print("      ⏳ Aguardando sistema salvar...")
+                time.sleep(1.8) # Tempo fundamental para a grid atualizar
+                
+                print("      ✅ Observação salva com sucesso!")
+
+            except Exception as e:
+                print(f"      ⚠️ Erro ao cadastrar observação {obs['codigo']}: {e}")
+                webdriver.ActionChains(driver).send_keys(Keys.ESCAPE).perform()
+                time.sleep(1.5)
+
         print("> 🚧 Chegamos na Fase! Robô parado para conferência...")
-        time.sleep(15)
+        time.sleep(1.5)
+
+        # ================================================================
+        # TRANSIÇÃO PARA A PRÓXIMA FASE (MAIS 1 CLIQUES)
+        # ================================================================
+        print("> ⏩ Avançando mais duas abas...")
+        
+        # Garante que o topo da página está visível
+        driver.execute_script("window.scrollTo(0, 0);")
+        time.sleep(0.5)
+
+        for i in range(1):
+            try:
+                # Localiza o botão "Próximo" novamente para evitar erros de página
+                btn_proximo = wait.until(EC.presence_of_element_located((By.ID, "btnWizardProximoCab")))
+                
+                # Clique via JavaScript (mais seguro para o ERP Ciamed)
+                driver.execute_script("arguments[0].click();", btn_proximo)
+                
+                print(f"   - Clique adicional {i+1}/2 realizado.")
+                time.sleep(1.2) # Respiro para o ERP carregar a nova tela
+                
+            except Exception as e:
+                print(f"   - ⚠️ Erro no clique adicional: {e}")
+                driver.execute_script("window.scrollTo(0, 0);")
+                time.sleep(0.5)
+
+        print("> 📍 Chegamos na nova página! O que temos para preencher aqui?")
 
         return {"status": "Sucesso", "msg": "Fases 4 e 5 concluídas com sucesso!"}
 
@@ -521,7 +629,7 @@ def executar(dados_cliente):
 
     finally:
         # Comente a linha abaixo se quiser que o navegador fique aberto para conferir
-        driver.quit()
+        # driver.quit()
         print("> 🏁 Fim da execução.")
 
 
