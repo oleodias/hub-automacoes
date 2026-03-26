@@ -345,7 +345,7 @@ def executar(dados_cliente):
 
         # 1. Contatos OBRIGATÓRIOS
         contatos_para_cadastrar = [
-            {"nome": "ENVIO XML TI", "email_xml": "xmlcliente@ciamedrs.com.br", "email_danfe": "xmlcliente@ciamedrs.com.br"},
+            {"nome": "SIMFRETE", "email_xml": "ciamed@simfrete.com", "email_danfe": "ciamed@simfrete.com"},
             {"nome": "ENVIO NFE ELETRONICA", "email_xml": email_nfe, "email_danfe": email_nfe}
         ]
 
