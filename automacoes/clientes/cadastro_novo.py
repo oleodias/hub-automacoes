@@ -8,6 +8,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import Select
 
 from automacoes.clientes.navegacao_erp import fazer_login, navegar_via_favoritos
 
@@ -110,40 +111,124 @@ def executar(dados_cliente):
         codigo_atividade = definir_codigo_atividade(cnae_desc)
         print(f"> 🧠 CNAE analisado. Aplicando atividade Ciamed: {codigo_atividade}")
 
-        campo_ativ = wait.until(EC.presence_of_element_located((By.ID, "subFrmPsJuridicas:lovPsAtividadesPsJuridicas_txtCod")))
-        campo_ativ.clear()
-        campo_ativ.send_keys(codigo_atividade)
-        campo_ativ.send_keys(Keys.TAB)
+        for _ in range(3):
+            try:
+                campo_ativ = wait.until(EC.element_to_be_clickable((By.ID, "subFrmPsJuridicas:lovPsAtividadesPsJuridicas_txtCod")))
+                driver.execute_script("arguments[0].focus(); arguments[0].click();", campo_ativ)
+                time.sleep(0.5)
+
+                campo_ativ.send_keys(Keys.CONTROL + "a")
+                campo_ativ.send_keys(Keys.BACKSPACE)
+                time.sleep(0.3)
+
+                campo_ativ.send_keys(codigo_atividade)
+                campo_ativ.send_keys(Keys.TAB)
+                
+                print("   - ⏳ Sistema processando a atividade... Aguardando.")
+                time.sleep(3.5) # Aumentamos esse tempo para o ERP respirar e sair do loading!
+                break
+            except Exception as e:
+                print("   - ⚠️ Falha ao digitar atividade. Tentando novamente...")
+                time.sleep(1)
 
         # ── FASE 2: ENDEREÇO ───────────────────────────────
         print("> 📍 Preenchendo Endereço (Fase 2/4)...")
 
-        for _ in range(3):
+        # --- CEP ---
+        for _ in range(4): # Aumentei para 4 tentativas para garantir
             try:
-                campo_cep = wait.until(EC.presence_of_element_located((By.ID, "subFrmPsJuridicas:enderecoPsJuridicas_txtCep")))
+                campo_cep = wait.until(EC.element_to_be_clickable((By.ID, "subFrmPsJuridicas:enderecoPsJuridicas_txtCep")))
+                
+                driver.execute_script("arguments[0].focus(); arguments[0].click();", campo_cep)
+                time.sleep(0.5)
+
                 campo_cep.send_keys(Keys.CONTROL + "a")
                 campo_cep.send_keys(Keys.BACKSPACE)
                 time.sleep(0.5)
+                
                 cep_limpo = limpar_cnpj(dados_cliente.get('cep', ''))
                 campo_cep.send_keys(cep_limpo)
                 campo_cep.send_keys(Keys.TAB)
-                time.sleep(3)
+                
+                print("   - ⏳ Sistema processando o CEP... Aguardando.")
+                time.sleep(2) # Respiro para o ERP puxar rua e bairro sozinho
                 break
-            except:
-                time.sleep(1)
+            except Exception as e:
+                print("   - ⚠️ CEP ainda não está clicável. Aguardando ERP liberar a tela...")
+                time.sleep(2)
 
-        endereco_completo = f"{dados_cliente.get('logradouro', '')}, {dados_cliente.get('numero', '')}, {dados_cliente.get('complemento', '')}".strip(", ")
+        # ================================================================
+        # LÓGICA INTELIGENTE DE ENDEREÇO (VÁLVULA DE ESCAPE - 50 CARACTERES)
+        # ================================================================
+        print("   - 📏 Calculando tamanho do endereço...")
+        
+        logradouro = str(dados_cliente.get('logradouro', '')).strip()
+        numero = str(dados_cliente.get('numero', '')).strip()
+        complemento = str(dados_cliente.get('complemento', '')).strip()
+
+        # Montando o texto completo ideal
+        texto_completo = logradouro
+        if numero:
+            texto_completo += f", {numero}"
+        if complemento:
+            texto_completo += f" - {complemento}"
+
+        endereco_principal = ""
+        texto_referencia = ""
+
+        # PLANO A: Cabe tudo!
+        if len(texto_completo) <= 50:
+            endereco_principal = texto_completo
+            print(f"      ✅ Endereço curto ({len(texto_completo)} chars). Caberá tudo no campo principal.")
+        
+        # PLANO B e C: Estourou o limite!
+        else:
+            print(f"      ⚠️ Endereço longo ({len(texto_completo)} chars). Acionando válvula de escape...")
+            texto_sem_comp = logradouro
+            if numero:
+                texto_sem_comp += f", {numero}"
+            
+            # PLANO B: Tirar o complemento resolve?
+            if len(texto_sem_comp) <= 50:
+                endereco_principal = texto_sem_comp
+                texto_referencia = complemento
+                print("      🔄 Complemento movido para o campo de Referência.")
+            
+            # PLANO C: Logradouro é gigante! (Caso Extremo)
+            else:
+                endereco_principal = logradouro[:50] # Poda a rua nos 50 cravados
+                texto_ref_temp = f"Num: {numero}"
+                if complemento:
+                    texto_ref_temp += f" - {complemento}"
+                texto_referencia = texto_ref_temp[:50] # Garante que referência também não estoure
+                print("      🚨 Rua muito longa! Logradouro isolado. Num e Comp movidos para Referência.")
+
+        # --- Digitando o Endereço Principal ---
         for _ in range(3):
             try:
                 campo_endereco = wait.until(EC.presence_of_element_located((By.ID, "subFrmPsJuridicas:enderecoPsJuridicas_txtDesEndereco")))
                 campo_endereco.send_keys(Keys.CONTROL + "a")
                 campo_endereco.send_keys(Keys.BACKSPACE)
                 time.sleep(0.5)
-                campo_endereco.send_keys(endereco_completo)
+                campo_endereco.send_keys(endereco_principal)
                 break
             except:
                 time.sleep(1)
 
+        # --- Digitando a Referência (Válvula de Escape) ---
+        if texto_referencia:
+            for _ in range(3):
+                try:
+                    campo_ref = wait.until(EC.presence_of_element_located((By.ID, "subFrmPsJuridicas:enderecoPsJuridicas_txtDesReferencia")))
+                    campo_ref.send_keys(Keys.CONTROL + "a")
+                    campo_ref.send_keys(Keys.BACKSPACE)
+                    time.sleep(0.5)
+                    campo_ref.send_keys(texto_referencia)
+                    break
+                except:
+                    time.sleep(1)
+
+        # --- Digitando o Bairro ---
         for _ in range(3):
             try:
                 campo_bairro = wait.until(EC.presence_of_element_located((By.ID, "subFrmPsJuridicas:enderecoPsJuridicas_txtDesBairro")))
@@ -510,7 +595,7 @@ def executar(dados_cliente):
 
         print("> 📍 Chegamos na nova página! O que temos para preencher aqui?")
 
-# ================================================================
+        # ================================================================
         # FASE 6: PREENCHIMENTO DA ABA DE OBSERVAÇÕES
         # ================================================================
         print("> 📝 Analisando e adicionando Observações...")
@@ -591,9 +676,6 @@ def executar(dados_cliente):
                 webdriver.ActionChains(driver).send_keys(Keys.ESCAPE).perform()
                 time.sleep(1.5)
 
-        print("> 🚧 Chegamos na Fase! Robô parado para conferência...")
-        time.sleep(1.5)
-
         # ================================================================
         # TRANSIÇÃO PARA A PRÓXIMA FASE (MAIS 1 CLIQUES)
         # ================================================================
@@ -611,18 +693,465 @@ def executar(dados_cliente):
                 # Clique via JavaScript (mais seguro para o ERP Ciamed)
                 driver.execute_script("arguments[0].click();", btn_proximo)
                 
-                print(f"   - Clique adicional {i+1}/2 realizado.")
-                time.sleep(1.2) # Respiro para o ERP carregar a nova tela
+                print(f"   - Clique adicional {i+1}/1 realizado.")
+                time.sleep(0.8) # Respiro para o ERP carregar a nova tela
                 
             except Exception as e:
                 print(f"   - ⚠️ Erro no clique adicional: {e}")
                 driver.execute_script("window.scrollTo(0, 0);")
                 time.sleep(0.5)
 
-        print("> 📍 Chegamos na nova página! O que temos para preencher aqui?")
+        print("> 🚧 Chegamos na Fase! Robô parado para conferência...")
+        time.sleep(0.7)
 
-        return {"status": "Sucesso", "msg": "Fases 4 e 5 concluídas com sucesso!"}
+        
 
+        # ================================================================
+        # FASE 7: PREENCHIMENTO DA ABA CLIENTE (OPERAÇÃO E CONSUMIDOR)
+        # ================================================================
+        print("> 🏢 Analisando regras para Aba Cliente...")
+
+        # O robô precisa clicar na aba "CLIENTE" lá em cima no menu do ERP
+        # (Lembre de colocar o ID correto do botão da aba aqui se não for esse)
+        # btn_aba_cliente = wait.until(EC.element_to_be_clickable((By.ID, "ID_DA_ABA_CLIENTE")))
+        # driver.execute_script("arguments[0].click();", btn_aba_cliente)
+        # time.sleep(1.5)
+
+        cnae_desc = str(dados_cliente.get('cnae_principal_descricao', '')).lower()
+        tem_cebas = str(dados_cliente.get('tem_cebas', ''))
+
+        codigo_operacao = ""
+        valor_consumidor = ""
+
+        # A Lógica do CEBAS
+        if "varejista" in cnae_desc:
+            print("   - Regra: VAREJISTA detectado.")
+            codigo_operacao = "223"
+            valor_consumidor = "1" # Não
+        elif "atacadista" in cnae_desc:
+            print("   - Regra: ATACADISTA detectado.")
+            codigo_operacao = "224"
+            valor_consumidor = "1" # Não
+        else:
+            print("   - Regra: OUTROS. Verificando CEBAS...")
+            if tem_cebas == "SIM":
+                print("   - CEBAS: ATIVO.")
+                codigo_operacao = "240"
+                valor_consumidor = "0" # Sim
+            else:
+                print("   - CEBAS: INATIVO.")
+                codigo_operacao = "220"
+                valor_consumidor = "0" # Sim
+
+        try:
+            # 1. Preenchendo Operação
+            print(f"   - ✍️ Preenchendo Operação: {codigo_operacao}")
+            campo_oper = wait.until(EC.presence_of_element_located((By.ID, "subFrmPsClientes:lovCodOper_txtCod")))
+            campo_oper.clear()
+            campo_oper.send_keys(codigo_operacao)
+            campo_oper.send_keys(Keys.TAB)
+            time.sleep(1.5)
+
+            # 2. Selecionando o Consumidor Final
+            print(f"   - 🖱️ Marcando Consumidor Final: {'Não' if valor_consumidor == '1' else 'Sim'}")
+            dropdown_consumidor = Select(wait.until(EC.presence_of_element_located((By.ID, "subFrmPsClientes:cboIndConsumidor"))))
+            dropdown_consumidor.select_by_value(valor_consumidor)
+            time.sleep(1)
+
+            print("      ✅ Dados da aba Cliente preenchidos com sucesso!")
+
+        except Exception as e:
+            print(f"      ⚠️ Erro ao preencher Aba Cliente: {e}")
+
+        # ================================================================
+        # TRANSIÇÃO PARA A PRÓXIMA FASE (MAIS 2 CLIQUES)
+        # ================================================================
+        print("> ⏩ Avançando mais duas abas...")
+        
+        # Garante que o topo da página está visível
+        driver.execute_script("window.scrollTo(0, 0);")
+        time.sleep(0.5)
+
+        for i in range(2):
+            try:
+                # Localiza o botão "Próximo" novamente para evitar erros de página
+                btn_proximo = wait.until(EC.presence_of_element_located((By.ID, "btnWizardProximoCab")))
+                
+                # Clique via JavaScript (mais seguro para o ERP Ciamed)
+                driver.execute_script("arguments[0].click();", btn_proximo)
+                
+                print(f"   - Clique adicional {i+1}/2 realizado.")
+                time.sleep(0.8) # Respiro para o ERP carregar a nova tela
+                
+            except Exception as e:
+                print(f"   - ⚠️ Erro no clique adicional: {e}")
+                driver.execute_script("window.scrollTo(0, 0);")
+                time.sleep(0.5)
+
+        # ================================================================
+        # FASE 8: PREENCHIMENTO DA ABA DE REPRESENTANTES
+        # ================================================================
+        print("> 🤝 Adicionando Representante...")
+
+        # Puxa o nome do representante que veio da ficha (célula BD248)
+        representante = str(dados_cliente.get('representante', '')).strip()
+
+        # Só tenta adicionar se realmente existir um representante na ficha
+        if representante:
+            try:
+                # 1. Clicar no botão Adicionar
+                btn_add_rep = wait.until(EC.element_to_be_clickable((By.ID, "btnAdicionar_clientesRep")))
+                driver.execute_script("arguments[0].click();", btn_add_rep)
+                time.sleep(1.5) # Espera a janelinha abrir
+
+                # 2. Preencher o nome do representante e dar TAB
+                print(f"   - ✍️ Preenchendo nome: {representante}")
+                campo_rep = wait.until(EC.presence_of_element_located((By.ID, "subFrm_clientesRep:lovCodPessoaRep_txtDesc")))
+                campo_rep.clear()
+                campo_rep.send_keys(representante)
+                
+                # Dá o TAB para o ERP Ciamed puxar o cadastro interno do representante
+                campo_rep.send_keys(Keys.TAB)
+                time.sleep(1.5) # Respiro fundamental para o sistema autocompletar o campo
+
+                # 3. Clicar em Aplicar
+                btn_aplicar_rep = driver.find_element(By.ID, "subFrm_clientesRep:btnAplicar_clientesRep")
+                driver.execute_script("arguments[0].click();", btn_aplicar_rep)
+                time.sleep(1.2) # Tempo para a grid salvar e atualizar
+                
+                print("      ✅ Representante salvo com sucesso!")
+
+            except Exception as e:
+                print(f"      ⚠️ Erro ao adicionar representante: {e}")
+                # Dá um ESC para fechar a janelinha caso o ERP não encontre o nome
+                webdriver.ActionChains(driver).send_keys(Keys.ESCAPE).perform()
+                time.sleep(1)
+        else:
+            print("   - ℹ️ Nenhum representante informado na ficha. Pulando esta etapa.")
+
+        # ================================================================
+        # TRANSIÇÃO PARA A PRÓXIMA FASE (MAIS 2 CLIQUES)
+        # ================================================================
+        print("> ⏩ Avançando mais duas abas...")
+        
+        # Garante que o topo da página está visível
+        driver.execute_script("window.scrollTo(0, 0);")
+        time.sleep(0.5)
+
+        for i in range(2):
+            try:
+                # Localiza o botão "Próximo" novamente para evitar erros de página
+                btn_proximo = wait.until(EC.presence_of_element_located((By.ID, "btnWizardProximoCab")))
+                
+                # Clique via JavaScript (mais seguro para o ERP Ciamed)
+                driver.execute_script("arguments[0].click();", btn_proximo)
+                
+                print(f"   - Clique adicional {i+1}/2 realizado.")
+                time.sleep(0.8) # Respiro para o ERP carregar a nova tela
+                
+            except Exception as e:
+                print(f"   - ⚠️ Erro no clique adicional: {e}")
+                driver.execute_script("window.scrollTo(0, 0);")
+                time.sleep(0.5)
+
+        # ================================================================
+        # FASE 9: ABA COMPLEMENTO (DADOS COMPLEMENTARES)
+        # ================================================================
+        print("> 🧩 Preenchendo a Aba de Complementos...")
+
+        try:
+            # 1. Forçar a expansão da aba clicando direto no título via JS
+            print("   - 🔽 Expandindo a aba de complementos (clicando no título)...")
+            
+            # Usamos o XPath para caçar exatamente o <span> que tem esse texto
+            titulo_expandir = wait.until(EC.presence_of_element_located((By.XPATH, "//span[text()='Informações complementares - Complementar']")))
+            
+            # A martelada do clique ninja direto no texto!
+            driver.execute_script("arguments[0].click();", titulo_expandir)
+            
+            time.sleep(1.5) # Tempo essencial para a animação de "descer" a aba terminar
+
+            # ... (o resto do código continua igual, indo para a Caixinha 1 e 2) ...
+
+            # 2. Preencher a Caixinha 1 (Opção Fixa: SIM - SIM)
+            print("   - ✍️ Preenchendo opção fixa (SIM - SIM)...")
+            dropdown_fixo = Select(wait.until(EC.presence_of_element_located((By.ID, "subFrmColunasCompl:txtVlrColuna_3"))))
+            dropdown_fixo.select_by_value("1") # 1 = SIM - SIM
+            time.sleep(0.5)
+
+            # 3. Preencher a Caixinha 2 (Opção Dinâmica: Captação do HTML)
+            forma_captacao = str(dados_cliente.get('forma_captacao', ''))
+            
+            if forma_captacao:
+                print(f"   - 🎯 Preenchendo forma de captação (Código: {forma_captacao})...")
+                dropdown_dinamico = Select(wait.until(EC.presence_of_element_located((By.ID, "subFrmColunasCompl:txtVlrColuna_6"))))
+                dropdown_dinamico.select_by_value(forma_captacao)
+                time.sleep(0.5)
+            else:
+                print("   - ⚠️ Atenção: Forma de captação não foi recebida do site!")
+
+            print("      ✅ Aba de Complementos preenchida com sucesso!")
+
+        except Exception as e:
+            print(f"      ⚠️ Erro ao preencher Aba de Complementos: {e}")
+
+            # ================================================================
+        # TRANSIÇÃO PARA A PRÓXIMA FASE (MAIS 1 CLIQUES)
+        # ================================================================
+        print("> ⏩ Avançando mais duas abas...")
+        
+        # Garante que o topo da página está visível
+        driver.execute_script("window.scrollTo(0, 0);")
+        time.sleep(0.5)
+
+        for i in range(1):
+            try:
+                # Localiza o botão "Próximo" novamente para evitar erros de página
+                btn_proximo = wait.until(EC.presence_of_element_located((By.ID, "btnWizardProximoCab")))
+                
+                # Clique via JavaScript (mais seguro para o ERP Ciamed)
+                driver.execute_script("arguments[0].click();", btn_proximo)
+                
+                print(f"   - Clique adicional {i+1}/1 realizado.")
+                time.sleep(0.8) # Respiro para o ERP carregar a nova tela
+                
+            except Exception as e:
+                print(f"   - ⚠️ Erro no clique adicional: {e}")
+                driver.execute_script("window.scrollTo(0, 0);")
+                time.sleep(0.5)
+
+        print("> 🚧 Chegamos na Fase! Robô parado para conferência...")
+        time.sleep(0.7)
+
+        # ================================================================
+        # FASE 10: ABA MÁSCARAS (A LÓGICA PURA DO VENDEDOR)
+        # ================================================================
+        print("> 🎭 Preenchendo Aba de Máscaras (Modo Padrão Simples)...")
+
+        # --- Ação 1: Código CNAE ---
+        print("   - ✍️ Preenchendo [Pessoas - Codigo CNAE]...")
+        try:
+            for _ in range(3):
+                try:
+                    xpath_cnae = "//td[contains(., 'Pessoas - Codigo CNAE')]/a[contains(@class, 'OraLink')]"
+                    link_cnae = wait.until(EC.presence_of_element_located((By.XPATH, xpath_cnae)))
+                    driver.execute_script("arguments[0].click();", link_cnae)
+                    time.sleep(1.5) 
+                    break
+                except:
+                    time.sleep(1)
+
+            # Pulo para o Iframe
+            iframe_cnae = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "af_dialog_content")))
+            driver.switch_to.frame(iframe_cnae)
+            time.sleep(1.5) 
+
+            # Limpar e formatar o CNAE
+            cnae_cru = str(dados_cliente.get('cnae_principal_descricao', ''))
+            if " - " in cnae_cru:
+                cnae_numeros = cnae_cru.split(" - ")[0]
+            else:
+                cnae_numeros = cnae_cru
+            import re
+            cnae_apenas_digitos = re.sub(r'\D', '', cnae_numeros)
+
+            # LÓGICA DO VENDEDOR: Clica, Apaga, Digita, TAB
+            campo_cnae = wait.until(EC.element_to_be_clickable((By.ID, "txtVlr_0")))
+            campo_cnae.click()
+            time.sleep(0.5)
+            campo_cnae.send_keys(Keys.CONTROL + "a")
+            campo_cnae.send_keys(Keys.BACKSPACE)
+            time.sleep(0.5)
+            
+            # Aqui vamos injetar de forma limpa
+            campo_cnae.send_keys(cnae_apenas_digitos)
+            time.sleep(0.5)
+            campo_cnae.send_keys(Keys.TAB)
+            time.sleep(1) 
+
+            # Gravar
+            btn_gravar = wait.until(EC.element_to_be_clickable((By.ID, "btnGravar")))
+            btn_gravar.click()
+            time.sleep(2) 
+            
+            driver.switch_to.default_content()
+            time.sleep(1) 
+            print(f"      ✅ CNAE [{cnae_apenas_digitos}] salvo!")
+            
+        except Exception as e:
+            print(f"      ⚠️ Erro ao preencher CNAE: {e}")
+            # Se deu erro, clica em Fechar para não bugar a próxima janela!
+            try:
+                btn_fechar = driver.find_element(By.ID, "btnFechar")
+                btn_fechar.click()
+                time.sleep(1)
+            except:
+                pass
+            driver.switch_to.default_content() 
+
+
+        # --- Ação 2: Tipos Clientes ---
+        print("   - ✍️ Preenchendo [Pessoas - Tipos Clientes]...")
+        try:
+            for _ in range(3):
+                try:
+                    xpath_tipos = "//td[contains(., 'Pessoas - Tipos Clientes')]/a[contains(@class, 'OraLink')]"
+                    link_tipos = wait.until(EC.presence_of_element_located((By.XPATH, xpath_tipos)))
+                    driver.execute_script("arguments[0].click();", link_tipos)
+                    time.sleep(1.5)
+                    break
+                except:
+                    time.sleep(1)
+
+            # Pulo para o Iframe
+            iframe_tipos = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "af_dialog_content")))
+            driver.switch_to.frame(iframe_tipos)
+            time.sleep(1.5)
+
+            # LÓGICA DO VENDEDOR
+            campo_tipos = wait.until(EC.element_to_be_clickable((By.ID, "lovNiveis_0_txtCod")))
+            campo_tipos.click()
+            time.sleep(0.5)
+            campo_tipos.send_keys(Keys.CONTROL + "a")
+            campo_tipos.send_keys(Keys.BACKSPACE)
+            time.sleep(0.5)
+            
+            campo_tipos.send_keys("10")
+            time.sleep(0.5)
+            campo_tipos.send_keys(Keys.TAB)
+            time.sleep(1)
+
+            # Gravar
+            btn_gravar = wait.until(EC.element_to_be_clickable((By.ID, "btnGravar")))
+            btn_gravar.click()
+            time.sleep(2)
+            
+            driver.switch_to.default_content()
+            time.sleep(1)
+            print("      ✅ Tipo Cliente [10] salvo!")
+            
+        except Exception as e:
+            print(f"      ⚠️ Erro ao preencher Tipo Cliente: {e}")
+            try:
+                btn_fechar = driver.find_element(By.ID, "btnFechar")
+                btn_fechar.click()
+                time.sleep(1)
+            except:
+                pass
+            driver.switch_to.default_content()
+
+
+        # --- Ação 3: Vendedor ---
+        print("   - ✍️ Preenchendo [VENDEDOR]...")
+        vendedor = str(dados_cliente.get('vendedor', '')).strip()
+        if vendedor:
+            try:
+                for _ in range(3):
+                    try:
+                        xpath_vendedor = "//td[contains(., 'VENDEDOR')]/a[contains(@class, 'OraLink')]"
+                        link_vendedor = wait.until(EC.presence_of_element_located((By.XPATH, xpath_vendedor)))
+                        driver.execute_script("arguments[0].click();", link_vendedor)
+                        time.sleep(1.5)
+                        break
+                    except:
+                        time.sleep(1)
+
+                # Pulo para o Iframe
+                iframe_vendedor = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "af_dialog_content")))
+                driver.switch_to.frame(iframe_vendedor)
+                time.sleep(1.5)
+
+                # LÓGICA DO VENDEDOR (A Original!)
+                campo_vendedor = wait.until(EC.element_to_be_clickable((By.ID, "txtVlr_0")))
+                campo_vendedor.click()
+                time.sleep(0.5)
+                campo_vendedor.send_keys(Keys.CONTROL + "a")
+                campo_vendedor.send_keys(Keys.BACKSPACE)
+                time.sleep(0.5)
+                
+                campo_vendedor.send_keys(vendedor)
+                time.sleep(0.5)
+                campo_vendedor.send_keys(Keys.TAB)
+                time.sleep(1)
+
+                # Gravar
+                btn_gravar = wait.until(EC.element_to_be_clickable((By.ID, "btnGravar")))
+                btn_gravar.click()
+                time.sleep(2)
+                
+                driver.switch_to.default_content()
+                time.sleep(1)
+                print(f"      ✅ Vendedor [{vendedor}] salvo!")
+                
+            except Exception as e:
+                print(f"      ⚠️ Erro ao preencher Vendedor: {e}")
+                try:
+                    btn_fechar = driver.find_element(By.ID, "btnFechar")
+                    btn_fechar.click()
+                    time.sleep(1)
+                except:
+                    pass
+                driver.switch_to.default_content()
+        else:
+            print("   - ℹ️ Nenhum vendedor informado na ficha. Pulando etapa.")
+
+        # ================================================================
+        # TRANSIÇÃO PARA A PRÓXIMA FASE (MAIS 3 CLIQUES)
+        # ================================================================
+        print("> ⏩ Avançando mais duas abas...")
+        
+        # Garante que o topo da página está visível
+        driver.execute_script("window.scrollTo(0, 0);")
+        time.sleep(0.5)
+
+        for i in range(3):
+            try:
+                # Localiza o botão "Próximo" novamente para evitar erros de página
+                btn_proximo = wait.until(EC.presence_of_element_located((By.ID, "btnWizardProximoCab")))
+                
+                # Clique via JavaScript (mais seguro para o ERP Ciamed)
+                driver.execute_script("arguments[0].click();", btn_proximo)
+                
+                print(f"   - Clique adicional {i+1}/3 realizado.")
+                time.sleep(0.8) # Respiro para o ERP carregar a nova tela
+                
+            except Exception as e:
+                print(f"   - ⚠️ Erro no clique adicional: {e}")
+                driver.execute_script("window.scrollTo(0, 0);")
+                time.sleep(0.5)
+
+        # ================================================================
+        # FASE FINAL: GRAVAR CADASTRO E CAPTURAR PROTOCOLO
+        # ================================================================
+        print("> 🏁 Reta final: Salvando o cadastro do cliente...")
+
+        try:
+            # 1. Clicar no botão principal de Gravar (O botão verde gigante)
+            btn_gravar_final = wait.until(EC.presence_of_element_located((By.ID, "btnCrudGravar")))
+            driver.execute_script("arguments[0].click();", btn_gravar_final)
+            print("   - 💾 Botão Gravar clicado! Aguardando o ERP processar (isso pode levar alguns segundos)...")
+
+            # 2. Aguardar e capturar o Número do Protocolo
+            espera_longa = WebDriverWait(driver, 20) 
+            caixa_protocolo = espera_longa.until(EC.visibility_of_element_located((By.CLASS_NAME, "protocolo_panel_numero")))
+            
+            codigo_cliente = caixa_protocolo.text.strip()
+            print(f"\n> 🏆 SUCESSO! Cliente cadastrado com o código: {codigo_cliente} 🏆\n")
+
+            # 3. Clicar no botão OK da janela de protocolo para limpar a tela
+            btn_ok = wait.until(EC.presence_of_element_located((By.ID, "btnProtocolo")))
+            driver.execute_script("arguments[0].click();", btn_ok)
+            time.sleep(2) # Respiro final para a tela fechar
+            
+            print("> 🛑 Execução do robô finalizada com êxito!")
+
+        except Exception as e:
+            print(f"> ❌ ERRO FATAL: Falha ao tentar salvar o cliente ou capturar o protocolo final.")
+            print(f"Detalhes do erro: {e}")
+
+        # Final do robô
+        return {"status": "Sucesso", "msg": "Cadastro salvo e finalizado com sucesso!"}
+    
     except Exception as e:
         print(f"> ❌ Erro Crítico: {e}")
         return {"status": "Erro", "msg": str(e)}
@@ -641,7 +1170,7 @@ if __name__ == "__main__":
         "razao_social": "EMPRESA DE TESTE LTDA",
         "nome_fantasia": "TESTE FANTASIA",
         "inscricao_estadual": "ISENTO",
-        "cnae_principal_descricao": "Comércio varejista de medicamentos",
+        "cnae_principal_descricao": "4771-7/02 - Comércio varejista de medicamentos",        
         "cep": "01001000",
         "logradouro": "Praça da Sé",
         "numero": "123",

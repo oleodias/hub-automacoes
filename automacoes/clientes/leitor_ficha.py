@@ -84,6 +84,9 @@ def processar_ficha_cliente(caminho_arquivo):
                 end = api_json.get("estabelecimento", {})
                 dados["cep"] = end.get("cep", "")
                 dados["logradouro"] = f"{end.get('tipo_logradouro', '')} {end.get('logradouro', '')}".strip()
+                # 👇 O ASPIRADOR DE ESPAÇOS PARA O COMPLEMENTO 👇
+                complemento_sujo = end.get("complemento") or ""
+                dados["complemento"] = " ".join(str(complemento_sujo).split())
                 dados["numero"] = end.get("numero", "")
                 dados["bairro"] = end.get("bairro", "")
                 dados["cidade"] = end.get("cidade", {}).get("nome", "")
@@ -91,7 +94,10 @@ def processar_ficha_cliente(caminho_arquivo):
                 
                 
                 # CNAE Principal
-                dados["cnae_principal"] = end.get("atividade_principal", {}).get("descricao", "")
+                # CNAE Principal (Juntando o Número + Texto)
+                cnae_id = end.get("atividade_principal", {}).get("id", "")
+                cnae_desc = end.get("atividade_principal", {}).get("descricao", "")
+                dados["cnae_principal"] = f"{cnae_id} - {cnae_desc}"
                 
                 # Filtrando Inscrições Estaduais (Apenas ATIVAS)
                 ies_ativas = []

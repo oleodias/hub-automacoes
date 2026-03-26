@@ -132,6 +132,18 @@ function preencherTela(data) {
   document.getElementById("cliVendedor").value = data.vendedor || "";
   document.getElementById("cliRepresentante").value = data.representante || "";
 
+  // 👇 ADICIONE ESTA LÓGICA DO CEBAS AQUI 👇
+  const cnaeDesc = (data.cnae_principal || "").toLowerCase();
+  const containerCebas = document.getElementById("container-cebas");
+  document.getElementById("cliCebas").value = ""; // Limpa testes antigos
+
+  if (cnaeDesc.includes("varejista") || cnaeDesc.includes("atacadista")) {
+    containerCebas.style.display = "none";
+  } else {
+    containerCebas.style.display = "block";
+  }
+  // 👆 FIM DA LÓGICA DO CEBAS 👆
+
   // --- Status Visual ---
   document.getElementById("txt-cliente").innerText =
     "Ficha processada! Revise os dados abaixo.";
@@ -230,6 +242,32 @@ function copiarLog() {
 }
 
 async function iniciarCadastroNovo() {
+  // 👇 1. ADICIONE A TRAVA DE SEGURANÇA AQUI NO TOPO 👇
+  const containerCebas = document.getElementById("container-cebas");
+  const cebasValor = document.getElementById("cliCebas").value;
+
+  if (containerCebas.style.display === "block" && cebasValor === "") {
+    logConsole(
+      "❌ ERRO: Você precisa informar se o cliente possui CEBAS antes de iniciar!",
+      "error",
+    );
+    alert("Por favor, responda se o CNPJ possui CEBAS.");
+    return; // Impede o robô de rodar!
+  }
+  // 👆 FIM DA TRAVA 👆
+
+  // 👇 NOVA TRAVA DA CAPTAÇÃO 👇
+  const captacaoValor = document.getElementById("cliNovaCaptacao").value;
+  if (captacaoValor === "") {
+    logConsole(
+      "❌ ERRO: Você precisa informar a Forma de Captação antes de iniciar!",
+      "error",
+    );
+    alert("Por favor, selecione a Forma de Captação do cliente.");
+    return;
+  }
+  // 👆 FIM DA NOVA TRAVA 👆
+
   const btn = document.getElementById("btnAprovarNovo");
   btn.innerHTML =
     '<i class="fa-solid fa-circle-notch fa-spin me-2"></i> Ligando Robô...';
@@ -279,6 +317,12 @@ async function iniciarCadastroNovo() {
     cnae_principal_descricao:
       document.getElementById("cliCnae")?.value || "Varejista",
     telefone_empresa: document.getElementById("cliTelefone")?.value || "",
+
+    // 👇 ADICIONE ESTA LINHA 👇
+    tem_cebas: cebasValor,
+    representante: document.getElementById("cliRepresentante")?.value || "",
+    forma_captacao: captacaoValor,
+    vendedor: document.getElementById("cliVendedor")?.value || "",
 
     // AQUI VÃO OS CONTATOS!
     email_xml: document.getElementById("cliEmailXml")?.value || "",

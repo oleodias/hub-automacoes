@@ -92,7 +92,7 @@ content %}
       </div>
       <div class="form-field">
         <label>Cód. Cliente (Reativação)</label>
-        <input type="text" id="cliCodigo" readonly />
+        <input type="text" id="cliCodigo" readonly style="text-align: center" />
       </div>
     </div>
 
@@ -111,7 +111,10 @@ content %}
       </div>
     </div>
 
-    <div class="form-row cols-3-7-2">
+    <div
+      class="form-row"
+      style="display: grid; grid-template-columns: 5fr 5fr 2fr; gap: 15px"
+    >
       <div class="form-field">
         <label>Bairro</label>
         <input type="text" id="cliBairro" readonly />
@@ -215,6 +218,66 @@ content %}
       <div class="form-field">
         <label>Representante</label>
         <input type="text" id="cliRepresentante" readonly />
+      </div>
+    </div>
+
+    <div
+      id="container-captacao"
+      class="form-row"
+      style="
+        background-color: rgba(52, 152, 219, 0.2);
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #3498db;
+        margin-top: 15px;
+      "
+    >
+      <div class="form-field" style="width: 100%">
+        <label style="color: #3498db; font-weight: bold"
+          >🎯 Obrigatório: Qual foi a forma de captação deste cliente?</label
+        >
+        <select
+          id="cliNovaCaptacao"
+          class="input-dark"
+          style="margin-top: 5px; width: 50%"
+        >
+          <option value="">-- Selecione uma opção --</option>
+          <option value="0">1 - WhatsApp</option>
+          <option value="1">2 - Plataforma de cotação</option>
+          <option value="2">3 - E-mail</option>
+          <option value="3">4 - Ligação</option>
+          <option value="4">5 - Visita de representante</option>
+          <option value="5">6 - Site</option>
+        </select>
+      </div>
+    </div>
+
+    <div
+      id="container-cebas"
+      class="form-row"
+      style="
+        display: none;
+        background-color: rgba(255, 193, 7, 0.2);
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #ffc107;
+        margin-top: 15px;
+      "
+    >
+      <div class="form-field" style="width: 100%">
+        <label style="color: #ffc107; font-weight: bold"
+          >⚠️ Atenção: Este CNPJ não é Varejista nem Atacadista. Ele possui
+          CEBAS?</label
+        >
+        <select
+          id="cliCebas"
+          class="input-dark"
+          style="margin-top: 5px; width: 50%"
+        >
+          <option value="">-- Selecione uma opção --</option>
+          <option value="SIM">Sim (Possui CEBAS)</option>
+          <option value="NAO">Não (Não possui CEBAS)</option>
+        </select>
       </div>
     </div>
   </form>
