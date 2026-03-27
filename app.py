@@ -90,6 +90,11 @@ def verificar_horario():
     # 1. Deixa carregar imagens e CSS normalmente
     if request.endpoint and 'static' in request.endpoint:
         return None
+    
+    # 👇 ADICIONE ESTA LINHA: Libera o cliente de acessar a ficha e consultar CNPJ a qualquer hora!
+    if request.endpoint in ['ficha_cliente', 'api_cnpj_completo', 'consulta_cnpj']:
+        return None 
+    # 👆 ---------------------------------------------------------------------------------
 
     # 2. CHAVE MESTRA: Se você digitar ?bypass=leo_admin na URL, libera o acesso
     if request.args.get('bypass') == 'leo_admin':
@@ -342,6 +347,10 @@ def iniciar_cadastro_novo():
 @app.route('/consulta_cte')
 def consulta_cte():
     return render_template('consulta_cte.html')
+
+@app.route('/ficha_cliente')
+def ficha_cliente():
+    return render_template('ficha_cliente.html')
 
 # ==========================================
 # SISTEMA DE BANCO DE DADOS (JSON)

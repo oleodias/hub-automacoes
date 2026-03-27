@@ -27,6 +27,92 @@ content %}
   </span>
 </div>
 
+<div
+  class="card-dark"
+  style="margin-bottom: 20px; border-left: 4px solid var(--blue)"
+>
+  <div class="card-title-row">
+    <i class="fa-solid fa-link" style="color: var(--blue)"></i>
+    <h5>1. Rastreio e Forma de Preenchimento</h5>
+  </div>
+
+  <form id="formGerarLink" class="form-grid">
+    <div class="form-row cols-4-4-4">
+      <div class="form-field">
+        <label>Nome do Vendedor</label>
+        <input
+          type="text"
+          id="linkVendedor"
+          class="input-dark"
+          placeholder="Ex: João Silva"
+          required
+        />
+      </div>
+      <div class="form-field">
+        <label>Nome do Representante</label>
+        <input
+          type="text"
+          id="linkRepresentante"
+          class="input-dark"
+          placeholder="Ex: Carlos Representações"
+          required
+        />
+      </div>
+      <div class="form-field">
+        <label>Forma de Captação</label>
+        <select id="linkCaptacao" class="input-dark" required>
+          <option value="">-- Selecione --</option>
+          <option value="WhatsApp">WhatsApp</option>
+          <option value="Plataforma">Plataforma de cotação</option>
+          <option value="Email">E-mail</option>
+          <option value="Ligacao">Ligação</option>
+          <option value="Visita">Visita de representante</option>
+          <option value="Site">Site</option>
+        </select>
+      </div>
+    </div>
+  </form>
+
+  <div
+    class="botoes-acao"
+    style="margin-top: 20px; justify-content: flex-start; gap: 15px"
+  >
+    <button
+      class="btn-iniciar btn-reativacao"
+      onclick="gerarLinkCliente()"
+      style="background-color: #28a745"
+    >
+      <i class="fa-brands fa-whatsapp me-2"></i> Gerar Link para Cliente
+    </button>
+
+    <button class="btn-iniciar btn-novo" onclick="abrirFormularioInterno()">
+      <i class="fa-solid fa-desktop me-2"></i> Eu mesmo vou preencher
+    </button>
+  </div>
+
+  <div id="areaLinkGerado" style="display: none; margin-top: 15px">
+    <label style="color: #10b981; font-weight: bold"
+      >Link gerado com sucesso! Copie e envie para o cliente:</label
+    >
+    <div style="display: flex; gap: 10px; margin-top: 5px">
+      <input
+        type="text"
+        id="urlMágica"
+        class="input-dark"
+        readonly
+        style="flex: 1; border-color: #10b981"
+      />
+      <button
+        class="btn-term"
+        onclick="copiarLinkMagico()"
+        style="padding: 0 15px; cursor: pointer"
+      >
+        <i class="fa-regular fa-copy"></i> Copiar
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- CARD 1: UPLOAD DA FICHA -->
 <div class="card-dark" style="margin-bottom: 20px; animation-delay: 0.1s">
   <div class="card-title-row">

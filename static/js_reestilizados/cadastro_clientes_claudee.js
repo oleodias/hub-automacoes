@@ -352,3 +352,53 @@ async function iniciarCadastroNovo() {
     btn.disabled = false;
   }
 }
+
+// ==========================================
+// NOVAS FUNÇÕES: GERAÇÃO DE LINK MÁGICO
+// ==========================================
+
+function gerarLinkCliente() {
+  const vendedor = document.getElementById("linkVendedor").value;
+  const representante = document.getElementById("linkRepresentante").value;
+  const captacao = document.getElementById("linkCaptacao").value;
+
+  // Validação simples
+  if (!vendedor || !representante || !captacao) {
+    alert("Preencha Vendedor, Representante e Captação antes de gerar o link!");
+    return;
+  }
+
+  // Monta a URL (Vamos usar uma rota /ficha_cliente que criaremos depois no Flask)
+  // O encodeURIComponent garante que espaços virem %20 (seguro para links)
+  const baseUrl = window.location.origin + "/ficha_cliente";
+  const urlCompleta = `${baseUrl}?vendedor=${encodeURIComponent(vendedor)}&rep=${encodeURIComponent(representante)}&cap=${encodeURIComponent(captacao)}`;
+
+  // Mostra o link na tela
+  document.getElementById("urlMágica").value = urlCompleta;
+  document.getElementById("areaLinkGerado").style.display = "block";
+
+  logConsole(`Link de captação gerado para o Vendedor: ${vendedor}`, "ok");
+}
+
+function copiarLinkMagico() {
+  const inputLink = document.getElementById("urlMágica");
+  navigator.clipboard.writeText(inputLink.value).then(() => {
+    alert("Link copiado com sucesso! Pode colar no WhatsApp.");
+  });
+}
+
+function abrirFormularioInterno() {
+  const vendedor = document.getElementById("linkVendedor").value;
+  const representante = document.getElementById("linkRepresentante").value;
+  const captacao = document.getElementById("linkCaptacao").value;
+
+  if (!vendedor || !representante || !captacao) {
+    alert("Preencha os dados de rastreio antes de iniciar o preenchimento!");
+    return;
+  }
+
+  alert(
+    "Aqui nós vamos expandir o formulário de Cadastro Web (Em construção na Fase 2!)",
+  );
+  // O que faremos aqui nas próximas etapas: Ocultar este card e mostrar o card do formulário limpo.
+}

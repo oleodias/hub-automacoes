@@ -1,0 +1,1013 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cadastro Comercial - Ciamed</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="icon" href="/static/img/logosvg.svg" />
+
+    <style>
+      /* ==========================================
+       VARIÁVEIS E BASE (MOBILE FIRST)
+    ========================================== */
+      :root {
+        --bg-body: #f4f6f9;
+        --bg-card: #263238;
+        --input-bg: #37474f;
+        --border: #455a64;
+        --text-main: #ffffff;
+        --text-muted: #b0bec5;
+        --primary: #05776c;
+        --primary-hover: #045c53;
+        --accent-purple: #9b59b6;
+        --accent-orange: #f39c12;
+        --accent-red: #e74c3c;
+      }
+
+      body {
+        background-color: var(--bg-body);
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        display: flex;
+        justify-content: center;
+        padding: 15px;
+        margin: 0;
+      }
+
+      .form-container {
+        background-color: var(--bg-card);
+        color: var(--text-main);
+        width: 100%;
+        /* DEIXAMOS A TELA LIVRE PARA CRESCER ATÉ 1800px (Monitores Ultra-Wide) */
+        max-width: 1800px;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      }
+
+      .header-logo {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .header-logo img {
+        height: 100px;
+      }
+      .header-logo h2 {
+        color: var(--primary);
+        margin: 15px 0 5px 0;
+        font-size: 1.8rem;
+      }
+      .header-logo p {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        margin: 0;
+      }
+
+      /* ==========================================
+       ESTRUTURA DE GRID (CELULAR - 1 COLUNA)
+    ========================================== */
+      .section-title {
+        border-bottom: 2px solid var(--border);
+        padding-bottom: 8px;
+        margin: 35px 0 20px 0;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 15px;
+      }
+      .contacts-wrapper {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 15px;
+      }
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .form-group label {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+
+      .form-control {
+        width: 100%;
+        padding: 12px 15px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background-color: var(--input-bg);
+        color: var(--text-main);
+        box-sizing: border-box;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+      }
+
+      .form-control:focus {
+        border-color: var(--primary);
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(5, 119, 108, 0.3);
+      }
+      .input-readonly {
+        background-color: #1e272b;
+        color: #78909c;
+        cursor: not-allowed;
+      }
+
+      .contact-card {
+        background-color: rgba(0, 0, 0, 0.15);
+        padding: 20px;
+        border-radius: 10px;
+        border-left: 4px solid var(--accent-orange);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .contact-card h4 {
+        margin: 0;
+        color: var(--accent-orange);
+        font-size: 1.1rem;
+      }
+
+      input[type="file"] {
+        padding: 10px;
+        background-color: rgba(255, 255, 255, 0.05);
+        border: 1px dashed var(--border);
+        cursor: pointer;
+      }
+      input[type="file"]::file-selector-button {
+        background-color: var(--border);
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 4px;
+        margin-right: 15px;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+      input[type="file"]::file-selector-button:hover {
+        background-color: var(--primary);
+      }
+
+      .btn-submit {
+        width: 100%;
+        padding: 16px;
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        font-size: 1.15rem;
+        cursor: pointer;
+        transition: 0.3s;
+        margin-top: 30px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .btn-submit:hover {
+        background-color: var(--primary-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(5, 119, 108, 0.4);
+      }
+
+      /* ==========================================
+       MEDIA QUERIES (TABLETS - 2 COLUNAS)
+    ========================================== */
+      @media (min-width: 768px) {
+        body {
+          padding: 30px 20px;
+        }
+        .form-container {
+          padding: 35px;
+        }
+        .form-grid.cols-2 {
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+        }
+        .contacts-wrapper {
+          grid-template-columns: 1fr 1fr;
+        }
+        .full-width {
+          grid-column: span 2;
+        }
+      }
+
+      /* ==========================================
+       MEDIA QUERIES (COMPUTADORES - 3 e 4 COLUNAS)
+    ========================================== */
+      @media (min-width: 1200px) {
+        body {
+          padding: 40px;
+        }
+        .form-container {
+          padding: 40px 50px;
+        }
+
+        /* Campos Fiscais e Comerciais viram 3 colunas */
+        .form-grid.cols-2 {
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 25px;
+        }
+
+        /* O endereço ocupa as 3 colunas de ponta a ponta */
+        .full-width {
+          grid-column: span 3;
+        }
+
+        /* Os 4 cards de contatos ficam perfeitamente alinhados lado a lado! */
+        .contacts-wrapper {
+          grid-template-columns: 1fr 1fr 1fr 1fr;
+          gap: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="form-container">
+      <div class="header-logo">
+        <img
+          src="{{ url_for('static', filename='img/logo-2024.png') }}"
+          alt="Ciamed Logo"
+        />
+        <h2>Ficha Cadastral Digital</h2>
+        <p>Preencha com atenção. Todos os campos são obrigatórios.</p>
+      </div>
+
+      <form id="formClienteFinal">
+        <input type="hidden" id="hdnVendedor" />
+        <input type="hidden" id="hdnRepresentante" />
+        <input type="hidden" id="hdnCaptacao" />
+
+        <h3
+          class="section-title"
+          style="color: var(--primary); border-color: var(--primary)"
+        >
+          <i class="fa-solid fa-building"></i> 1. Dados Fiscais da Empresa
+        </h3>
+
+        <div
+          style="display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 25px"
+        >
+          <div
+            class="form-group"
+            style="
+              flex: 1;
+              min-width: 280px;
+              background-color: rgba(5, 119, 108, 0.1);
+              padding: 15px 20px;
+              border-radius: 8px;
+              border-left: 4px solid var(--primary);
+            "
+          >
+            <label
+              style="
+                font-size: 1.05rem;
+                color: white;
+                margin-bottom: 10px;
+                font-weight: bold;
+              "
+            >
+              É contribuinte do ICMS? *</label
+            >
+            <div style="display: flex; gap: 30px; margin-top: 5px">
+              <label
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  cursor: pointer;
+                  color: var(--text-main);
+                  font-size: 1.1rem;
+                "
+              >
+                <input
+                  type="radio"
+                  name="cliIcms"
+                  value="Sim"
+                  required
+                  style="
+                    width: 20px;
+                    height: 20px;
+                    accent-color: var(--primary);
+                    cursor: pointer;
+                  "
+                />
+                Sim
+              </label>
+              <label
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  cursor: pointer;
+                  color: var(--text-main);
+                  font-size: 1.1rem;
+                "
+              >
+                <input
+                  type="radio"
+                  name="cliIcms"
+                  value="Não"
+                  required
+                  style="
+                    width: 20px;
+                    height: 20px;
+                    accent-color: var(--primary);
+                    cursor: pointer;
+                  "
+                />
+                Não
+              </label>
+            </div>
+          </div>
+
+          <div
+            id="wrapperRegimeEspecial"
+            class="form-group"
+            style="
+              display: none;
+              flex: 1;
+              min-width: 280px;
+              background-color: rgba(243, 156, 18, 0.1);
+              padding: 15px 20px;
+              border-radius: 8px;
+              border-left: 4px solid var(--accent-orange);
+            "
+          >
+            <label
+              style="
+                font-size: 1.05rem;
+                color: white;
+                margin-bottom: 10px;
+                font-weight: bold;
+              "
+            >
+              Possui Regime Especial de ICMS? *</label
+            >
+            <div style="display: flex; gap: 30px; margin-top: 5px">
+              <label
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  cursor: pointer;
+                  color: var(--text-main);
+                  font-size: 1.1rem;
+                "
+              >
+                <input
+                  type="radio"
+                  name="cliRegimeEspecial"
+                  value="Sim"
+                  style="
+                    width: 20px;
+                    height: 20px;
+                    accent-color: var(--accent-orange);
+                    cursor: pointer;
+                  "
+                />
+                Sim
+              </label>
+              <label
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  cursor: pointer;
+                  color: var(--text-main);
+                  font-size: 1.1rem;
+                "
+              >
+                <input
+                  type="radio"
+                  name="cliRegimeEspecial"
+                  value="Não"
+                  style="
+                    width: 20px;
+                    height: 20px;
+                    accent-color: var(--accent-orange);
+                    cursor: pointer;
+                  "
+                />
+                Não
+              </label>
+            </div>
+            <p
+              style="
+                color: var(--text-muted);
+                font-size: 0.85rem;
+                margin: 10px 0 0 0;
+              "
+            >
+              Anexar o documento no final da ficha.
+            </p>
+          </div>
+
+          <div
+            class="form-group"
+            style="
+              flex: 1;
+              min-width: 280px;
+              background-color: rgba(155, 89, 182, 0.1);
+              padding: 15px 20px;
+              border-radius: 8px;
+              border-left: 4px solid var(--accent-purple);
+            "
+          >
+            <label
+              style="
+                font-size: 1.05rem;
+                color: white;
+                margin-bottom: 10px;
+                font-weight: bold;
+              "
+            >
+              Regra de Faturamento *</label
+            >
+            <div style="display: flex; gap: 30px; margin-top: 5px">
+              <label
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  cursor: pointer;
+                  color: var(--text-main);
+                  font-size: 1.1rem;
+                "
+              >
+                <input
+                  type="radio"
+                  name="cliRegraFat"
+                  value="Caixa"
+                  required
+                  style="
+                    width: 20px;
+                    height: 20px;
+                    accent-color: var(--accent-purple);
+                    cursor: pointer;
+                  "
+                />
+                Caixa
+              </label>
+              <label
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  cursor: pointer;
+                  color: var(--text-main);
+                  font-size: 1.1rem;
+                "
+              >
+                <input
+                  type="radio"
+                  name="cliRegraFat"
+                  value="Unitario"
+                  required
+                  style="
+                    width: 20px;
+                    height: 20px;
+                    accent-color: var(--accent-purple);
+                    cursor: pointer;
+                  "
+                />
+                Unitário
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="form-grid cols-3" style="margin-bottom: 25px">
+          <div class="form-group">
+            <label>CNPJ (Apenas números) *</label>
+            <input
+              type="text"
+              id="cliCnpj"
+              class="form-control"
+              placeholder="00.000.000/0000-00"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label>Telefone Principal *</label>
+            <input
+              type="text"
+              id="cliTelefone"
+              class="form-control"
+              placeholder="(XX) XXXXX-XXXX"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label
+              ><i class="fa-brands fa-whatsapp" style="color: #25d366"></i>
+              WhatsApp *</label
+            >
+            <input
+              type="text"
+              id="cliWhatsapp"
+              class="form-control"
+              placeholder="(XX) XXXXX-XXXX"
+              required
+            />
+          </div>
+        </div>
+
+        <div
+          style="
+            background-color: rgba(0, 0, 0, 0.15);
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.1);
+          "
+        >
+          <h4
+            style="
+              margin: 0 0 20px 0;
+              color: var(--primary);
+              font-size: 1.1rem;
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              border-bottom: 1px solid rgba(5, 119, 108, 0.3);
+              padding-bottom: 10px;
+            "
+          >
+            <i class="fa-solid fa-magnifying-glass-chart"></i> Consulta
+            Automática - Receita Federal
+          </h4>
+
+          <div class="form-grid cols-2" style="row-gap: 20px">
+            <div class="form-group">
+              <label>Razão Social *</label>
+              <input
+                type="text"
+                id="cliRazao"
+                class="form-control input-readonly"
+                readonly
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label
+                ><i
+                  class="fa-solid fa-file-shield"
+                  style="color: var(--text-muted)"
+                ></i>
+                Situação Cadastral</label
+              >
+              <input
+                type="text"
+                id="cliSituacao"
+                class="form-control input-readonly"
+                style="
+                  font-weight: bold;
+                  text-transform: uppercase;
+                  text-align: center;
+                "
+                readonly
+              />
+            </div>
+
+            <div class="form-group full-width">
+              <label>Endereço Completo *</label>
+              <input
+                type="text"
+                id="cliEndereco"
+                class="form-control input-readonly"
+                readonly
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label
+                ><i
+                  class="fa-solid fa-calendar-check"
+                  style="color: var(--text-muted)"
+                ></i>
+                Data de Abertura</label
+              >
+              <input
+                type="text"
+                id="cliAbertura"
+                class="form-control input-readonly"
+                style="text-align: center"
+                readonly
+              />
+            </div>
+
+            <div class="form-group">
+              <label
+                ><i
+                  class="fa-solid fa-briefcase"
+                  style="color: var(--text-muted)"
+                ></i>
+                CNAE Principal</label
+              >
+              <input
+                type="text"
+                id="cliCnae"
+                class="form-control input-readonly"
+                readonly
+              />
+            </div>
+          </div>
+        </div>
+
+        <h3
+          class="section-title"
+          style="
+            color: var(--accent-orange);
+            border-color: var(--accent-orange);
+          "
+        >
+          <i class="fa-solid fa-address-book"></i> 2. Dados de Contato
+        </h3>
+
+        <div
+          style="
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: nowrap;
+          "
+        >
+          <div class="form-group" style="flex: 1">
+            <label>E-mail Principal (XML/NF-e) *</label>
+            <input
+              type="email"
+              id="cliEmailXml"
+              class="form-control"
+              placeholder="nfe@empresa.com.br"
+              required
+            />
+          </div>
+          <div class="form-group" style="flex: 1">
+            <label>E-mail Secundário (Opcional)</label>
+            <input
+              type="email"
+              id="cliEmailXml2"
+              class="form-control"
+              placeholder="opcional@empresa.com.br"
+            />
+          </div>
+          <div class="form-group" style="flex: 1">
+            <label>E-mail Terciário (Opcional)</label>
+            <input
+              type="email"
+              id="cliEmailXml3"
+              class="form-control"
+              placeholder="opcional2@empresa.com.br"
+            />
+          </div>
+        </div>
+
+        <div class="contacts-wrapper">
+          <div class="contact-card">
+            <h4><i class="fa-solid fa-cart-shopping me-2"></i> Compras</h4>
+            <input
+              type="text"
+              id="ctoComprasNome"
+              class="form-control"
+              placeholder="Nome do Responsável"
+              required
+            />
+            <input
+              type="text"
+              id="ctoComprasTel"
+              class="form-control"
+              placeholder="Telefone"
+              required
+            />
+            <input
+              type="email"
+              id="ctoComprasEmail"
+              class="form-control"
+              placeholder="E-mail"
+              required
+            />
+          </div>
+
+          <div class="contact-card">
+            <h4><i class="fa-solid fa-truck-ramp-box me-2"></i> Recebimento</h4>
+            <input
+              type="text"
+              id="ctoRecNome"
+              class="form-control"
+              placeholder="Nome do Responsável"
+              required
+            />
+            <input
+              type="text"
+              id="ctoRecTel"
+              class="form-control"
+              placeholder="Telefone"
+              required
+            />
+            <input
+              type="email"
+              id="ctoRecEmail"
+              class="form-control"
+              placeholder="E-mail"
+              required
+            />
+          </div>
+
+          <div class="contact-card">
+            <h4><i class="fa-solid fa-coins me-2"></i> Financeiro</h4>
+            <input
+              type="text"
+              id="ctoFinNome"
+              class="form-control"
+              placeholder="Nome do Responsável"
+              required
+            />
+            <input
+              type="text"
+              id="ctoFinTel"
+              class="form-control"
+              placeholder="Telefone"
+              required
+            />
+            <input
+              type="email"
+              id="ctoFinEmail"
+              class="form-control"
+              placeholder="E-mail"
+              required
+            />
+          </div>
+
+          <div class="contact-card">
+            <h4><i class="fa-solid fa-user-doctor me-2"></i> Farmacêutico</h4>
+            <input
+              type="text"
+              id="ctoFarmaNome"
+              class="form-control"
+              placeholder="Nome do Responsável"
+              required
+            />
+            <input
+              type="text"
+              id="ctoFarmaTel"
+              class="form-control"
+              placeholder="Telefone"
+              required
+            />
+            <input
+              type="email"
+              id="ctoFarmaEmail"
+              class="form-control"
+              placeholder="E-mail"
+              required
+            />
+          </div>
+        </div>
+
+        <h3
+          class="section-title"
+          style="color: var(--accent-red); border-color: var(--accent-red)"
+        >
+          <i class="fa-solid fa-file-pdf"></i> 3. Documentação Obrigatória
+        </h3>
+
+        <div
+          id="wrapperUploadRegime"
+          style="display: none; margin-bottom: 20px"
+        >
+          <div
+            style="
+              background-color: rgba(231, 76, 60, 0.15);
+              padding: 20px;
+              border-radius: 8px;
+              border-left: 4px solid var(--accent-red);
+            "
+          >
+            <label
+              style="
+                color: white;
+                font-weight: bold;
+                font-size: 1.05rem;
+                display: block;
+                margin-bottom: 10px;
+              "
+            >
+              <i class="fa-solid fa-file-signature me-2"></i> Anexo do Regime
+              Especial de ICMS *
+            </label>
+            <input
+              type="file"
+              id="docRegimeEspecial"
+              class="form-control"
+              style="
+                background-color: rgba(0, 0, 0, 0.2);
+                border: 1px dashed var(--accent-red);
+                cursor: pointer;
+              "
+            />
+          </div>
+        </div>
+
+        <div class="form-grid cols-2" style="row-gap: 20px">
+          <div
+            class="form-group"
+            style="
+              background-color: rgba(255, 255, 255, 0.03);
+              padding: 15px;
+              border-radius: 8px;
+              border: 1px solid var(--border);
+            "
+          >
+            <label
+              style="
+                color: var(--text-main);
+                font-weight: 600;
+                font-size: 0.95rem;
+              "
+              ><i
+                class="fa-solid fa-file-lines me-2"
+                style="color: var(--text-muted)"
+              ></i>
+              1. Alvará Sanitário</label
+            >
+            <input
+              type="file"
+              id="docAlvara"
+              class="form-control"
+              style="margin-top: 8px"
+              required
+            />
+          </div>
+
+          <div
+            class="form-group"
+            style="
+              background-color: rgba(255, 255, 255, 0.03);
+              padding: 15px;
+              border-radius: 8px;
+              border: 1px solid var(--border);
+            "
+          >
+            <label
+              style="
+                color: var(--text-main);
+                font-weight: 600;
+                font-size: 0.95rem;
+              "
+              ><i
+                class="fa-solid fa-file-shield me-2"
+                style="color: var(--text-muted)"
+              ></i>
+              2. Certidão de Regularidade</label
+            >
+            <input
+              type="file"
+              id="docCRT"
+              class="form-control"
+              style="margin-top: 8px"
+              required
+            />
+          </div>
+
+          <div
+            class="form-group"
+            style="
+              background-color: rgba(255, 255, 255, 0.03);
+              padding: 15px;
+              border-radius: 8px;
+              border: 1px solid var(--border);
+            "
+          >
+            <label
+              style="
+                color: var(--text-main);
+                font-weight: 600;
+                font-size: 0.95rem;
+              "
+              ><i
+                class="fa-solid fa-file-waveform me-2"
+                style="color: var(--text-muted)"
+              ></i>
+              3. Publicação AFE / AE</label
+            >
+            <input
+              type="file"
+              id="docAFE"
+              class="form-control"
+              style="margin-top: 8px"
+              required
+            />
+          </div>
+
+          <div
+            class="form-group"
+            style="
+              background-color: rgba(255, 255, 255, 0.03);
+              padding: 15px;
+              border-radius: 8px;
+              border: 1px solid var(--border);
+            "
+          >
+            <label
+              style="
+                color: var(--text-main);
+                font-weight: 600;
+                font-size: 0.95rem;
+              "
+              ><i
+                class="fa-solid fa-chart-pie me-2"
+                style="color: var(--text-muted)"
+              ></i>
+              4. Último Balanço e DRE</label
+            >
+            <input
+              type="file"
+              id="docBalanco"
+              class="form-control"
+              style="margin-top: 8px"
+              required
+            />
+          </div>
+
+          <div
+            class="form-group"
+            style="
+              background-color: rgba(255, 255, 255, 0.03);
+              padding: 15px;
+              border-radius: 8px;
+              border: 1px solid var(--border);
+            "
+          >
+            <label
+              style="
+                color: var(--text-main);
+                font-weight: 600;
+                font-size: 0.95rem;
+              "
+              ><i
+                class="fa-solid fa-chart-line me-2"
+                style="color: var(--text-muted)"
+              ></i>
+              5. Balancete (< 90 dias)</label
+            >
+            <input
+              type="file"
+              id="docBalancete"
+              class="form-control"
+              style="margin-top: 8px"
+              required
+            />
+          </div>
+
+          <div
+            class="form-group"
+            style="
+              background-color: rgba(255, 255, 255, 0.03);
+              padding: 15px;
+              border-radius: 8px;
+              border: 1px solid var(--border);
+            "
+          >
+            <label
+              style="
+                color: var(--text-main);
+                font-weight: 600;
+                font-size: 0.95rem;
+              "
+              ><i
+                class="fa-solid fa-file-contract me-2"
+                style="color: var(--text-muted)"
+              ></i>
+              6. Contrato Social</label
+            >
+            <input
+              type="file"
+              id="docContrato"
+              class="form-control"
+              style="margin-top: 8px"
+              required
+            />
+          </div>
+        </div>
+        <button type="button" class="btn-submit" onclick="enviarParaN8N()">
+          <i class="fa-solid fa-cloud-arrow-up me-2"></i> Enviar Cadastro para
+          Análise
+        </button>
+      </form>
+    </div>
+
+    <script src="{{ url_for('static', filename='js_reestilizados/ficha_cliente_claude.js') }}"></script>
+  </body>
+</html>
