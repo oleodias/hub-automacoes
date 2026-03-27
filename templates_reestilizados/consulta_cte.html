@@ -1,0 +1,132 @@
+{% extends "base.html" %} {% block title %}Consulta CT-e - Hub Ciamed{% endblock
+%} {% block css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css_reestilizados/consulta_cnpj_claude.css') }}"
+/>
+{% endblock %} {% block navbar_title %}Hub de Automações{% endblock %} {% block
+content %}
+<div class="page-header">
+  <div class="left">
+    <button
+      class="btn-back"
+      onclick="window.location.href = '/'"
+      title="Voltar"
+    >
+      <i class="fa-solid fa-arrow-left" style="font-size: 13px"></i>
+    </button>
+    <div class="page-title">
+      Consulta Pública de CT-e
+      <span>Conhecimento de Transporte Eletrônico · Portal SEFAZ/SVRS</span>
+    </div>
+  </div>
+  <span class="badge-api"
+    ><i class="fa-solid fa-truck-fast me-1"></i>SVRS Scraping</span
+  >
+</div>
+
+<div class="card-dark" id="card-busca" style="animation-delay: 0.1s">
+  <div class="card-title-row">
+    <i class="fa-solid fa-magnifying-glass" style="color: var(--teal)"></i>
+    <h5>Buscar Chave do CT-e</h5>
+  </div>
+  <div class="search-wrap">
+    <p>
+      Digite os 44 dígitos da chave de acesso do CT-e para consultar os dados
+      básicos na SEFAZ.
+    </p>
+    <div class="input-dark-group">
+      <input
+        type="text"
+        id="chaveInput"
+        class="input-dark"
+        placeholder="0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000"
+        maxlength="54"
+      />
+      <button class="btn-teal" type="button" id="btnConsultar">
+        <i class="fa-solid fa-search me-1"></i> Consultar
+      </button>
+    </div>
+    <div class="status-row">
+      <span class="status-dot bg-gray" id="dotStatus"></span>
+      <span id="txtStatus">Aguardando Chave de Acesso...</span>
+    </div>
+  </div>
+</div>
+
+<div id="resultado-wrap" style="display: none">
+  <div class="empresa-hero">
+    <div
+      class="empresa-avatar"
+      style="background: var(--blue-dim); color: var(--blue)"
+    >
+      <i class="fa-solid fa-file-contract"></i>
+    </div>
+    <div class="empresa-info">
+      <div class="empresa-nome" id="cteStatus">Autorizado</div>
+      <div class="empresa-fantasia">Situação do Documento na SEFAZ</div>
+      <div class="empresa-cnpj" id="cteChave">—</div>
+    </div>
+  </div>
+
+  <div class="secao-titulo">Dados da Prestação de Serviço</div>
+  <div class="grid-2" style="margin-bottom: 20px">
+    <div class="card-dark" style="animation-delay: 0.12s">
+      <div class="card-title-row">
+        <i class="fa-solid fa-building-flag" style="color: var(--green)"></i>
+        <h5>Transportadora (Emitente)</h5>
+      </div>
+      <div class="info-field">
+        <span class="info-label">Razão Social</span>
+        <span class="info-value" id="cteEmitente">—</span>
+      </div>
+      <div class="info-field">
+        <span class="info-label">CNPJ do Emitente</span>
+        <span class="info-value mono" id="cteCnpjEmitente">—</span>
+      </div>
+    </div>
+
+    <div class="card-dark" style="animation-delay: 0.18s">
+      <div class="card-title-row">
+        <i class="fa-solid fa-box-open" style="color: var(--amber)"></i>
+        <h5>Destinatário</h5>
+      </div>
+      <div class="info-field">
+        <span class="info-label">Razão Social / Nome</span>
+        <span class="info-value" id="cteDestinatario">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card-dark" style="animation-delay: 0.24s">
+      <div class="card-title-row">
+        <i class="fa-solid fa-money-bill-wave" style="color: var(--purple)"></i>
+        <h5>Valores do Frete</h5>
+      </div>
+      <div class="info-field">
+        <span class="info-label">Valor Total da Prestação</span>
+        <span
+          class="info-value"
+          id="cteValor"
+          style="font-size: 1.2rem; font-weight: bold; color: var(--purple)"
+          >—</span
+        >
+      </div>
+    </div>
+
+    <div class="card-dark" style="animation-delay: 0.28s">
+      <div class="card-title-row">
+        <i class="fa-solid fa-calendar-check" style="color: var(--blue)"></i>
+        <h5>Emissão</h5>
+      </div>
+      <div class="info-field">
+        <span class="info-label">Data de Emissão</span>
+        <span class="info-value" id="cteData">—</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='js_reestilizados/consulta_cte_claude.js') }}"></script>
+{% endblock %}

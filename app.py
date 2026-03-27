@@ -9,7 +9,14 @@ import threading
 import time as time_module
 from werkzeug.utils import secure_filename
 from automacoes.clientes.leitor_ficha import processar_ficha_cliente
-from automacoes.clientes import cadastro_novo 
+from automacoes.clientes import cadastro_novo
+import re
+import requests
+from bs4 import BeautifulSoup
+from flask import jsonify, render_template
+import urllib3
+# Desliga os avisos chatos de segurança quando usamos verify=False
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) 
 
 # ── SISTEMA DE FILA ──────────────────────
 _lock_execucao = threading.Lock()
@@ -331,6 +338,10 @@ def iniciar_cadastro_novo():
     resultado = cadastro_novo.executar(dados_do_cliente)
     
     return jsonify(resultado) # Devolve pra tela se deu Sucesso ou Erro
+
+@app.route('/consulta_cte')
+def consulta_cte():
+    return render_template('consulta_cte.html')
 
 # ==========================================
 # SISTEMA DE BANCO DE DADOS (JSON)
