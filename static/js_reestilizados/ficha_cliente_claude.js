@@ -15,11 +15,53 @@ document.addEventListener("DOMContentLoaded", () => {
   // 3. BUSCAR O CNPJ AUTOMATICAMENTE NA SUA API
   const inputCnpj = document.getElementById("cliCnpj");
 
+  // 👇 MÁSCARA AUTOMÁTICA: Formata o CNPJ enquanto o usuário digita 👇
+  inputCnpj.addEventListener("input", (e) => {
+    let valor = e.target.value.replace(/\D/g, ""); // Remove tudo o que não for número
+
+    // Aplica a formatação: 00.000.000/0000-00
+    valor = valor.replace(/^(\d{2})(\d)/, "$1.$2");
+    valor = valor.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+    valor = valor.replace(/\.(\d{3})(\d)/, ".$1/$2");
+    valor = valor.replace(/(\d{4})(\d)/, "$1-$2");
+
+    // Limita a quantidade máxima de caracteres (14 números + 4 pontuações = 18)
+    e.target.value = valor.substring(0, 18);
+  });
+  // 👆 FIM DA MÁSCARA 👆
+
+  // 👇 MÁSCARA AUTOMÁTICA PARA TODOS OS TELEFONES 👇
+  const inputsTelefone = [
+    "cliTelefone",
+    "cliWhatsapp",
+    "ctoComprasTel",
+    "ctoRecTel",
+    "ctoFinTel",
+    "ctoFarmaTel",
+  ];
+
+  inputsTelefone.forEach((id) => {
+    const campo = document.getElementById(id);
+    if (campo) {
+      campo.addEventListener("input", (e) => {
+        let v = e.target.value.replace(/\D/g, ""); // Remove tudo que não for número
+        v = v.substring(0, 11); // Limita a 11 números (DDD + 9 dígitos)
+
+        // Aplica a formatação: (XX) XXXXX-XXXX ou (XX) XXXX-XXXX
+        if (v.length > 2) {
+          v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+          v = v.replace(/(\d)(\d{4})$/, "$1-$2");
+        }
+        e.target.value = v;
+      });
+    }
+  });
+  // 👆 FIM DA MÁSCARA DE TELEFONES 👆
+
   inputCnpj.addEventListener("blur", async () => {
     const cnpjLimpo = inputCnpj.value.replace(/\D/g, "");
 
     if (cnpjLimpo.length === 14) {
-      inputCnpj.value = cnpjLimpo;
       document.getElementById("cliRazao").value =
         "Buscando na Receita Federal...";
       document.getElementById("cliEndereco").value = "Aguarde...";
@@ -29,13 +71,65 @@ document.addEventListener("DOMContentLoaded", () => {
         const dados = await resposta.json();
 
         if (!dados.erro) {
+          const estab = dados.estabelecimento || {};
+
+          // ==========================================
+          // 1. MONTAR O ENDEREÇO COMPLETÍSSIMO
+          // ==========================================
+          const tipoLog = estab.tipo_logradouro || "";
+          const log = estab.logradouro || "";
+          const num = estab.numero || "S/N";
+          const comp = estab.complemento ? ` - ${estab.complemento}` : "";
+          const bairro = estab.bairro ? ` - ${estab.bairro}` : "";
+          const cid = estab.cidade?.nome || "";
+          const uf = estab.estado?.sigla || "";
+
+          // Junta tudo: Rua X, 123 - Sala 2 - Bairro - Cidade/UF
+          const enderecoCompleto = `${tipoLog} ${log}, ${num}${comp}${bairro} - ${cid} / ${uf}`;
+          document.getElementById("cliEndereco").value = enderecoCompleto;
+
+          // ==========================================
+          // 2. PREENCHER OS DEMAIS CAMPOS DA API
+          // ==========================================
           document.getElementById("cliRazao").value =
             dados.razao_social || "Razão não encontrada";
-          const estab = dados.estabelecimento || {};
-          const logradouro = `${estab.tipo_logradouro || ""} ${estab.logradouro || ""}, ${estab.numero || "S/N"}`;
-          const cidadeUf = `${estab.cidade?.nome || ""} - ${estab.estado?.sigla || ""}`;
-          document.getElementById("cliEndereco").value =
-            `${logradouro} | ${cidadeUf}`;
+
+          if (document.getElementById("cliFantasia")) {
+            document.getElementById("cliFantasia").value =
+              estab.nome_fantasia || dados.razao_social || "Não possui";
+          }
+
+          // Formatar Data de Abertura (Muda de YYYY-MM-DD para DD/MM/YYYY)
+          let dataFormatada = estab.data_inicio_atividade || "";
+          if (dataFormatada.includes("-")) {
+            const partes = dataFormatada.split("-");
+            dataFormatada = `${partes[2]}/${partes[1]}/${partes[0]}`;
+          }
+          if (document.getElementById("cliAbertura")) {
+            document.getElementById("cliAbertura").value =
+              dataFormatada || "N/A";
+          }
+
+          // Situação Cadastral (Com Alerta de Cor)
+          const sit = estab.situacao_cadastral || "Desconhecida";
+          const inputSit = document.getElementById("cliSituacao");
+          if (inputSit) {
+            inputSit.value = sit;
+            if (sit.toUpperCase() === "ATIVA") {
+            } else {
+              inputSit.style.color = "#e74c3c"; // Vermelho perigo
+              inputSit.style.borderColor = "rgba(231, 76, 60, 0.3)";
+            }
+          }
+
+          // CNAE Principal
+          const cnaeId = estab.atividade_principal?.id || "";
+          const cnaeDesc = estab.atividade_principal?.descricao || "";
+          if (document.getElementById("cliCnae")) {
+            document.getElementById("cliCnae").value = cnaeId
+              ? `${cnaeId} - ${cnaeDesc}`
+              : "Não informado";
+          }
         } else {
           alert("CNPJ não encontrado! Verifique os números.");
           document.getElementById("cliRazao").value = "";
@@ -50,6 +144,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ==========================================
   // 👇 LÓGICA CONDICIONAL: ICMS E REGIME ESPECIAL 👇
   // ==========================================
+
   const wrapperPerguntaRegime = document.getElementById(
     "wrapperRegimeEspecial",
   );
@@ -79,6 +174,40 @@ document.addEventListener("DOMContentLoaded", () => {
     radio.addEventListener("change", gerenciarVisibilidadeRegime),
   );
 });
+
+// ==========================================
+// FUNÇÃO DE FEEDBACK VISUAL DOS UPLOADS
+// ==========================================
+function marcarDoc(input, wrapId) {
+  const wrapper = document.getElementById(wrapId);
+  const labelSpan = wrapper.querySelector("span");
+  const icon = wrapper.querySelector("i");
+
+  if (input.files && input.files.length > 0) {
+    // Arquivo selecionado com sucesso!
+    const nomeArquivo = input.files[0].name;
+
+    // Adiciona a classe que deixa a borda verde
+    wrapper.classList.add("has-file");
+
+    // Troca o texto para o nome do arquivo (cortando se for muito grande)
+    labelSpan.textContent =
+      nomeArquivo.length > 25
+        ? nomeArquivo.substring(0, 22) + "..."
+        : nomeArquivo;
+
+    // Troca o ícone da nuvem por um ícone de "check"
+    icon.classList.remove("fa-cloud-arrow-up");
+    icon.classList.add("fa-circle-check");
+  } else {
+    // O usuário abriu a janela mas cancelou sem escolher nada
+    wrapper.classList.remove("has-file");
+    labelSpan.textContent = "Clique ou arraste";
+
+    icon.classList.remove("fa-circle-check");
+    icon.classList.add("fa-cloud-arrow-up");
+  }
+}
 
 // ==========================================
 // 4. FUNÇÃO DO BOTÃO ENVIAR (FASE 3 - N8N)
@@ -220,7 +349,8 @@ async function enviarParaN8N() {
 
   try {
     // ⚠️ ATENÇÃO: COLOQUE AQUI A URL DE TESTE DO SEU WEBHOOK DO N8N ⚠️
-    const urlWebhookN8N = "COLE_A_URL_DO_N8N_AQUI";
+    const urlWebhookN8N =
+      "https://leonardodiascaumo.app.n8n.cloud/webhook-test/receber-cadastro";
 
     const resposta = await fetch(urlWebhookN8N, {
       method: "POST",

@@ -537,6 +537,42 @@ def fila_sair(meu_id):
     sair_da_fila(meu_id)
     return jsonify({'ok': True})
 
+    # ==========================================
+# ROTA DE INTEGRAÇÃO: n8n -> ROBÔ RPA
+# ==========================================
+@app.route('/n8n_iniciar_cadastro', methods=['POST'])
+def n8n_iniciar_cadastro():
+    # 1. Captura o pacote enviado pelo n8n
+    dados_n8n = request.json
+    
+    # 2. Extrai os dados que você definiu (CNPJ, Razão e Vendedor)
+    cnpj = dados_n8n.get('cnpj')
+    razao = dados_n8n.get('razao_social')
+    vendedor = dados_n8n.get('vendedor')
+
+    # Log para você ver no terminal do VS Code quando o n8n chamar
+    print(f"\n🔔 [N8N] Solicitação recebida!")
+    print(f"🏢 Cliente: {razao} | 👤 Vendedor: {vendedor}")
+
+    try:
+        # 3. Chama o motor do seu robô (ajustando para o formato que ele espera)
+        # O cadastro_novo.executar já está importado no seu app.py!
+        resultado = cadastro_novo.executar({
+            "cnpj": cnpj,
+            "razao_social": razao,
+            "vendedor": vendedor
+        })
+        
+        return jsonify({
+            "status": "sucesso",
+            "mensagem": f"Robô finalizou o cadastro de {razao}",
+            "resultado": resultado
+        }), 200
+
+    except Exception as e:
+        print(f"❌ Erro ao processar chamado do n8n: {e}")
+        return jsonify({"status": "erro", "detalhes": str(e)}), 500
+
 if __name__ == '__main__':
     print("🚀 SERVIDOR ONLINE! Acesse pelo IP da sua máquina.")
     app.run(host='0.0.0.0', port=5000, debug=True)
