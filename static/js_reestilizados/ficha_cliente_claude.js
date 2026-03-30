@@ -150,28 +150,48 @@ document.addEventListener("DOMContentLoaded", () => {
   );
   const wrapperUploadRegime = document.getElementById("wrapperUploadRegime");
   const inputUploadRegime = document.getElementById("docRegimeEspecial");
+
   const radiosIcms = document.querySelectorAll('input[name="cliIcms"]');
+  const radiosRegime = document.querySelectorAll(
+    'input[name="cliRegimeEspecial"]',
+  );
 
-  function gerenciarVisibilidadeRegime(e) {
+  // 1. O que acontece quando clica em "Contribuinte do ICMS?"
+  function gerenciarPerguntaRegime(e) {
     if (e.target.value === "Sim") {
-      wrapperPerguntaRegime.style.display = "flex";
-      wrapperUploadRegime.style.display = "block";
-      inputUploadRegime.required = true; // Torna o upload obrigatório
+      wrapperPerguntaRegime.style.display = "flex"; // Mostra a 2ª pergunta
     } else {
-      wrapperPerguntaRegime.style.display = "none";
-      wrapperUploadRegime.style.display = "none";
-      inputUploadRegime.required = false; // Tira a obrigatoriedade
+      wrapperPerguntaRegime.style.display = "none"; // Esconde a 2ª pergunta
 
-      inputUploadRegime.value = ""; // Limpa arquivo se houver
-      const radioRegimeCheck = document.querySelector(
-        'input[name="cliRegimeEspecial"]:checked',
-      );
-      if (radioRegimeCheck) radioRegimeCheck.checked = false;
+      // Se não é contribuinte, também temos que esconder/limpar o anexo lá embaixo
+      wrapperUploadRegime.style.display = "none";
+      inputUploadRegime.required = false;
+      inputUploadRegime.value = "";
+
+      // Desmarca os botões de "Regime Especial" (já que a pergunta sumiu)
+      radiosRegime.forEach((radio) => (radio.checked = false));
     }
   }
 
+  // 2. O que acontece quando clica em "Regime Especial de ICMS?"
+  function gerenciarUploadRegime(e) {
+    if (e.target.value === "Sim") {
+      wrapperUploadRegime.style.display = "block"; // Mostra a caixa de upload
+      inputUploadRegime.required = true; // Torna o upload obrigatório
+    } else {
+      wrapperUploadRegime.style.display = "none"; // Esconde a caixa de upload
+      inputUploadRegime.required = false; // Tira a obrigatoriedade
+      inputUploadRegime.value = ""; // Limpa o arquivo se já tinha selecionado
+    }
+  }
+
+  // Adiciona os "ouvintes" de clique aos botões
   radiosIcms.forEach((radio) =>
-    radio.addEventListener("change", gerenciarVisibilidadeRegime),
+    radio.addEventListener("change", gerenciarPerguntaRegime),
+  );
+
+  radiosRegime.forEach((radio) =>
+    radio.addEventListener("change", gerenciarUploadRegime),
   );
 });
 
@@ -206,6 +226,45 @@ function marcarDoc(input, wrapId) {
 
     icon.classList.remove("fa-circle-check");
     icon.classList.add("fa-cloud-arrow-up");
+  }
+}
+
+// ==========================================
+// FUNÇÃO DE DISPENSA DE DOCUMENTO (BYPASS)
+// ==========================================
+function dispensarDoc(inputId, wrapId, checkbox) {
+  const input = document.getElementById(inputId);
+  const wrapper = document.getElementById(wrapId);
+  const labelSpan = wrapper.querySelector("span");
+  const icon = wrapper.querySelector("i");
+
+  // Pega a estrelinha vermelha do título (para esconder)
+  const reqStar = wrapper.parentElement.querySelector(".doc-label span");
+
+  if (checkbox.checked) {
+    // 1. Tira a obrigatoriedade
+    input.required = false;
+    input.value = ""; // Limpa se o cara já tinha subido um arquivo
+
+    // 2. Muda o visual da caixa
+    wrapper.classList.add("disabled");
+    wrapper.classList.remove("has-file");
+    labelSpan.textContent = "Envio dispensado";
+    icon.className = "fa-solid fa-ban";
+
+    // 3. Esconde o asterisco vermelho
+    if (reqStar) reqStar.style.display = "none";
+  } else {
+    // 1. Volta a ser obrigatório
+    input.required = true;
+
+    // 2. Volta o visual ao normal
+    wrapper.classList.remove("disabled");
+    labelSpan.textContent = "Clique ou arraste";
+    icon.className = "fa-solid fa-cloud-arrow-up";
+
+    // 3. Mostra o asterisco vermelho de volta
+    if (reqStar) reqStar.style.display = "inline";
   }
 }
 
@@ -319,28 +378,23 @@ async function enviarParaN8N() {
     document.getElementById("ctoFarmaEmail").value,
   );
 
-  // Arquivos
-  if (document.getElementById("docRegimeEspecial").files[0]) {
-    formData.append(
-      "doc_regime_especial",
-      document.getElementById("docRegimeEspecial").files[0],
-    );
-  }
-  formData.append("doc_alvara", document.getElementById("docAlvara").files[0]);
-  formData.append("doc_crt", document.getElementById("docCRT").files[0]);
-  formData.append("doc_afe", document.getElementById("docAFE").files[0]);
-  formData.append(
-    "doc_balanco",
-    document.getElementById("docBalanco").files[0],
-  );
-  formData.append(
-    "doc_balancete",
-    document.getElementById("docBalancete").files[0],
-  );
-  formData.append(
-    "doc_contrato",
-    document.getElementById("docContrato").files[0],
-  );
+  // Arquivos (Só anexa se o usuário realmente selecionou um arquivo)
+  const listaDocumentos = [
+    { id: "docRegimeEspecial", nome: "doc_regime_especial" },
+    { id: "docAlvara", nome: "doc_alvara" },
+    { id: "docCRT", nome: "doc_crt" },
+    { id: "docAFE", nome: "doc_afe" },
+    { id: "docBalanco", nome: "doc_balanco" },
+    { id: "docBalancete", nome: "doc_balancete" },
+    { id: "docContrato", nome: "doc_contrato" },
+  ];
+
+  listaDocumentos.forEach((doc) => {
+    const inputElement = document.getElementById(doc.id);
+    if (inputElement && inputElement.files[0]) {
+      formData.append(doc.nome, inputElement.files[0]);
+    }
+  });
 
   // Disparo para o servidor (n8n)
   btn.innerHTML =
@@ -350,7 +404,7 @@ async function enviarParaN8N() {
   try {
     // ⚠️ ATENÇÃO: COLOQUE AQUI A URL DE TESTE DO SEU WEBHOOK DO N8N ⚠️
     const urlWebhookN8N =
-      "https://leonardodiascaumo.app.n8n.cloud/webhook-test/receber-cadastro";
+      "https://ciamedrs.app.n8n.cloud/webhook-test/receber-cadastro";
 
     const resposta = await fetch(urlWebhookN8N, {
       method: "POST",
