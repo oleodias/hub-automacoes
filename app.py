@@ -335,6 +335,7 @@ def upload_ficha_cliente():
     else:
         return jsonify({"erro": True, "mensagem": "Formato inválido. Envie um arquivo Excel (.xlsx ou .xls)"}), 400
     
+
 @app.route('/iniciar_cadastro_novo', methods=['POST'])
 def iniciar_cadastro_novo():
     dados_do_cliente = request.json  # Pega os dados que o JavaScript mandou

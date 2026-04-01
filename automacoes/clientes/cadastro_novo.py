@@ -83,9 +83,17 @@ def executar(dados_cliente):
         campo_razao.clear()
         campo_razao.send_keys(dados_cliente.get('razao_social', ''))
 
+        # Nome Fantasia (Com Fallback para Razão Social e trava de 20 caracteres do ERP)
         campo_fantasia = wait.until(EC.presence_of_element_located((By.ID, "subFrmPsJuridicas:desPessoaFantasia")))
         campo_fantasia.clear()
-        campo_fantasia.send_keys(dados_cliente.get('nome_fantasia', ''))
+        
+        # Tenta pegar o nome fantasia, se vier vazio ou nulo, pega a Razão Social
+        nome_fantasia_api = dados_cliente.get('nome_fantasia', '')
+        if not nome_fantasia_api:
+            nome_fantasia_api = dados_cliente.get('razao_social', '')
+            
+        nome_fantasia_cortado = str(nome_fantasia_api)[:20]
+        campo_fantasia.send_keys(nome_fantasia_cortado)
 
         # Inscrição Estadual
         ie = dados_cliente.get('inscricao_estadual', '')
@@ -243,19 +251,24 @@ def executar(dados_cliente):
                 time.sleep(1)
 
         uf = dados_cliente.get('uf', '')
-        codigo_regiao = descobrir_regiao(uf)
-        for _ in range(3):
-            try:
-                campo_regiao = wait.until(EC.presence_of_element_located((By.ID, "subFrmPsJuridicas:lovPsRegioesPsJuridicas_txtCod")))
-                campo_regiao.send_keys(Keys.CONTROL + "a")
-                campo_regiao.send_keys(Keys.BACKSPACE)
-                time.sleep(0.5)
-                campo_regiao.send_keys(codigo_regiao)
-                campo_regiao.send_keys(Keys.TAB)
-                time.sleep(1.5)
-                break
-            except:
-                time.sleep(1)
+        
+        # 🛡️ TRAVA INTELIGENTE PARA O RIO GRANDE DO SUL
+        if uf.upper() == 'RS':
+            print("   - ℹ️ Estado é RS. O sistema preenche a região automaticamente! Pulando campo...")
+        else:
+            codigo_regiao = descobrir_regiao(uf)
+            for _ in range(3):
+                try:
+                    campo_regiao = wait.until(EC.presence_of_element_located((By.ID, "subFrmPsJuridicas:lovPsRegioesPsJuridicas_txtCod")))
+                    campo_regiao.send_keys(Keys.CONTROL + "a")
+                    campo_regiao.send_keys(Keys.BACKSPACE)
+                    time.sleep(0.5)
+                    campo_regiao.send_keys(codigo_regiao)
+                    campo_regiao.send_keys(Keys.TAB)
+                    time.sleep(1.5)
+                    break
+                except:
+                    time.sleep(1)
 
         # ── AVANÇANDO ABAS DO WIZARD ───────────────────────
         driver.execute_script("window.scrollTo(0, 0);")
@@ -360,8 +373,8 @@ def executar(dados_cliente):
                 c['nome'] = str(c['nome']).strip() + " - ENVIO BOLETO"
                 c['check_boleto'] = True
                 
-            # REGRA DO FARMACÊUTICO (Código 20)
-            elif c.get('codigo') == "20":
+            # REGRA DO RESPONSÁVEL TÉCNICO (Código 39)
+            elif c.get('codigo') == "39":
                 c['check_docs'] = True
 
             contatos_para_cadastrar.append(c)

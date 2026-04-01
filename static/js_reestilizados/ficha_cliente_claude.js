@@ -404,7 +404,7 @@ async function enviarParaN8N() {
   try {
     // ⚠️ ATENÇÃO: COLOQUE AQUI A URL DE TESTE DO SEU WEBHOOK DO N8N ⚠️
     const urlWebhookN8N =
-      "https://ciamedrs.app.n8n.cloud/webhook-test/receber-cadastro";
+      "https://ciamedrs.app.n8n.cloud/webhook-test/receber-cadastro-leo";
 
     const resposta = await fetch(urlWebhookN8N, {
       method: "POST",
