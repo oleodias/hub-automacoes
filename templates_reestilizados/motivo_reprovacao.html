@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Motivo de Reprovação — Ciamed</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="icon" href="/static/img/logosvg.svg" />
+  <style>
+    :root {
+      --bg: #090d14; --surface: #0f1623; --card: #131c2e;
+      --border: rgba(255,255,255,0.07); --border-hover: rgba(255,255,255,0.13);
+      --red: #f87171; --red-dim: rgba(248,113,113,0.1); --red-border: rgba(248,113,113,0.25);
+      --teal: #0ee6b8; --text: #e8edf5; --muted: #7a8ba3; --faint: #4a5a72;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: "DM Sans", sans-serif;
+      min-height: 100vh; display: flex; align-items: center;
+      justify-content: center; padding: 24px; overflow: hidden;
+    }
+    body::before {
+      content: ""; position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(14,230,184,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(14,230,184,0.02) 1px, transparent 1px);
+      background-size: 48px 48px; pointer-events: none;
+    }
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 48px 44px;
+      max-width: 480px; width: 100%;
+      position: relative; z-index: 1;
+      opacity: 0; transform: translateY(20px);
+      animation: cardIn 0.45s 0.05s cubic-bezier(0.34,1.2,0.64,1) forwards;
+    }
+    .card::before {
+      content: ""; position: absolute; top: 0; left: 10%; right: 10%;
+      height: 2px; background: var(--red); border-radius: 0 0 4px 4px;
+      opacity: 0; animation: lineIn 0.4s 0.4s ease forwards;
+    }
+    @keyframes cardIn { to { opacity:1; transform:translateY(0); } }
+    @keyframes lineIn  { to { opacity: 1; } }
+    @keyframes fadeUp  { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+    .logo-wrap { text-align: center; margin-bottom: 28px; opacity:0; animation: fadeUp 0.3s 0.1s ease forwards; }
+    .logo-wrap img { height: 32px; }
+
+    .header { text-align: center; margin-bottom: 28px; opacity:0; animation: fadeUp 0.3s 0.2s ease forwards; }
+    .tag {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--red); background: var(--red-dim);
+      border: 1px solid var(--red-border);
+      padding: 4px 14px; border-radius: 100px; margin-bottom: 14px;
+    }
+    h1 { font-family: "Syne", sans-serif; font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+    .subtitle { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* Info da empresa */
+    .empresa-chip {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 16px;
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 24px; opacity:0; animation: fadeUp 0.3s 0.3s ease forwards;
+    }
+    .empresa-chip i { color: var(--red); font-size: 14px; }
+    .empresa-chip .nome { font-size: 14px; font-weight: 600; color: var(--text); }
+    .empresa-chip .cnpj { font-size: 12px; color: var(--faint); margin-top: 2px; }
+
+    /* Textarea */
+    .field-wrap { opacity:0; animation: fadeUp 0.3s 0.35s ease forwards; }
+    .field-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--faint); display: block; margin-bottom: 8px;
+    }
+    textarea {
+      width: 100%; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 14px 16px; color: var(--text);
+      font-family: "DM Sans", sans-serif; font-size: 14px;
+      line-height: 1.6; resize: none; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    textarea::placeholder { color: var(--faint); }
+    textarea:focus {
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px var(--red-dim);
+    }
+    .char-count { font-size: 11px; color: var(--faint); text-align: right; margin-top: 6px; }
+
+    /* Botão */
+    .btn-enviar {
+      margin-top: 20px; width: 100%; padding: 14px;
+      background: var(--red); color: #090d14;
+      border: none; border-radius: 10px;
+      font-family: "Syne", sans-serif; font-weight: 700;
+      font-size: 14px; cursor: pointer;
+      transition: filter 0.2s, transform 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      opacity:0; animation: fadeUp 0.3s 0.45s ease forwards;
+    }
+    .btn-enviar:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .btn-enviar:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  </style>
+</head>
+<body>
+<div class="card">
+
+  <div class="logo-wrap">
+    <img src="/static/img/ciamedia.png" alt="Ciamed" />
+  </div>
+
+  <div class="header">
+    <div class="tag">❌ Reprovação</div>
+    <h1>Informar Motivo</h1>
+    <p class="subtitle">Descreva o motivo da reprovação. O vendedor será notificado automaticamente com esta mensagem.</p>
+  </div>
+
+  {% if empresa %}
+  <div class="empresa-chip">
+    <i class="fa-solid fa-building"></i>
+    <div>
+      <div class="nome">{{ empresa }}</div>
+      {% if cnpj %}<div class="cnpj">{{ cnpj }}</div>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="field-wrap">
+    <label class="field-label" for="motivo">Motivo da reprovação</label>
+    <textarea
+      id="motivo"
+      rows="5"
+      maxlength="500"
+      placeholder="Ex: Alvará Sanitário vencido. Por favor solicitar documento atualizado com validade vigente..."
+    ></textarea>
+    <div class="char-count"><span id="charCount">0</span>/500</div>
+  </div>
+
+  <button class="btn-enviar" id="btnEnviar" onclick="enviar()">
+    <i class="fa-solid fa-paper-plane"></i> Enviar Reprovação
+  </button>
+
+</div>
+
+<script>
+  const textarea = document.getElementById("motivo");
+  const charCount = document.getElementById("charCount");
+
+  textarea.addEventListener("input", () => {
+    charCount.textContent = textarea.value.length;
+  });
+
+  function enviar() {
+    const motivo = textarea.value.trim();
+    if (!motivo) {
+      textarea.style.borderColor = "var(--red)";
+      textarea.focus();
+      return;
+    }
+
+    const btn = document.getElementById("btnEnviar");
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Enviando...';
+
+    const resumeUrl = "{{ resume_url }}";
+    const empresa   = "{{ empresa }}";
+
+    // Redireciona para /confirmar que chama o N8N e mostra a tela de sucesso
+    const url = `/confirmar?acao=reprovar&empresa=${encodeURIComponent(empresa)}&motivo=${encodeURIComponent(motivo)}&resumeUrl=${encodeURIComponent(resumeUrl + "?motivo=" + encodeURIComponent(motivo))}`;
+    window.location.href = url;
+  }
+
+  // Envia com Enter+Ctrl
+  textarea.addEventListener("keydown", (e) => {
+    if (e.ctrlKey && e.key === "Enter") enviar();
+  });
+</script>
+</body>
+</html>

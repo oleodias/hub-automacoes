@@ -15,6 +15,7 @@ import requests
 from bs4 import BeautifulSoup
 from flask import jsonify, render_template
 import urllib3
+import requests as req_ext
 # Desliga os avisos chatos de segurança quando usamos verify=False
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) 
 
@@ -359,6 +360,70 @@ def consulta_cte():
 @app.route('/ficha_cliente')
 def ficha_cliente():
     return render_template('ficha_cliente.html')
+
+# ──────────────────────────────────────────────────────────────────
+# ROTA PRINCIPAL: Farmacêutica clica no botão do email
+# O Flask chama o N8N em background e mostra a tela bonita
+#
+# Uso no email do N8N (substitua o href dos botões):
+#   APROVAR:   http://192.168.210.131:5000/confirmar?acao=aprovar&empresa=NOME&resumeUrl=URL_N8N
+#   REPROVAR:  http://192.168.210.131:5000/confirmar?acao=reprovar&empresa=NOME&resumeUrl=URL_N8N
+#   MÁSCARAS:  http://192.168.210.131:5000/confirmar?acao=mascaras&empresa=NOME&resumeUrl=URL_N8N
+# ──────────────────────────────────────────────────────────────────
+ 
+@app.route('/confirmar')
+def confirmar_acao():
+    acao      = request.args.get('acao', '')        # aprovar | reprovar | mascaras
+    empresa   = request.args.get('empresa', '')
+    resume_url = request.args.get('resumeUrl', '')
+    motivo    = request.args.get('motivo', '')
+ 
+    if not resume_url:
+        return "Parâmetro resumeUrl ausente.", 400
+ 
+    # ── CHAMA O N8N EM BACKGROUND ──────────────────
+    # Isso faz o N8N continuar o fluxo ANTES de renderizar a tela,
+    # então quando o usuário vê o resultado, tudo já foi processado.
+    try:
+        if acao == 'aprovar':
+            req_ext.get(f"{resume_url}?decisao=aprovar", timeout=10)
+ 
+        elif acao == 'reprovar':
+            req_ext.get(f"{resume_url}?decisao=reprovar", timeout=10)
+ 
+        elif acao == 'mascaras':
+            req_ext.get(f"{resume_url}?mascaras=confirmadas", timeout=10)
+ 
+    except Exception as e:
+        # Mesmo se der timeout, mostra a tela — o N8N pode ter recebido
+        print(f"⚠️ Aviso ao chamar N8N: {e}")
+ 
+    # ── RENDERIZA A TELA BONITA ────────────────────
+    return render_template(
+        'confirmar_acao.html',
+        acao=acao,
+        empresa=empresa,
+        motivo=motivo
+    )
+ 
+ 
+# ──────────────────────────────────────────────────────────────────
+# ROTA DO FORMULÁRIO DE MOTIVO DE REPROVAÇÃO
+# Farmacêutica clica em "Informar Motivo" no email → abre esta tela
+# Ela digita o motivo e clica enviar → vai para /confirmar?acao=reprovar
+# ──────────────────────────────────────────────────────────────────
+ 
+@app.route('/motivo_reprovacao')
+def motivo_reprovacao():
+    resume_url = request.args.get('resumeUrl', '')
+    empresa    = request.args.get('empresa', '')
+    cnpj       = request.args.get('cnpj', '')
+    return render_template(
+        'motivo_reprovacao.html',
+        resume_url=resume_url,
+        empresa=empresa,
+        cnpj=cnpj
+    )
 
 # ==========================================
 # SISTEMA DE BANCO DE DADOS (JSON)

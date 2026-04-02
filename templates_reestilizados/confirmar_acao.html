@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Confirmação — Ciamed</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="icon" href="/static/img/logosvg.svg" />
+
+  <style>
+    :root {
+      --bg:      #090d14;
+      --surface: #0f1623;
+      --card:    #131c2e;
+      --border:  rgba(255,255,255,0.07);
+      --teal:    #0ee6b8;
+      --green:   #34d399;
+      --amber:   #f59e0b;
+      --purple:  #a855f7;
+      --red:     #f87171;
+      --text:    #e8edf5;
+      --muted:   #7a8ba3;
+      --faint:   #4a5a72;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "DM Sans", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    /* Grid texture */
+    body::before {
+      content: "";
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(14,230,184,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(14,230,184,0.02) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+    }
+
+    /* Glow radial ao fundo */
+    body::after {
+      content: "";
+      position: fixed;
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--glow-color, rgba(14,230,184,0.06)) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      transition: background 0.6s ease;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 52px 48px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+      opacity: 0;
+      transform: translateY(24px) scale(0.97);
+      animation: cardIn 0.5s 0.1s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    }
+
+    @keyframes cardIn {
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Linha colorida no topo */
+    .card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 10%; right: 10%;
+      height: 2px;
+      border-radius: 0 0 4px 4px;
+      background: var(--accent-color, var(--teal));
+      opacity: 0;
+      animation: lineIn 0.4s 0.5s ease forwards;
+    }
+    @keyframes lineIn { to { opacity: 1; } }
+
+    /* ── ÍCONE ── */
+    .icon-ring {
+      width: 88px; height: 88px;
+      border-radius: 50%;
+      background: var(--icon-bg, var(--teal-dim, rgba(14,230,184,0.1)));
+      border: 1px solid var(--icon-border, rgba(14,230,184,0.2));
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 28px;
+      font-size: 32px;
+      color: var(--accent-color, var(--teal));
+      opacity: 0;
+      transform: scale(0.5);
+      animation: iconIn 0.5s 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    }
+    @keyframes iconIn { to { opacity: 1; transform: scale(1); } }
+
+    /* Círculos pulsantes */
+    .icon-ring::after {
+      content: "";
+      position: absolute;
+      width: 88px; height: 88px;
+      border-radius: 50%;
+      border: 1px solid var(--accent-color, var(--teal));
+      opacity: 0;
+      animation: ripple 2s 0.8s ease-out infinite;
+    }
+    @keyframes ripple {
+      0%   { transform: scale(1); opacity: 0.4; }
+      100% { transform: scale(1.8); opacity: 0; }
+    }
+
+    /* ── TEXTOS ── */
+    .tag {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent-color, var(--teal));
+      background: var(--icon-bg);
+      border: 1px solid var(--icon-border);
+      padding: 4px 14px;
+      border-radius: 100px;
+      display: inline-block;
+      margin-bottom: 16px;
+      opacity: 0;
+      animation: fadeUp 0.4s 0.45s ease forwards;
+    }
+
+    h1 {
+      font-family: "Syne", sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+      opacity: 0;
+      animation: fadeUp 0.4s 0.5s ease forwards;
+    }
+
+    p {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.65;
+      opacity: 0;
+      animation: fadeUp 0.4s 0.55s ease forwards;
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 28px 0;
+      opacity: 0;
+      animation: fadeUp 0.4s 0.6s ease forwards;
+    }
+
+    /* ── INFO CHIPS ── */
+    .info-row {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      opacity: 0;
+      animation: fadeUp 0.4s 0.65s ease forwards;
+    }
+
+    .info-chip {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      text-align: left;
+    }
+    .info-chip i {
+      font-size: 13px;
+      color: var(--accent-color, var(--teal));
+      width: 16px;
+      flex-shrink: 0;
+    }
+    .info-chip span {
+      font-size: 13px;
+      color: var(--text);
+      font-weight: 500;
+    }
+    .info-chip small {
+      font-size: 11px;
+      color: var(--faint);
+      display: block;
+      margin-top: 2px;
+    }
+
+    /* ── BOTÃO FECHAR ── */
+    .btn-close-page {
+      margin-top: 28px;
+      width: 100%;
+      padding: 13px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--muted);
+      font-family: "DM Sans", sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      opacity: 0;
+      animation: fadeUp 0.4s 0.75s ease forwards;
+    }
+    .btn-close-page:hover {
+      background: var(--card);
+      color: var(--text);
+      border-color: rgba(255,255,255,0.13);
+    }
+
+    /* ── LOGO ── */
+    .logo-wrap {
+      margin-bottom: 32px;
+      opacity: 0;
+      animation: fadeUp 0.4s 0.15s ease forwards;
+    }
+    .logo-wrap img { height: 36px; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── LOADING STATE ── */
+    .loading-bar {
+      height: 3px;
+      background: var(--border);
+      border-radius: 100px;
+      margin-top: 20px;
+      overflow: hidden;
+      opacity: 0;
+      animation: fadeUp 0.4s 0.7s ease forwards;
+    }
+    .loading-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent-color, var(--teal));
+      border-radius: 100px;
+      transition: width 0.1s linear;
+    }
+    .loading-label {
+      font-size: 11px;
+      color: var(--faint);
+      margin-top: 8px;
+      opacity: 0;
+      animation: fadeUp 0.4s 0.75s ease forwards;
+    }
+
+    @media (max-width: 520px) {
+      .card { padding: 40px 28px; }
+      h1 { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="card" id="mainCard">
+
+  <div class="logo-wrap">
+    <img src="/static/img/ciamedia.png" alt="Ciamed" />
+  </div>
+
+  <div class="icon-ring" id="iconRing">
+    <i id="mainIcon" class="fa-solid fa-check"></i>
+  </div>
+
+  <div class="tag" id="tagLabel">Processando...</div>
+  <h1 id="titulo">Aguarde um momento</h1>
+  <p id="subtitulo">Estamos registrando sua resposta no sistema.</p>
+
+  <!-- Barra de progresso enquanto chama o N8N -->
+  <div class="loading-bar" id="loadingBar">
+    <div class="loading-bar-fill" id="loadingFill"></div>
+  </div>
+  <p class="loading-label" id="loadingLabel">Comunicando com o sistema...</p>
+
+  <div class="divider" id="divider" style="display:none"></div>
+
+  <div class="info-row" id="infoRow" style="display:none">
+    <div class="info-chip">
+      <i class="fa-solid fa-building"></i>
+      <div>
+        <span id="chipEmpresa">—</span>
+        <small>Empresa</small>
+      </div>
+    </div>
+    <div class="info-chip">
+      <i class="fa-solid fa-clock-rotate-left"></i>
+      <div>
+        <span id="chipHora">—</span>
+        <small>Horário da confirmação</small>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-close-page" id="btnFechar" style="display:none" onclick="window.close()">
+    <i class="fa-solid fa-xmark" style="margin-right:8px"></i> Fechar esta janela
+  </button>
+
+</div>
+
+<script>
+  // ── CONFIG POR AÇÃO ──────────────────────────────
+  const configs = {
+    aprovar: {
+      tag:       "✅ Triagem Farmacêutica",
+      titulo:    "Ficha Aprovada!",
+      subtitulo: "O robô de cadastro foi acionado automaticamente. Você será notificada quando o código do cliente estiver disponível.",
+      icon:      "fa-solid fa-check",
+      accentColor:  "#34d399",
+      iconBg:    "rgba(52,211,153,0.1)",
+      iconBorder:"rgba(52,211,153,0.2)",
+      glowColor: "rgba(52,211,153,0.06)",
+    },
+    reprovar: {
+      tag:       "❌ Triagem Farmacêutica",
+      titulo:    "Reprovação Registrada",
+      subtitulo: "O vendedor será notificado automaticamente com o motivo informado para que o cliente corrija os documentos.",
+      icon:      "fa-solid fa-xmark",
+      accentColor:  "#f87171",
+      iconBg:    "rgba(248,113,113,0.1)",
+      iconBorder:"rgba(248,113,113,0.2)",
+      glowColor: "rgba(248,113,113,0.06)",
+    },
+    mascaras: {
+      tag:       "🎭 Atualização de Máscaras",
+      titulo:    "Máscaras Confirmadas!",
+      subtitulo: "O financeiro foi notificado automaticamente. O cliente está liberado para início do processo de crédito.",
+      icon:      "fa-solid fa-shield-check",
+      accentColor:  "#a855f7",
+      iconBg:    "rgba(168,85,247,0.1)",
+      iconBorder:"rgba(168,85,247,0.2)",
+      glowColor: "rgba(168,85,247,0.06)",
+    }
+  };
+
+  // ── LÊ OS PARÂMETROS DA URL ──────────────────────
+  const params   = new URLSearchParams(window.location.search);
+  const acao     = params.get("acao") || "aprovar";
+  const empresa  = params.get("empresa") || "";
+  const motivo   = params.get("motivo") || "";
+
+  const cfg = configs[acao] || configs.aprovar;
+
+  // ── APLICA CORES ─────────────────────────────────
+  document.documentElement.style.setProperty("--accent-color",  cfg.accentColor);
+  document.documentElement.style.setProperty("--icon-bg",       cfg.iconBg);
+  document.documentElement.style.setProperty("--icon-border",   cfg.iconBorder);
+  document.documentElement.style.setProperty("--glow-color",    cfg.glowColor);
+
+  // Atualiza ícone
+  const iconEl = document.getElementById("mainIcon");
+  iconEl.className = cfg.icon;
+
+  // ── ANIMA BARRA DE PROGRESSO ─────────────────────
+  const fill = document.getElementById("loadingFill");
+  let pct = 0;
+  const interval = setInterval(() => {
+    pct = Math.min(pct + Math.random() * 8 + 2, 90);
+    fill.style.width = pct + "%";
+  }, 120);
+
+  // ── CHAMA O FLASK (QUE CHAMA O N8N) ─────────────
+  // O Flask já passou o resumeUrl como parte da rota, então só precisamos
+  // confirmar que chegamos aqui — o Flask já chamou o N8N no servidor.
+  // Se quiser chamar aqui no cliente também, descomentar abaixo:
+  /*
+  const resumeUrl = params.get("resumeUrl");
+  if (resumeUrl) {
+    fetch(resumeUrl + (acao === "mascaras" ? "?mascaras=confirmadas" : "?decisao=" + acao))
+      .catch(() => {});
+  }
+  */
+
+  // ── MOSTRA RESULTADO APÓS 1.8s ───────────────────
+  setTimeout(() => {
+    clearInterval(interval);
+    fill.style.width = "100%";
+
+    setTimeout(() => {
+      // Esconde loading
+      document.getElementById("loadingBar").style.opacity   = "0.3";
+      document.getElementById("loadingLabel").textContent   = "Confirmado ✓";
+
+      // Atualiza textos
+      document.getElementById("tagLabel").textContent   = cfg.tag;
+      document.getElementById("titulo").textContent     = cfg.titulo;
+      document.getElementById("subtitulo").textContent  = cfg.subtitulo;
+
+      // Mostra chips com infos
+      if (empresa) {
+        document.getElementById("chipEmpresa").textContent = empresa;
+        document.getElementById("chipHora").textContent    = new Date().toLocaleString("pt-BR");
+        document.getElementById("divider").style.display  = "";
+        document.getElementById("infoRow").style.display  = "";
+      }
+
+      // Mostra botão fechar
+      document.getElementById("btnFechar").style.display = "";
+
+      // Animação de entrada das infos
+      ["divider","infoRow","btnFechar"].forEach((id, i) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.style.opacity   = "0";
+          el.style.transform = "translateY(8px)";
+          setTimeout(() => {
+            el.style.transition = "all 0.4s ease";
+            el.style.opacity    = "1";
+            el.style.transform  = "translateY(0)";
+          }, i * 100);
+        }
+      });
+
+    }, 300);
+  }, 1800);
+</script>
+</body>
+</html>
