@@ -1,4 +1,5 @@
 import time
+import os
 import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -8,6 +9,10 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
+
+# Pega a pasta principal de execução para garantir que salve no lugar certo
+DIRETORIO_ATUAL = os.getcwd()
+NOME_ARQUIVO = os.path.join(DIRETORIO_ATUAL, "Relatorio_MDFs_Gerado.xlsx")
 
 # --- EMOJIS ---
 import sys
@@ -29,7 +34,6 @@ chrome_options.add_argument("--window-size=1920,1080")
 # ----------------------------------------
 
 dados_para_planilha = []
-NOME_ARQUIVO = "Relatorio_MDFs_Março.xlsx"
 URL_SISTEMA = "http://192.168.200.252:8585/NLWeb/site/9000/emp/1"
 
 # Inicia o Navegador
@@ -40,9 +44,13 @@ driver.maximize_window()
 
 def salvar_dados():
     if dados_para_planilha:
-        df = pd.DataFrame(dados_para_planilha)
-        df.to_excel(NOME_ARQUIVO, index=False)
-        print(f"   💾 Planilha atualizada: {NOME_ARQUIVO}")
+        try:
+            df = pd.DataFrame(dados_para_planilha)
+            df.to_excel(NOME_ARQUIVO, index=False)
+            print(f"   💾 Planilha salva com sucesso em: {NOME_ARQUIVO}")
+        except Exception as e:
+            # Se faltar o openpyxl ou houver erro de permissão, agora aparecerá no log!
+            print(f"   ❌ ERRO CRÍTICO ao gerar Excel (falta openpyxl?): {e}")
 
 def preencher_campo_seguro(id_campo, valor):
     try:
@@ -54,12 +62,18 @@ def preencher_campo_seguro(id_campo, valor):
         time.sleep(1.5)
     except: pass
 
-def desmarcar_checkbox(xpath):
+def desmarcar_checkbox_js(id_checkbox):
     try:
-        elemento = driver.find_element(By.XPATH, xpath)
-        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", elemento)
-        elemento.click()
-    except: pass
+        # A mágica do JS: Encontra o elemento pelo ID. Se ele existir e estiver marcado (checked), força o clique!
+        script = f"""
+        var cb = document.getElementById('{id_checkbox}');
+        if (cb && cb.checked) {{
+            cb.click();
+        }}
+        """
+        driver.execute_script(script)
+    except Exception as e:
+        print(f"   ⚠️ Aviso: Não conseguiu interagir com o checkbox {id_checkbox}.")
 
 def fazer_login(driver):
     """Realiza o login automático e trata as sessões abertas."""
@@ -146,16 +160,29 @@ def navegar_e_filtrar():
         preencher_campo_seguro("dtaPeriodo_inicial", data_inicio_global)
         preencher_campo_seguro("dtaPeriodo_final", data_fim_global)
 
-        checks = ['//*[@id="chkIndNFe__xc_c"]/span', '//*[@id="chkIndNFCe__xc_c"]/span',
-                  '//*[@id="chkIndCTe__xc_c"]/span', '//*[@id="chkIndNFSe__xc_c"]/span',
-                  '//*[@id="chkIndSAT__xc_c"]/span']
-        for c in checks: desmarcar_checkbox(c)
+        # 👇 NOVA LÓGICA DE CHECKBOXES VIA JS 👇
+        print("   🧹 Desmarcando opções irrelevantes...")
+        
+        # Lista com os IDs exatos que você me mandou (incluindo o novo DCe)
+        checks_para_desmarcar = [
+            "chkIndNFe", 
+            "chkIndNFCe", 
+            "chkIndCTe", 
+            "chkIndNFSe", 
+            "chkIndSAT", 
+            "chkIndDCe"
+        ]
+        
+        for id_check in checks_para_desmarcar: 
+            desmarcar_checkbox_js(id_check)
+            time.sleep(0.3) # Uma pausa super rápida para o sistema processar cada clique
+        # 👆 --------------------------------- 👆
 
         btn_pesq = driver.find_element(By.XPATH, '/html/body/form[1]/div[3]/div[3]/div/div[3]/div[3]/button')
         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn_pesq)
         time.sleep(1)
         btn_pesq.click()
-        time.sleep(8)
+        time.sleep(6)
         return True
     except Exception as e:
         print(f"❌ Erro na navegação: {e}")
@@ -179,7 +206,7 @@ def extrair_notas_da_linha(index):
                 driver.execute_script("arguments[0].click();", opt)
                 break
         
-        time.sleep(6)
+        time.sleep(5)
         WebDriverWait(driver, 15).until(EC.element_to_be_clickable((By.ID, "tabTransporte"))).click()
         time.sleep(3)
 
@@ -196,24 +223,40 @@ def extrair_notas_da_linha(index):
         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", elemento_exp)
         time.sleep(1)
         driver.execute_script("arguments[0].click();", elemento_exp)
-        time.sleep(2)
+        
+        # ⏳ A MÁGICA 1: Aumentamos o tempo de espera. Às vezes o sistema da NL/Oracle demora para renderizar a sub-tabela!
+        print("   ⏳ Aguardando notas relacionadas carregarem...")
+        time.sleep(4) 
 
         # 4. Coleta Notas e DATAS REAIS (da tabela interna)
-        linhas_notas = driver.find_elements(By.XPATH, '//*[@id="table_nswNotasNotas"]/table[2]/tbody/tr')
+        # 🔍 A MÁGICA 2: Deixamos o XPath mais "flexível", removendo o [2] fixo que pode quebrar o código
+        linhas_notas = driver.find_elements(By.XPATH, '//*[@id="table_nswNotasNotas"]//tbody/tr')
         
+        if len(linhas_notas) == 0:
+            print("   ⚠️ Nenhuma linha encontrada na tabela de notas relacionadas!")
+
         for i, linha in enumerate(linhas_notas, start=1):
             try:
-                num_nota = linha.find_element(By.XPATH, f'.//td[contains(@headers, "colNumNota")]').text.strip()
-                data_real = linha.find_element(By.XPATH, f'.//td[contains(@headers, "colDtaEmissao")]').text.strip()
+                # Usamos find_elements (no plural). Se não achar nada, ele retorna uma lista vazia em vez de dar erro!
+                coluna_nota = linha.find_elements(By.XPATH, './/td[contains(@headers, "colNumNota")]')
+                coluna_data = linha.find_elements(By.XPATH, './/td[contains(@headers, "colDtaEmissao")]')
                 
-                if num_nota:
-                    print(f"   ✅ Nota {num_nota} | Data: {data_real}")
-                    dados_para_planilha.append({
-                        "Data Emissão": data_real,
-                        "Número MDF": num_mdf,
-                        "Nota Fiscal": num_nota,
-                    })
-            except: continue
+                # Se ele encontrou a coluna da nota e a coluna da data nessa linha, aí sim ele extrai
+                if coluna_nota and coluna_data:
+                    num_nota = coluna_nota[0].text.strip()
+                    data_real = coluna_data[0].text.strip()
+                    
+                    # Se o número da nota não estiver em branco
+                    if num_nota:
+                        print(f"   ✅ Nota {num_nota} | Data: {data_real}")
+                        dados_para_planilha.append({
+                            "Data Emissão": data_real,
+                            "Número MDF": num_mdf,
+                            "Nota Fiscal": num_nota,
+                        })
+            except Exception as e: 
+                # Se acontecer algum erro bizarro e inesperado, ele avisa de forma curta
+                print(f"   ⚠️ Ignorando linha com formato inesperado.")
 
         salvar_dados()
 
@@ -223,7 +266,7 @@ def extrair_notas_da_linha(index):
         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn_v)
         time.sleep(1)
         btn_v.click()
-        time.sleep(8)
+        time.sleep(6)
         return True
 
     except Exception as e:
@@ -237,6 +280,31 @@ if fazer_login(driver):
     
     # Se o login der certo, tenta navegar e filtrar
     if navegar_e_filtrar():
+
+        # 👇 --- NOVA MÁGICA DA PAGINAÇÃO (MOSTRAR TUDO) --- 👇
+        try:
+            print("   📂 Verificando se é necessário expandir a tabela para mostrar tudo...")
+            script_paginacao = """
+            var select = document.getElementById('tabNswNotasGerencia-nb__xc_c');
+            if(select) {
+                // Força o valor para "all" (Mostrar Tudo)
+                select.value = 'all';
+                // Dispara o evento 'change' igualzinho a um clique humano real para o sistema carregar os dados
+                select.dispatchEvent(new Event('change'));
+                return true;
+            }
+            return false; // Retorna falso se não achar o botão
+            """
+            expandiu = driver.execute_script(script_paginacao)
+            
+            if expandiu:
+                print("   ✅ Opção 'Mostrar Tudo' ativada! Aguardando o sistema recarregar a lista gigante...")
+                time.sleep(4) # Tempo de paciência para o NL trazer todas as notas extras
+            else:
+                print("   ℹ️ Dropdown não encontrado (Provavelmente 20 registros ou menos). Seguindo o fluxo normal...")
+        except Exception as e:
+            print(f"   ⚠️ Aviso ao tentar expandir paginação (pode ser ignorado): {e}")
+        # 👆 ----------------------------------------------- 👆
         
         # --- A MÁGICA DA CONTAGEM AUTOMÁTICA ENTRA AQUI ---
         try:
@@ -262,13 +330,17 @@ if fazer_login(driver):
         # Se filtrou e achou registros, inicia o loop de extração
         if qtd_registros > 0:
             for i in range(1, qtd_registros + 1):
-                linha_atual = i + 1 # Mantive a sua lógica original de pular a primeira linha invisível do cabeçalho
+                linha_atual = i + 1 
                 print(f"\n🔄 Registro {i} de {qtd_registros}...")
                 
                 if not extrair_notas_da_linha(linha_atual): 
                     break
-
-            print(f"\n✅ SUCESSO! Relatório finalizado em: {NOME_ARQUIVO}")
+            
+            # --- NOVA VALIDAÇÃO ---
+            if not dados_para_planilha:
+                print("\n❌ ALERTA: O robô leu as linhas, mas não encontrou NENHUMA nota válida para extrair. A planilha NÃO foi criada.")
+            else:
+                print(f"\n✅ SUCESSO! Relatório finalizado.")
         else:
             print("\n🏁 Processo finalizado: Nada para fazer.")
         

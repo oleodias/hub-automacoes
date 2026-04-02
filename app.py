@@ -254,11 +254,18 @@ def rota_mdf():
 
 @app.route('/download_mdf')
 def download_mdf():
-    caminho_arquivo = "Relatorio_MDFs_Março.xlsx" # Tem que ser o mesmo nome que está no seu robo_mdf.py
+    # Caminho absoluto garantido, mesmo do robô
+    caminho_arquivo = os.path.join(os.getcwd(), "Relatorio_MDFs_Gerado.xlsx")
+    
+    # Verifica se o arquivo realmente existe antes de tentar enviar
+    if not os.path.exists(caminho_arquivo):
+        return "❌ O arquivo não foi encontrado. O robô pode não ter encontrado dados neste período ou ocorreu um erro na geração.", 404
+
     try:
-        return send_file(caminho_arquivo, as_attachment=True)
+        # download_name permite que o arquivo baixe com um nome amigável para a sua chefe
+        return send_file(caminho_arquivo, as_attachment=True, download_name="Relatorio_MDF_Ciamed.xlsx")
     except Exception as e:
-        return f"Erro ao baixar arquivo: {e}"
+        return f"Erro interno ao tentar baixar o arquivo: {e}", 500
     
 @app.route('/cadastro_fornecedor')
 def cadastro_fornecedor():
