@@ -361,17 +361,18 @@ function gerarLinkCliente() {
   const vendedor = document.getElementById("linkVendedor").value;
   const representante = document.getElementById("linkRepresentante").value;
   const captacao = document.getElementById("linkCaptacao").value;
+  const tipo = document.getElementById("linkTipoCadastro").value;
 
   // Validação simples
-  if (!vendedor || !representante || !captacao) {
-    alert("Preencha Vendedor, Representante e Captação antes de gerar o link!");
+  if (!vendedor || !representante || !captacao || !tipo) {
+    alert("Preencha todos os campos antes de gerar o link!");
     return;
   }
 
   // Monta a URL (Vamos usar uma rota /ficha_cliente que criaremos depois no Flask)
   // O encodeURIComponent garante que espaços virem %20 (seguro para links)
   const baseUrl = window.location.origin + "/ficha_cliente";
-  const urlCompleta = `${baseUrl}?vendedor=${encodeURIComponent(vendedor)}&rep=${encodeURIComponent(representante)}&cap=${encodeURIComponent(captacao)}`;
+  const urlCompleta = `${baseUrl}?vendedor=${encodeURIComponent(vendedor)}&rep=${encodeURIComponent(representante)}&cap=${encodeURIComponent(captacao)}&tipo=${encodeURIComponent(tipo)}`;
 
   // Mostra o link na tela
   document.getElementById("urlMágica").value = urlCompleta;
@@ -391,9 +392,10 @@ function abrirFormularioInterno() {
   const vendedor = document.getElementById("linkVendedor").value;
   const representante = document.getElementById("linkRepresentante").value;
   const captacao = document.getElementById("linkCaptacao").value;
+  const tipo = document.getElementById("linkTipoCadastro").value;
 
-  if (!vendedor || !representante || !captacao) {
-    alert("Preencha os dados de rastreio antes de iniciar o preenchimento!");
+  if (!vendedor || !representante || !captacao || !tipo) {
+    alert("Preencha todos os campos antes de gerar o link!");
     return;
   }
 

@@ -37,7 +37,7 @@ content %}
   </div>
 
   <form id="formGerarLink" class="form-grid">
-    <div class="form-row cols-4-4-4">
+    <div class="form-row cols-4-4-2-2">
       <div class="form-field">
         <label>Nome do Vendedor</label>
         <input
@@ -68,6 +68,14 @@ content %}
           <option value="Ligacao">Ligação</option>
           <option value="Visita">Visita de representante</option>
           <option value="Site">Site</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label>Tipo de Cadastro</label>
+        <select id="linkTipoCadastro" class="input-dark" required>
+          <option value="">-- Selecione --</option>
+          <option value="NOVO">Cadastro Novo</option>
+          <option value="REATIVACAO">Reativação</option>
         </select>
       </div>
     </div>

@@ -82,9 +82,9 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # ==========================================
 # PORTEIRO DIGITAL (CONTROLE DE HORÁRIO)
 # ==========================================
-HORA_INICIO = time(6, 50)   # 06:50
-HORA_FIM = time(18, 40)    # 18:40
-DIAS_UTEIS = [0, 1, 2, 3, 4] # 0 = Segunda, 4 = Sexta
+HORA_INICIO = time(00, 00)   # 06:50
+HORA_FIM = time(23, 59)    # 18:40
+DIAS_UTEIS = [0, 1, 2, 3, 4, 5] # 0 = Segunda, 4 = Sexta
 
 @app.before_request
 def verificar_horario():

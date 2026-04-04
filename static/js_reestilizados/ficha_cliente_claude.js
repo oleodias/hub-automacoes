@@ -6,7 +6,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const vendedor = parametrosDaUrl.get("vendedor");
   const representante = parametrosDaUrl.get("rep");
   const captacao = parametrosDaUrl.get("cap");
+  const tipo = parametrosDaUrl.get("tipo");
 
+  if (tipo) document.getElementById("hdnTipoCadastro").value = tipo;
   if (vendedor) document.getElementById("hdnVendedor").value = vendedor;
   if (representante)
     document.getElementById("hdnRepresentante").value = representante;
@@ -319,6 +321,10 @@ async function enviarParaN8N() {
     document.getElementById("hdnRepresentante").value,
   );
   formData.append("captacao", document.getElementById("hdnCaptacao").value);
+  formData.append(
+    "tipo_cadastro",
+    document.getElementById("hdnTipoCadastro").value,
+  );
 
   // Regras Comerciais
   formData.append("contribuinte_icms", icmsSelecionado.value);
@@ -404,7 +410,7 @@ async function enviarParaN8N() {
   try {
     // ⚠️ ATENÇÃO: COLOQUE AQUI A URL DE TESTE DO SEU WEBHOOK DO N8N ⚠️
     const urlWebhookN8N =
-      "https://ciamedrs.app.n8n.cloud/webhook-test/receber-cadastro-leo";
+      "https://ciamedrs.app.n8n.cloud/webhook-test/receber-cadastro-teste-em-casa";
 
     const resposta = await fetch(urlWebhookN8N, {
       method: "POST",
