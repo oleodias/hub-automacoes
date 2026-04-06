@@ -164,3 +164,100 @@ def atualizar_status(uuid, status):
         )
         conn.commit()
     print(f"📋 [BD] Status atualizado | UUID: {uuid} | Status: {status}")
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ADICIONAR ESTAS DUAS FUNÇÕES NO FINAL DO banco_cadastros.py
+# ══════════════════════════════════════════════════════════════════════════════
+
+def listar_submissoes(status=None, tipo=None, busca=None, data_de=None, data_ate=None):
+    """
+    Retorna lista de todas as submissões com filtros opcionais.
+    Usada pela tela de Monitor de Cadastros.
+
+    Filtros:
+      status   → 'pendente' | 'aprovado' | 'reprovado' | 'cadastrado'
+      tipo     → 'NOVO' | 'REATIVACAO' (busca dentro do dados_json)
+      busca    → texto livre para empresa ou CNPJ
+      data_de  → string 'dd/mm/yyyy'
+      data_ate → string 'dd/mm/yyyy'
+    """
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            'SELECT * FROM submissoes ORDER BY created_at DESC'
+        ).fetchall()
+
+    resultado = []
+    for row in rows:
+        dados = dict(row)
+        try:
+            dados['dados_json']         = json.loads(dados['dados_json'])
+        except Exception:
+            dados['dados_json']         = {}
+        try:
+            dados['docs_enviados']      = json.loads(dados['docs_enviados'])
+        except Exception:
+            dados['docs_enviados']      = []
+        try:
+            dados['motivos_reprovacao'] = json.loads(dados['motivos_reprovacao'])
+        except Exception:
+            dados['motivos_reprovacao'] = []
+
+        d = dados['dados_json']
+
+        # Filtro por status
+        if status and dados.get('status') != status:
+            continue
+
+        # Filtro por tipo (dentro do dados_json)
+        if tipo and d.get('tipo_cadastro') != tipo:
+            continue
+
+        # Filtro por busca (empresa ou CNPJ)
+        if busca:
+            b = busca.lower()
+            empresa = (dados.get('razao_social') or '').lower()
+            cnpj    = (dados.get('cnpj') or '').lower()
+            if b not in empresa and b not in cnpj:
+                continue
+
+        # Filtro por data
+        if data_de or data_ate:
+            created = dados.get('created_at', '')  # formato 'dd/mm/yyyy HH:MM'
+            try:
+                partes = created.split(' ')[0].split('/')  # ['dd','mm','yyyy']
+                data_iso = f"{partes[2]}-{partes[1]}-{partes[0]}"  # 'yyyy-mm-dd'
+                if data_de:
+                    de_iso = '-'.join(reversed(data_de.split('/'))) if '/' in data_de else data_de
+                    if data_iso < de_iso:
+                        continue
+                if data_ate:
+                    ate_iso = '-'.join(reversed(data_ate.split('/'))) if '/' in data_ate else data_ate
+                    if data_iso > ate_iso:
+                        continue
+            except Exception:
+                pass
+
+        resultado.append(dados)
+
+    return resultado
+
+
+def stats_submissoes():
+    """
+    Retorna contagem por status para o painel de estatísticas.
+    """
+    with sqlite3.connect(DB_PATH) as conn:
+        rows = conn.execute(
+            'SELECT status, COUNT(*) as total FROM submissoes GROUP BY status'
+        ).fetchall()
+
+    contagem = {'total': 0, 'pendente': 0, 'aprovado': 0, 'reprovado': 0, 'cadastrado': 0}
+    for row in rows:
+        status = row[0] or 'pendente'
+        qtd    = row[1]
+        if status in contagem:
+            contagem[status] += qtd
+        contagem['total'] += qtd
+
+    return contagem

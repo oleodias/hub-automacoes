@@ -25,7 +25,7 @@ content %}
         <i class="fa-solid fa-bolt"></i>
       </div>
       <div>
-        <div class="stat-value">5</div>
+        <div class="stat-value">6</div>
         <div class="stat-label">Automações Ativas</div>
       </div>
     </div>
@@ -49,7 +49,7 @@ content %}
         <i class="fa-solid fa-layer-group"></i>
       </div>
       <div>
-        <div class="stat-value">7</div>
+        <div class="stat-value">8</div>
         <div class="stat-label">Total de Módulos</div>
       </div>
     </div>
@@ -152,6 +152,27 @@ content %}
       <div class="card-title">Cadastro de Clientes — Fiscal</div>
       <div class="card-desc">
         Cadastro e reativação de clientes da empresa para o setor fiscal.
+      </div>
+      <div class="badge-status badge-operational">
+        <span class="dot"></span> Operacional
+      </div>
+    </div>
+
+    <div
+      class="auto-card clickable"
+      onclick="window.location.href='{{ url_for('monitor_cadastros') }}'"
+    >
+      <div class="card-accent-line" style="background: #34d399"></div>
+      <div
+        class="card-icon-wrap"
+        style="background: rgba(52, 211, 153, 0.1); color: #34d399"
+      >
+        <i class="fa-solid fa-table-list"></i>
+      </div>
+      <div class="card-title">Monitor de Fichas Cadastrais</div>
+      <div class="card-desc">
+        Histórico completo de fichas cadastrais recebidas, com filtros por
+        status, período e empresa.
       </div>
       <div class="badge-status badge-operational">
         <span class="dot"></span> Operacional

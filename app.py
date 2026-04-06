@@ -333,10 +333,6 @@ def iniciar_cadastro_novo():
     resultado = cadastro_novo.executar(dados_do_cliente)
     return jsonify(resultado)
 
-@app.route('/consulta_cte')
-def consulta_cte():
-    return render_template('consulta_cte.html')
-
 @app.route('/ficha_cliente')
 def ficha_cliente():
     return render_template('ficha_cliente.html')
@@ -759,6 +755,102 @@ def fila_sair(meu_id):
     sair_da_fila(meu_id)
     return jsonify({'ok': True})
 
+# ══════════════════════════════════════════════════════════════════
+# FILA DO ROBÔ DE CADASTRO — controle via N8N
+# ══════════════════════════════════════════════════════════════════
+
+# Fila específica para o robô de cadastro
+# Cada item é um dict: { 'id': str, 'resume_url': str }
+_fila_cadastro = []
+_fila_cadastro_lock = threading.Lock()
+_cadastro_em_execucao = False
+
+@app.route('/fila_cadastro/entrar', methods=['POST'])
+def fila_cadastro_entrar():
+    """
+    N8N chama aqui para entrar na fila do robô.
+    Recebe: { "resume_url": "https://n8n.cloud/webhook/..." }
+    Retorna: { "id": "...", "posicao": N, "sua_vez": true/false }
+    """
+    global _cadastro_em_execucao
+
+    dados      = request.get_json()
+    resume_url = dados.get('resume_url', '')
+
+    if not resume_url:
+        return jsonify({'erro': 'resume_url obrigatório'}), 400
+
+    # Gera um ID único para esta execução
+    novo_id = str(uuid_lib.uuid4())[:8]
+
+    with _fila_cadastro_lock:
+        _fila_cadastro.append({
+            'id':         novo_id,
+            'resume_url': resume_url
+        })
+        posicao    = len(_fila_cadastro)
+        sua_vez    = posicao == 1 and not _cadastro_em_execucao
+
+    print(f"📥 [FILA] Entrada | ID: {novo_id} | Posição: {posicao}")
+
+    # Se for o primeiro e ninguém está executando, libera imediatamente
+    if sua_vez:
+        _liberar_proximo_cadastro()
+
+    return jsonify({
+        'id':      novo_id,
+        'posicao': posicao,
+        'sua_vez': sua_vez
+    })
+
+
+@app.route('/fila_cadastro/liberar_proximo', methods=['POST'])
+def fila_cadastro_liberar_proximo():
+    """
+    N8N chama aqui quando o robô terminou.
+    Remove o atual da fila e acorda o próximo Wait node.
+    """
+    global _cadastro_em_execucao
+
+    with _fila_cadastro_lock:
+        # Remove o primeiro (que acabou de terminar)
+        if _fila_cadastro:
+            concluido = _fila_cadastro.pop(0)
+            print(f"✅ [FILA] Concluído | ID: {concluido['id']}")
+        _cadastro_em_execucao = False
+
+    # Acorda o próximo se existir
+    _liberar_proximo_cadastro()
+
+    return jsonify({'status': 'ok'})
+
+
+def _liberar_proximo_cadastro():
+    """
+    Função interna: pega o primeiro da fila e chama o resumeUrl dele
+    no N8N para acordar o Wait node correspondente.
+    """
+    global _cadastro_em_execucao
+
+    with _fila_cadastro_lock:
+        if not _fila_cadastro or _cadastro_em_execucao:
+            return
+        proximo        = _fila_cadastro[0]
+        _cadastro_em_execucao = True
+
+    print(f"🚀 [FILA] Liberando | ID: {proximo['id']}")
+
+    # Chama o resumeUrl do Wait node do N8N em background
+    # (em thread separada para não travar o Flask)
+    def chamar_n8n():
+        try:
+            req_ext.get(proximo['resume_url'], timeout=10)
+            print(f"✅ [FILA] N8N acordado | ID: {proximo['id']}")
+        except Exception as e:
+            print(f"⚠️ [FILA] Erro ao acordar N8N: {e}")
+
+    threading.Thread(target=chamar_n8n, daemon=True).start()
+
 # ==========================================
 # ROTA DE INTEGRAÇÃO: n8n -> ROBÔ RPA
 # ==========================================
@@ -784,6 +876,43 @@ def n8n_iniciar_cadastro():
     except Exception as e:
         print(f"❌ Erro ao processar chamado do n8n: {e}")
         return jsonify({"status": "erro", "detalhes": str(e)}), 500
+    
+# ══════════════════════════════════════════════════════════════════════════════
+# ADICIONAR ESTAS ROTAS NO app.py ANTES DA LINHA:
+# if __name__ == '__main__':
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.route('/monitor_cadastros')
+def monitor_cadastros():
+    return render_template('monitor_cadastros.html')
+
+
+@app.route('/api/monitor_cadastros')
+def api_monitor_cadastros():
+    """
+    API que alimenta a tela de Monitor de Cadastros.
+    Aceita query params: status, tipo, busca, data_de, data_ate
+    Retorna: { cadastros: [...], stats: {...} }
+    """
+    status   = request.args.get('status',   None)
+    tipo     = request.args.get('tipo',     None)
+    busca    = request.args.get('busca',    None)
+    data_de  = request.args.get('data_de',  None)
+    data_ate = request.args.get('data_ate', None)
+
+    cadastros = banco_cadastros.listar_submissoes(
+        status=status,
+        tipo=tipo,
+        busca=busca,
+        data_de=data_de,
+        data_ate=data_ate
+    )
+    stats = banco_cadastros.stats_submissoes()
+
+    return jsonify({
+        'cadastros': cadastros,
+        'stats':     stats
+    })
 
 
 if __name__ == '__main__':
