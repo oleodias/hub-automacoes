@@ -22,421 +22,510 @@ content %}
         <span>Histórico completo · Fichas Cadastrais</span>
       </div>
     </div>
-    <button class="btn-refresh" onclick="carregarDados()" title="Atualizar">
-      <i class="fa-solid fa-rotate-right"></i> Atualizar
-    </button>
-  </div>
-
-  <!-- STATS ROW -->
-  <div class="stats-row" id="statsRow">
-    <div class="stat-item">
-      <div
-        class="stat-icon"
-        style="background: rgba(96, 165, 250, 0.1); color: #60a5fa"
-      >
-        <i class="fa-solid fa-layer-group"></i>
-      </div>
-      <div>
-        <div class="stat-value" id="statTotal">—</div>
-        <div class="stat-label">Total de Fichas</div>
-      </div>
-    </div>
-    <div class="stat-item">
-      <div
-        class="stat-icon"
-        style="background: rgba(245, 158, 11, 0.1); color: #f59e0b"
-      >
-        <i class="fa-solid fa-hourglass-half"></i>
-      </div>
-      <div>
-        <div class="stat-value" id="statPendente">—</div>
-        <div class="stat-label">Em Análise</div>
-      </div>
-    </div>
-    <div class="stat-item">
-      <div
-        class="stat-icon"
-        style="background: rgba(52, 211, 153, 0.1); color: #34d399"
-      >
-        <i class="fa-solid fa-circle-check"></i>
-      </div>
-      <div>
-        <div class="stat-value" id="statAprovado">—</div>
-        <div class="stat-label">Aprovados</div>
-      </div>
-    </div>
-    <div class="stat-item">
-      <div
-        class="stat-icon"
-        style="background: rgba(248, 113, 113, 0.1); color: #f87171"
-      >
-        <i class="fa-solid fa-circle-xmark"></i>
-      </div>
-      <div>
-        <div class="stat-value" id="statReprovado">—</div>
-        <div class="stat-label">Reprovados</div>
-      </div>
-    </div>
-    <div class="stat-item">
-      <div
-        class="stat-icon"
-        style="background: rgba(168, 85, 247, 0.1); color: #a855f7"
-      >
-        <i class="fa-solid fa-robot"></i>
-      </div>
-      <div>
-        <div class="stat-value" id="statCadastrado">—</div>
-        <div class="stat-label">Cadastrados ERP</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- FILTROS -->
-  <div class="filtros-card">
-    <div class="filtros-row">
-      <div class="filtro-group">
-        <label>Buscar empresa ou CNPJ</label>
-        <div class="search-wrap">
-          <i class="fa-solid fa-magnifying-glass"></i>
-          <input
-            type="text"
-            id="filtroBusca"
-            placeholder="Ex: Farmácia X ou 00.000.000/0001-00"
-            oninput="filtrarTabela()"
-          />
-        </div>
-      </div>
-      <div class="filtro-group">
-        <label>Status</label>
-        <select id="filtroStatus" onchange="filtrarTabela()">
-          <option value="">Todos</option>
-          <option value="pendente">⏳ Em Análise</option>
-          <option value="aprovado">✅ Aprovado</option>
-          <option value="reprovado">❌ Reprovado</option>
-          <option value="cadastrado">🤖 Cadastrado ERP</option>
-        </select>
-      </div>
-      <div class="filtro-group">
-        <label>Tipo</label>
-        <select id="filtroTipo" onchange="filtrarTabela()">
-          <option value="">Todos</option>
-          <option value="NOVO">Novo Cadastro</option>
-          <option value="REATIVACAO">Reativação</option>
-        </select>
-      </div>
-      <div class="filtro-group">
-        <label>Período — De</label>
-        <input type="date" id="filtroDataDe" onchange="filtrarTabela()" />
-      </div>
-      <div class="filtro-group">
-        <label>Até</label>
-        <input type="date" id="filtroDataAte" onchange="filtrarTabela()" />
-      </div>
-      <button class="btn-limpar" onclick="limparFiltros()">
-        <i class="fa-solid fa-xmark"></i> Limpar
+    <div style="display: flex; gap: 10px; align-items: center">
+      <button class="btn-exportar" onclick="exportarExcel()" id="btnExportar">
+        <i class="fa-solid fa-table-cells"></i> Exportar Excel
+      </button>
+      <button class="btn-refresh" onclick="carregarDados()" title="Atualizar">
+        <i class="fa-solid fa-rotate-right"></i> Atualizar
       </button>
     </div>
   </div>
 
-  <!-- TABELA -->
-  <div class="tabela-card">
-    <div class="tabela-header-row">
-      <span id="contadorResultados" class="contador">Carregando...</span>
+    <!-- STATS ROW -->
+    <div class="stats-row" id="statsRow">
+      <div class="stat-item">
+        <div
+          class="stat-icon"
+          style="background: rgba(96, 165, 250, 0.1); color: #60a5fa"
+        >
+          <i class="fa-solid fa-layer-group"></i>
+        </div>
+        <div>
+          <div class="stat-value" id="statTotal">—</div>
+          <div class="stat-label">Total de Fichas</div>
+        </div>
+      </div>
+      <div class="stat-item">
+        <div
+          class="stat-icon"
+          style="background: rgba(245, 158, 11, 0.1); color: #f59e0b"
+        >
+          <i class="fa-solid fa-hourglass-half"></i>
+        </div>
+        <div>
+          <div class="stat-value" id="statPendente">—</div>
+          <div class="stat-label">Em Análise</div>
+        </div>
+      </div>
+      <div class="stat-item">
+        <div
+          class="stat-icon"
+          style="background: rgba(52, 211, 153, 0.1); color: #34d399"
+        >
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div>
+          <div class="stat-value" id="statAprovado">—</div>
+          <div class="stat-label">Aprovados</div>
+        </div>
+      </div>
+      <div class="stat-item">
+        <div
+          class="stat-icon"
+          style="background: rgba(248, 113, 113, 0.1); color: #f87171"
+        >
+          <i class="fa-solid fa-circle-xmark"></i>
+        </div>
+        <div>
+          <div class="stat-value" id="statReprovado">—</div>
+          <div class="stat-label">Reprovados</div>
+        </div>
+      </div>
+      <div class="stat-item">
+        <div
+          class="stat-icon"
+          style="background: rgba(168, 85, 247, 0.1); color: #a855f7"
+        >
+          <i class="fa-solid fa-robot"></i>
+        </div>
+        <div>
+          <div class="stat-value" id="statCadastrado">—</div>
+          <div class="stat-label">Cadastrados ERP</div>
+        </div>
+      </div>
     </div>
 
-    <div class="tabela-wrap">
-      <table id="tabelaCadastros">
-        <thead>
-          <tr>
-            <th>Data/Hora</th>
-            <th>Empresa</th>
-            <th>CNPJ</th>
-            <th>Tipo</th>
-            <th>Vendedor</th>
-            <th>Tentativa</th>
-            <th>Status</th>
-            <th>Cód. ERP</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody id="tabelaBody">
-          <tr>
-            <td colspan="9" class="loading-cell">
-              <i class="fa-solid fa-circle-notch fa-spin"></i> Carregando
-              dados...
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- FILTROS -->
+    <div class="filtros-card">
+      <div class="filtros-row">
+        <div class="filtro-group">
+          <label>Buscar empresa ou CNPJ</label>
+          <div class="search-wrap">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input
+              type="text"
+              id="filtroBusca"
+              placeholder="Ex: Farmácia X ou 00.000.000/0001-00"
+              oninput="filtrarTabela()"
+            />
+          </div>
+        </div>
+        <div class="filtro-group">
+          <label>Status</label>
+          <select id="filtroStatus" onchange="filtrarTabela()">
+            <option value="">Todos</option>
+            <option value="pendente">⏳ Em Análise</option>
+            <option value="aprovado">✅ Aprovado</option>
+            <option value="reprovado">❌ Reprovado</option>
+            <option value="cadastrado">🤖 Cadastrado ERP</option>
+          </select>
+        </div>
+        <div class="filtro-group">
+          <label>Tipo</label>
+          <select id="filtroTipo" onchange="filtrarTabela()">
+            <option value="">Todos</option>
+            <option value="NOVO">Novo Cadastro</option>
+            <option value="REATIVACAO">Reativação</option>
+          </select>
+        </div>
+        <div class="filtro-group">
+          <label>Período — De</label>
+          <input type="date" id="filtroDataDe" onchange="filtrarTabela()" />
+        </div>
+        <div class="filtro-group">
+          <label>Até</label>
+          <input type="date" id="filtroDataAte" onchange="filtrarTabela()" />
+        </div>
+        <button class="btn-limpar" onclick="limparFiltros()">
+          <i class="fa-solid fa-xmark"></i> Limpar
+        </button>
+      </div>
+    </div>
+
+    <!-- TABELA -->
+    <div class="tabela-card">
+      <div class="tabela-header-row">
+        <span id="contadorResultados" class="contador">Carregando...</span>
+      </div>
+
+      <div class="tabela-wrap">
+        <table id="tabelaCadastros">
+          <thead>
+            <tr>
+              <th>Data/Hora</th>
+              <th>Empresa</th>
+              <th>CNPJ</th>
+              <th>Tipo</th>
+              <th>Vendedor</th>
+              <th>Tentativa</th>
+              <th>Status</th>
+              <th>Cód. ERP</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaBody">
+            <tr>
+              <td colspan="9" class="loading-cell">
+                <i class="fa-solid fa-circle-notch fa-spin"></i> Carregando
+                dados...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- ══════════════════════════════════════════════════════════
+  <!-- ══════════════════════════════════════════════════════════
      MODAL DE DETALHES
 ═══════════════════════════════════════════════════════════ -->
-<div id="modalOverlay" class="modal-overlay" onclick="fecharModal(event)">
-  <div class="modal-box" onclick="event.stopPropagation()">
-    <div class="modal-header">
-      <div>
-        <div class="modal-tag" id="modalTag">—</div>
-        <h2 class="modal-empresa" id="modalEmpresa">—</h2>
-        <p class="modal-cnpj" id="modalCnpj">—</p>
-      </div>
-      <button class="modal-close" onclick="fecharModal()">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-    </div>
-
-    <div class="modal-body-content">
-      <!-- INFO GRID -->
-      <div class="info-grid">
-        <div class="info-item">
-          <span class="info-label">Status</span>
-          <span class="info-value" id="modalStatus">—</span>
+  <div id="modalOverlay" class="modal-overlay" onclick="fecharModal(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <div class="modal-tag" id="modalTag">—</div>
+          <h2 class="modal-empresa" id="modalEmpresa">—</h2>
+          <p class="modal-cnpj" id="modalCnpj">—</p>
         </div>
-        <div class="info-item">
-          <span class="info-label">Tipo</span>
-          <span class="info-value" id="modalTipo">—</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Tentativa</span>
-          <span class="info-value" id="modalTentativa">—</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Cód. ERP</span>
-          <span class="info-value" id="modalCodErp">—</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Entrada</span>
-          <span class="info-value" id="modalCreatedAt">—</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Última atualização</span>
-          <span class="info-value" id="modalUpdatedAt">—</span>
+        <div class="modal-header-right">
+          <div id="modalStatusBadge">—</div>
+          <button class="modal-close" onclick="fecharModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
         </div>
       </div>
-
-      <!-- DADOS COMERCIAIS -->
-      <div class="secao-titulo">
-        <i class="fa-solid fa-handshake" style="color: var(--teal)"></i>
-        Dados Comerciais
-      </div>
-      <div class="info-grid">
-        <div class="info-item">
-          <span class="info-label">Vendedor</span>
-          <span class="info-value" id="modalVendedor">—</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Representante</span>
-          <span class="info-value" id="modalRepresentante">—</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Captação</span>
-          <span class="info-value" id="modalCaptacao">—</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Regra Faturamento</span>
-          <span class="info-value" id="modalRegraFat">—</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">ICMS Contribuinte</span>
-          <span class="info-value" id="modalIcms">—</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Regime Especial</span>
-          <span class="info-value" id="modalRegime">—</span>
-        </div>
-      </div>
-
-      <!-- DADOS DE CONTATO -->
-      <div class="secao-titulo">
-        <i class="fa-solid fa-address-book" style="color: var(--blue)"></i>
-        Contatos
-      </div>
-      <div class="info-grid cols-3">
-        <div class="info-item">
-          <span class="info-label">Telefone</span>
-          <span class="info-value" id="modalTelefone">—</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">WhatsApp</span>
-          <span class="info-value" id="modalWhatsapp">—</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">E-mail XML</span>
-          <span class="info-value" id="modalEmailXml">—</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Endereço</span>
-          <span class="info-value full-width" id="modalEndereco">—</span>
-        </div>
-      </div>
-
-      <!-- DOCUMENTOS -->
-      <div class="secao-titulo">
-        <i class="fa-solid fa-file-pdf" style="color: var(--red)"></i>
-        Documentos Enviados
-      </div>
-      <div id="modalDocs" class="docs-grid">—</div>
-
-      <!-- HISTÓRICO DE REPROVAÇÕES -->
-      <div id="secaoReprovacoes" style="display: none">
+      <div class="modal-body-content">
         <div class="secao-titulo">
-          <i
-            class="fa-solid fa-triangle-exclamation"
-            style="color: var(--amber)"
-          ></i>
-          Histórico de Reprovações
+          <i class="fa-solid fa-chart-line" style="color: var(--teal)"></i
+          >Resumo do Processo
         </div>
-        <div id="modalReprovacoes" class="reprovacoes-lista"></div>
+        <div class="info-grid cols-3">
+          <div class="info-item">
+            <span class="info-label">Tipo de Cadastro</span
+            ><span class="info-value" id="modalTipo">—</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Tentativa</span
+            ><span class="info-value" id="modalTentativa">—</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Cod. ERP</span
+            ><span
+              class="info-value"
+              id="modalCodErp"
+              style="color: var(--purple); font-family: monospace"
+              >—</span
+            >
+          </div>
+          <div class="info-item">
+            <span class="info-label">Data de Entrada</span
+            ><span class="info-value" id="modalCreatedAt">—</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Ultima Atualizacao</span
+            ><span class="info-value" id="modalUpdatedAt">—</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">UUID</span
+            ><span
+              class="info-value"
+              id="modalUuid"
+              style="
+                font-size: 11px;
+                color: var(--faint);
+                font-family: monospace;
+                word-break: break-all;
+              "
+              >—</span
+            >
+          </div>
+        </div>
+
+        <div class="secao-titulo">
+          <i class="fa-solid fa-building" style="color: var(--teal)"></i>Dados
+          Fiscais
+        </div>
+        <div class="info-grid cols-3">
+          <div class="info-item" style="grid-column: span 2">
+            <span class="info-label">Razao Social</span
+            ><span class="info-value" id="modalRazao">—</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">CNPJ</span
+            ><span class="info-value" id="modalCnpjDetalhe">—</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">ICMS Contribuinte</span
+            ><span class="info-value" id="modalIcms">—</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Regime Especial ICMS</span
+            ><span class="info-value" id="modalRegime">—</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Regra de Faturamento</span
+            ><span class="info-value" id="modalRegraFat">—</span>
+          </div>
+          <div class="info-item" style="grid-column: span 3">
+            <span class="info-label">Endereco Completo</span
+            ><span class="info-value" id="modalEndereco">—</span>
+          </div>
+        </div>
+
+        <div class="secao-titulo">
+          <i class="fa-solid fa-handshake" style="color: var(--amber)"></i>Dados
+          Comerciais
+        </div>
+        <div class="info-grid cols-4">
+          <div class="info-item">
+            <span class="info-label">Vendedor</span
+            ><span class="info-value" id="modalVendedor">—</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Representante</span
+            ><span class="info-value" id="modalRepresentante">—</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Captacao</span
+            ><span class="info-value" id="modalCaptacao">—</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Tipo</span
+            ><span class="info-value" id="modalTipoCom">—</span>
+          </div>
+        </div>
+
+        <div class="secao-titulo">
+          <i class="fa-solid fa-phone" style="color: var(--blue)"></i>Contato da
+          Empresa
+        </div>
+        <div class="info-grid cols-3">
+          <div class="info-item">
+            <span class="info-label">Telefone Principal</span
+            ><span class="info-value" id="modalTelefone">—</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">WhatsApp</span
+            ><span class="info-value" id="modalWhatsapp">—</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">E-mail XML 1</span
+            ><span class="info-value" id="modalEmailXml1">—</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">E-mail XML 2</span
+            ><span class="info-value" id="modalEmailXml2">—</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">E-mail XML 3</span
+            ><span class="info-value" id="modalEmailXml3">—</span>
+          </div>
+        </div>
+
+        <div class="secao-titulo">
+          <i class="fa-solid fa-address-book" style="color: var(--purple)"></i
+          >Matriz de Contatos
+        </div>
+        <div class="contatos-matrix">
+          <div class="matrix-header">
+            <span>Setor</span><span>Nome</span><span>Telefone</span
+            ><span>E-mail</span>
+          </div>
+          <div class="matrix-row">
+            <span class="matrix-setor" style="color: var(--teal)"
+              ><i class="fa-solid fa-cart-shopping"></i> Compras</span
+            >
+            <span id="modalComprasNome">—</span
+            ><span id="modalComprasTel">—</span
+            ><span id="modalComprasEmail">—</span>
+          </div>
+          <div class="matrix-row">
+            <span class="matrix-setor" style="color: var(--blue)"
+              ><i class="fa-solid fa-box-open"></i> Recebimento</span
+            >
+            <span id="modalRecNome">—</span><span id="modalRecTel">—</span
+            ><span id="modalRecEmail">—</span>
+          </div>
+          <div class="matrix-row">
+            <span class="matrix-setor" style="color: var(--amber)"
+              ><i class="fa-solid fa-coins"></i> Financeiro</span
+            >
+            <span id="modalFinNome">—</span><span id="modalFinTel">—</span
+            ><span id="modalFinEmail">—</span>
+          </div>
+          <div class="matrix-row">
+            <span class="matrix-setor" style="color: var(--purple)"
+              ><i class="fa-solid fa-flask"></i> Responsável Técnico</span
+            >
+            <span id="modalFarmaNome">—</span><span id="modalFarmaTel">—</span
+            ><span id="modalFarmaEmail">—</span>
+          </div>
+        </div>
+
+        <div class="secao-titulo" style="margin-top: 24px">
+          <i class="fa-solid fa-file-pdf" style="color: var(--red)"></i
+          >Documentos Enviados
+        </div>
+        <div id="modalDocs" class="docs-grid">—</div>
+
+        <div id="secaoReprovacoes" style="display: none">
+          <div class="secao-titulo">
+            <i
+              class="fa-solid fa-triangle-exclamation"
+              style="color: var(--amber)"
+            ></i
+            >Historico de Reprovacoes
+          </div>
+          <div id="modalReprovacoes" class="reprovacoes-lista"></div>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<script>
-  // ══════════════════════════════════════════════════════════════
-  // DADOS GLOBAIS
-  // ══════════════════════════════════════════════════════════════
-  let todosOsCadastros = [];
+  <script>
+    // ══════════════════════════════════════════════════════════════
+    // DADOS GLOBAIS
+    // ══════════════════════════════════════════════════════════════
+    let todosOsCadastros = [];
 
-  const NOMES_DOCS = {
-    doc_regime_especial: "Regime Especial de ICMS",
-    doc_alvara: "Alvará Sanitário",
-    doc_crt: "Certidão de Regularidade",
-    doc_afe: "Publicação AFE / AE",
-    doc_balanco: "Último Balanço e DRE",
-    doc_balancete: "Balancete (< 90 dias)",
-    doc_contrato: "Contrato Social",
-  };
+    const NOMES_DOCS = {
+      doc_regime_especial: "Regime Especial de ICMS",
+      doc_alvara: "Alvará Sanitário",
+      doc_crt: "Certidão de Regularidade",
+      doc_afe: "Publicação AFE / AE",
+      doc_balanco: "Último Balanço e DRE",
+      doc_balancete: "Balancete (< 90 dias)",
+      doc_contrato: "Contrato Social",
+    };
 
-  const STATUS_CONFIG = {
-    pendente: {
-      label: "⏳ Em Análise",
-      cor: "#60a5fa",
-      bg: "rgba(96,165,250,0.1)",
-    },
-    aprovado: {
-      label: "✅ Aprovado",
-      cor: "#34d399",
-      bg: "rgba(52,211,153,0.1)",
-    },
-    reprovado: {
-      label: "❌ Reprovado",
-      cor: "#f87171",
-      bg: "rgba(248,113,113,0.1)",
-    },
-    cadastrado: {
-      label: "🤖 Cadastrado ERP",
-      cor: "#a855f7",
-      bg: "rgba(168,85,247,0.1)",
-    },
-  };
+    const STATUS_CONFIG = {
+      pendente: {
+        label: "⏳ Em Análise",
+        cor: "#60a5fa",
+        bg: "rgba(96,165,250,0.1)",
+      },
+      aprovado: {
+        label: "✅ Aprovado",
+        cor: "#34d399",
+        bg: "rgba(52,211,153,0.1)",
+      },
+      reprovado: {
+        label: "❌ Reprovado",
+        cor: "#f87171",
+        bg: "rgba(248,113,113,0.1)",
+      },
+      cadastrado: {
+        label: "🤖 Cadastrado ERP",
+        cor: "#a855f7",
+        bg: "rgba(168,85,247,0.1)",
+      },
+    };
 
-  // ══════════════════════════════════════════════════════════════
-  // CARREGAR DADOS DA API
-  // ══════════════════════════════════════════════════════════════
-  async function carregarDados() {
-    document.getElementById("tabelaBody").innerHTML = `
+    // ══════════════════════════════════════════════════════════════
+    // CARREGAR DADOS DA API
+    // ══════════════════════════════════════════════════════════════
+    async function carregarDados() {
+      document.getElementById("tabelaBody").innerHTML = `
     <tr><td colspan="9" class="loading-cell">
       <i class="fa-solid fa-circle-notch fa-spin"></i> Carregando dados...
     </td></tr>`;
 
-    try {
-      const res = await fetch("/api/monitor_cadastros");
-      const data = await res.json();
-      todosOsCadastros = data.cadastros || [];
-      atualizarStats(data.stats || {});
-      filtrarTabela();
-    } catch (e) {
-      document.getElementById("tabelaBody").innerHTML = `
+      try {
+        const res = await fetch("/api/monitor_cadastros");
+        const data = await res.json();
+        todosOsCadastros = data.cadastros || [];
+        atualizarStats(data.stats || {});
+        filtrarTabela();
+      } catch (e) {
+        document.getElementById("tabelaBody").innerHTML = `
       <tr><td colspan="9" class="loading-cell" style="color:var(--red)">
         <i class="fa-solid fa-triangle-exclamation"></i> Erro ao carregar dados.
       </td></tr>`;
-    }
-  }
-
-  // ══════════════════════════════════════════════════════════════
-  // ATUALIZAR STATS
-  // ══════════════════════════════════════════════════════════════
-  function atualizarStats(stats) {
-    document.getElementById("statTotal").textContent = stats.total || 0;
-    document.getElementById("statPendente").textContent = stats.pendente || 0;
-    document.getElementById("statAprovado").textContent = stats.aprovado || 0;
-    document.getElementById("statReprovado").textContent = stats.reprovado || 0;
-    document.getElementById("statCadastrado").textContent =
-      stats.cadastrado || 0;
-  }
-
-  // ══════════════════════════════════════════════════════════════
-  // FILTRAR TABELA
-  // ══════════════════════════════════════════════════════════════
-  function filtrarTabela() {
-    const busca = document.getElementById("filtroBusca").value.toLowerCase();
-    const status = document.getElementById("filtroStatus").value;
-    const tipo = document.getElementById("filtroTipo").value;
-    const dataDe = document.getElementById("filtroDataDe").value;
-    const dataAte = document.getElementById("filtroDataAte").value;
-
-    const filtrados = todosOsCadastros.filter((c) => {
-      const d = c.dados_json || {};
-
-      // Busca por empresa ou CNPJ
-      if (
-        busca &&
-        !c.razao_social?.toLowerCase().includes(busca) &&
-        !c.cnpj?.toLowerCase().includes(busca)
-      )
-        return false;
-
-      // Status
-      if (status && c.status !== status) return false;
-
-      // Tipo
-      if (tipo && d.tipo_cadastro !== tipo) return false;
-
-      // Período
-      if (dataDe || dataAte) {
-        const partes = (c.created_at || "").split(" ")[0].split("/");
-        if (partes.length === 3) {
-          const dataISO = `${partes[2]}-${partes[1]}-${partes[0]}`;
-          if (dataDe && dataISO < dataDe) return false;
-          if (dataAte && dataISO > dataAte) return false;
-        }
       }
+    }
 
-      return true;
-    });
+    // ══════════════════════════════════════════════════════════════
+    // ATUALIZAR STATS
+    // ══════════════════════════════════════════════════════════════
+    function atualizarStats(stats) {
+      document.getElementById("statTotal").textContent = stats.total || 0;
+      document.getElementById("statPendente").textContent = stats.pendente || 0;
+      document.getElementById("statAprovado").textContent = stats.aprovado || 0;
+      document.getElementById("statReprovado").textContent =
+        stats.reprovado || 0;
+      document.getElementById("statCadastrado").textContent =
+        stats.cadastrado || 0;
+    }
 
-    renderizarTabela(filtrados);
-    document.getElementById("contadorResultados").textContent =
-      `${filtrados.length} resultado${filtrados.length !== 1 ? "s" : ""} encontrado${filtrados.length !== 1 ? "s" : ""}`;
-  }
+    // ══════════════════════════════════════════════════════════════
+    // FILTRAR TABELA
+    // ══════════════════════════════════════════════════════════════
+    function filtrarTabela() {
+      const busca = document.getElementById("filtroBusca").value.toLowerCase();
+      const status = document.getElementById("filtroStatus").value;
+      const tipo = document.getElementById("filtroTipo").value;
+      const dataDe = document.getElementById("filtroDataDe").value;
+      const dataAte = document.getElementById("filtroDataAte").value;
 
-  // ══════════════════════════════════════════════════════════════
-  // RENDERIZAR TABELA
-  // ══════════════════════════════════════════════════════════════
-  function renderizarTabela(lista) {
-    const tbody = document.getElementById("tabelaBody");
+      const filtrados = todosOsCadastros.filter((c) => {
+        const d = c.dados_json || {};
 
-    if (!lista.length) {
-      tbody.innerHTML = `
+        // Busca por empresa ou CNPJ
+        if (
+          busca &&
+          !c.razao_social?.toLowerCase().includes(busca) &&
+          !c.cnpj?.toLowerCase().includes(busca)
+        )
+          return false;
+
+        // Status
+        if (status && c.status !== status) return false;
+
+        // Tipo
+        if (tipo && d.tipo_cadastro !== tipo) return false;
+
+        // Período
+        if (dataDe || dataAte) {
+          const partes = (c.created_at || "").split(" ")[0].split("/");
+          if (partes.length === 3) {
+            const dataISO = `${partes[2]}-${partes[1]}-${partes[0]}`;
+            if (dataDe && dataISO < dataDe) return false;
+            if (dataAte && dataISO > dataAte) return false;
+          }
+        }
+
+        return true;
+      });
+
+      renderizarTabela(filtrados);
+      document.getElementById("contadorResultados").textContent =
+        `${filtrados.length} resultado${filtrados.length !== 1 ? "s" : ""} encontrado${filtrados.length !== 1 ? "s" : ""}`;
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // RENDERIZAR TABELA
+    // ══════════════════════════════════════════════════════════════
+    function renderizarTabela(lista) {
+      const tbody = document.getElementById("tabelaBody");
+
+      if (!lista.length) {
+        tbody.innerHTML = `
       <tr><td colspan="9" class="loading-cell" style="color:var(--text-secondary)">
         <i class="fa-solid fa-inbox"></i> Nenhum cadastro encontrado com estes filtros.
       </td></tr>`;
-      return;
-    }
+        return;
+      }
 
-    tbody.innerHTML = lista
-      .map((c) => {
-        const d = c.dados_json || {};
-        const st = STATUS_CONFIG[c.status] || STATUS_CONFIG.pendente;
-        const codErp = d.cod_erp || "—";
-        const tipo =
-          d.tipo_cadastro === "REATIVACAO" ? "🔄 Reativação" : "🆕 Novo";
+      tbody.innerHTML = lista
+        .map((c) => {
+          const d = c.dados_json || {};
+          const st = STATUS_CONFIG[c.status] || STATUS_CONFIG.pendente;
+          const codErp = d.cod_erp || "—";
+          const tipo =
+            d.tipo_cadastro === "REATIVACAO" ? "🔄 Reativação" : "🆕 Novo";
 
-        return `
+          return `
       <tr onclick="abrirModal('${c.uuid}')" style="cursor:pointer">
         <td class="td-data">${c.created_at || "—"}</td>
         <td class="td-empresa">${c.razao_social || "—"}</td>
@@ -456,78 +545,117 @@ content %}
           </button>
         </td>
       </tr>`;
-      })
-      .join("");
-  }
+        })
+        .join("");
+    }
 
-  // ══════════════════════════════════════════════════════════════
-  // ABRIR MODAL DE DETALHES
-  // ══════════════════════════════════════════════════════════════
-  function abrirModal(uuid) {
-    const c = todosOsCadastros.find((x) => x.uuid === uuid);
-    if (!c) return;
+    // ══════════════════════════════════════════════════════════════
+    // ABRIR MODAL DE DETALHES
+    // ══════════════════════════════════════════════════════════════
+    function abrirModal(uuid) {
+      const c = todosOsCadastros.find((x) => x.uuid === uuid);
+      if (!c) return;
 
-    const d = c.dados_json || {};
-    const st = STATUS_CONFIG[c.status] || STATUS_CONFIG.pendente;
+      const d = c.dados_json || {};
+      const st = STATUS_CONFIG[c.status] || STATUS_CONFIG.pendente;
 
-    // Header
-    const tipo =
-      d.tipo_cadastro === "REATIVACAO" ? "🔄 Reativação" : "🆕 Novo Cadastro";
-    document.getElementById("modalTag").textContent = tipo;
-    document.getElementById("modalEmpresa").textContent = c.razao_social || "—";
-    document.getElementById("modalCnpj").textContent = c.cnpj || "—";
+      // Header
+      const tipo =
+        d.tipo_cadastro === "REATIVACAO" ? "🔄 Reativação" : "🆕 Cadastro Novo";
+      document.getElementById("modalTag").textContent = tipo;
+      document.getElementById("modalEmpresa").textContent =
+        c.razao_social || "—";
+      document.getElementById("modalCnpj").textContent = c.cnpj || "—";
 
-    // Info grid
-    document.getElementById("modalStatus").innerHTML =
-      `<span style="color:${st.cor}">${st.label}</span>`;
-    document.getElementById("modalTipo").textContent = tipo;
-    document.getElementById("modalTentativa").textContent =
-      `${c.tentativa}ª tentativa`;
-    document.getElementById("modalCodErp").textContent = d.cod_erp || "—";
-    document.getElementById("modalCreatedAt").textContent = c.created_at || "—";
-    document.getElementById("modalUpdatedAt").textContent = c.updated_at || "—";
+      // Info grid
+      document.getElementById("modalStatusBadge").innerHTML =
+        `<span style="color:${st.cor}">${st.label}</span>`;
+      document.getElementById("modalTipo").textContent = tipo;
+      document.getElementById("modalTentativa").textContent =
+        `${c.tentativa}ª tentativa`;
+      document.getElementById("modalCodErp").textContent = d.cod_erp || "—";
+      document.getElementById("modalCreatedAt").textContent =
+        c.created_at || "—";
+      document.getElementById("modalUpdatedAt").textContent =
+        c.updated_at || "—";
+      document.getElementById("modalUuid").textContent = c.uuid || "—"; // ← NOVO
 
-    // Comerciais
-    document.getElementById("modalVendedor").textContent = d.vendedor || "—";
-    document.getElementById("modalRepresentante").textContent =
-      d.representante || "—";
-    document.getElementById("modalCaptacao").textContent = d.captacao || "—";
-    document.getElementById("modalRegraFat").textContent =
-      d.regra_faturamento || "—";
-    document.getElementById("modalIcms").textContent =
-      d.contribuinte_icms || "—";
-    document.getElementById("modalRegime").textContent =
-      d.possui_regime_especial || "—";
+      // Fiscais
+      document.getElementById("modalRazao").textContent = c.razao_social || "—"; // ← NOVO
+      document.getElementById("modalCnpjDetalhe").textContent = c.cnpj || "—"; // ← NOVO
 
-    // Contatos
-    document.getElementById("modalTelefone").textContent =
-      d.telefone_empresa || "—";
-    document.getElementById("modalWhatsapp").textContent = d.whatsapp || "—";
-    document.getElementById("modalEmailXml").textContent = d.email_xml_1 || "—";
-    document.getElementById("modalEndereco").textContent = d.endereco || "—";
+      // Comerciais
+      document.getElementById("modalVendedor").textContent = d.vendedor || "—";
+      document.getElementById("modalRepresentante").textContent =
+        d.representante || "—";
+      document.getElementById("modalCaptacao").textContent = d.captacao || "—";
+      document.getElementById("modalRegraFat").textContent =
+        d.regra_faturamento || "—";
+      document.getElementById("modalIcms").textContent =
+        d.contribuinte_icms || "—";
+      document.getElementById("modalRegime").textContent =
+        d.possui_regime_especial || "—";
+      document.getElementById("modalTipoCom").textContent = tipo; // ← NOVO
 
-    // Documentos
-    const docs = c.docs_enviados || [];
-    document.getElementById("modalDocs").innerHTML = docs.length
-      ? docs
-          .map(
-            (doc) => `
-        <div class="doc-chip">
-          <i class="fa-solid fa-file-pdf"></i>
+      // Contatos e E-mails
+      document.getElementById("modalTelefone").textContent =
+        d.telefone_empresa || "—";
+      document.getElementById("modalWhatsapp").textContent = d.whatsapp || "—";
+      document.getElementById("modalEndereco").textContent = d.endereco || "—";
+      document.getElementById("modalEmailXml1").textContent =
+        d.email_xml_1 || "—";
+      document.getElementById("modalEmailXml2").textContent =
+        d.email_xml_2 || "—"; // ← NOVO
+      document.getElementById("modalEmailXml3").textContent =
+        d.email_xml_3 || "—"; // ← NOVO
+
+      // Matriz de Contatos (Setores) ← NOVOS
+      document.getElementById("modalComprasNome").textContent =
+        d.compras_nome || "—";
+      document.getElementById("modalComprasTel").textContent =
+        d.compras_tel || "—";
+      document.getElementById("modalComprasEmail").textContent =
+        d.compras_email || "—";
+
+      document.getElementById("modalRecNome").textContent = d.rec_nome || "—";
+      document.getElementById("modalRecTel").textContent = d.rec_tel || "—";
+      document.getElementById("modalRecEmail").textContent = d.rec_email || "—";
+
+      document.getElementById("modalFinNome").textContent = d.fin_nome || "—";
+      document.getElementById("modalFinTel").textContent = d.fin_tel || "—";
+      document.getElementById("modalFinEmail").textContent = d.fin_email || "—";
+
+      document.getElementById("modalFarmaNome").textContent =
+        d.farma_nome || "—";
+      document.getElementById("modalFarmaTel").textContent = d.farma_tel || "—";
+      document.getElementById("modalFarmaEmail").textContent =
+        d.farma_email || "—";
+
+      // Documentos
+      // (Pode manter o código dos documentos que vem logo abaixo exatamente igual!)
+
+      // Documentos
+      const docs = c.docs_enviados || [];
+      document.getElementById("modalDocs").innerHTML = docs.length
+        ? docs
+            .map(
+              (doc) => `
+        <a href="/download_doc/${c.uuid}/${doc}" target="_blank" class="doc-chip" style="text-decoration: none; cursor: pointer; transition: 0.2s;" title="Clique para visualizar o documento original">
+          <i class="fa-solid fa-arrow-up-right-from-square" style="color: var(--teal);"></i>
           ${NOMES_DOCS[doc] || doc}
-        </div>`,
-          )
-          .join("")
-      : '<span style="color:var(--text-secondary);font-size:13px">Nenhum documento registrado.</span>';
+        </a>`,
+            )
+            .join("")
+        : '<span style="color:var(--text-secondary);font-size:13px">Nenhum documento registrado.</span>';
 
-    // Reprovações
-    const motivos = c.motivos_reprovacao || [];
-    const secao = document.getElementById("secaoReprovacoes");
-    if (motivos.length) {
-      secao.style.display = "block";
-      document.getElementById("modalReprovacoes").innerHTML = motivos
-        .map(
-          (m) => `
+      // Reprovações
+      const motivos = c.motivos_reprovacao || [];
+      const secao = document.getElementById("secaoReprovacoes");
+      if (motivos.length) {
+        secao.style.display = "block";
+        document.getElementById("modalReprovacoes").innerHTML = motivos
+          .map(
+            (m) => `
       <div class="reprovacao-item">
         <div class="reprovacao-meta">
           <span>⚠️ ${m.tentativa}ª tentativa</span>
@@ -535,41 +663,68 @@ content %}
         </div>
         <div class="reprovacao-motivo">${m.motivo}</div>
       </div>`,
-        )
-        .join("");
-    } else {
-      secao.style.display = "none";
+          )
+          .join("");
+      } else {
+        secao.style.display = "none";
+      }
+
+      document.getElementById("modalOverlay").classList.add("active");
+      document.body.style.overflow = "hidden";
     }
 
-    document.getElementById("modalOverlay").classList.add("active");
-    document.body.style.overflow = "hidden";
-  }
+    function exportarExcel() {
+      const btn = document.getElementById("btnExportar");
+      btn.disabled = true;
+      btn.innerHTML =
+        '<i class="fa-solid fa-circle-notch fa-spin"></i> Gerando...';
+      const p = new URLSearchParams();
+      const b = document.getElementById("filtroBusca").value.trim();
+      const s = document.getElementById("filtroStatus").value;
+      const t = document.getElementById("filtroTipo").value;
+      const d = document.getElementById("filtroDataDe").value;
+      const a = document.getElementById("filtroDataAte").value;
+      if (b) p.set("busca", b);
+      if (s) p.set("status", s);
+      if (t) p.set("tipo", t);
+      if (d) p.set("data_de", d);
+      if (a) p.set("data_ate", a);
+      const link = document.createElement("a");
+      link.href = "/api/exportar_fichas?" + p.toString();
+      link.click();
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML =
+          '<i class="fa-solid fa-table-cells"></i> Exportar Excel';
+      }, 2500);
+    }
 
-  function fecharModal(e) {
-    if (e && e.target !== document.getElementById("modalOverlay")) return;
-    document.getElementById("modalOverlay").classList.remove("active");
-    document.body.style.overflow = "";
-  }
+    function fecharModal(e) {
+      if (e && e.target !== document.getElementById("modalOverlay")) return;
+      document.getElementById("modalOverlay").classList.remove("active");
+      document.body.style.overflow = "";
+    }
 
-  // ══════════════════════════════════════════════════════════════
-  // LIMPAR FILTROS
-  // ══════════════════════════════════════════════════════════════
-  function limparFiltros() {
-    document.getElementById("filtroBusca").value = "";
-    document.getElementById("filtroStatus").value = "";
-    document.getElementById("filtroTipo").value = "";
-    document.getElementById("filtroDataDe").value = "";
-    document.getElementById("filtroDataAte").value = "";
-    filtrarTabela();
-  }
+    // ══════════════════════════════════════════════════════════════
+    // LIMPAR FILTROS
+    // ══════════════════════════════════════════════════════════════
+    function limparFiltros() {
+      document.getElementById("filtroBusca").value = "";
+      document.getElementById("filtroStatus").value = "";
+      document.getElementById("filtroTipo").value = "";
+      document.getElementById("filtroDataDe").value = "";
+      document.getElementById("filtroDataAte").value = "";
+      filtrarTabela();
+    }
 
-  // ── Fechar modal com ESC
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape")
-      fecharModal({ target: document.getElementById("modalOverlay") });
-  });
+    // ── Fechar modal com ESC
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape")
+        fecharModal({ target: document.getElementById("modalOverlay") });
+    });
 
-  // ── Carregar na abertura da página
-  carregarDados();
-</script>
-{% endblock %}
+    // ── Carregar na abertura da página
+    carregarDados();
+  </script>
+  {% endblock %}
+</div>

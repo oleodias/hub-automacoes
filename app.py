@@ -914,6 +914,225 @@ def api_monitor_cadastros():
         'stats':     stats
     })
 
+# ──────────────────────────────────────────────────────────────────────────────
+# ROTA: Baixar/Visualizar documentos direto do Monitor de Cadastros
+# ──────────────────────────────────────────────────────────────────────────────
+@app.route('/download_doc/<uuid>/<doc_nome>')
+def download_doc(uuid, doc_nome):
+    # Acessa a pasta específica deste cadastro usando o UUID
+    pasta_cliente = os.path.join(os.getcwd(), 'uploads_fichas', uuid)
+    
+    # Verifica se a pasta existe
+    if os.path.exists(pasta_cliente):
+        # Varre os arquivos da pasta para encontrar a extensão correta (.pdf, .jpg, etc)
+        for arquivo in os.listdir(pasta_cliente):
+            nome_sem_extensao = os.path.splitext(arquivo)[0]
+            
+            if nome_sem_extensao == doc_nome:
+                caminho_completo = os.path.join(pasta_cliente, arquivo)
+                # as_attachment=False faz o navegador TENTAR ABRIR na tela (ex: PDF) ao invés de só baixar
+                return send_file(caminho_completo, as_attachment=False)
+                
+    return "❌ Documento não encontrado no servidor. Ele pode ter sido apagado ou não foi salvo corretamente.", 404
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ROTA: Exportar fichas cadastrais como .xlsx formatado
+# ══════════════════════════════════════════════════════════════════════════════
+@app.route('/api/exportar_fichas')
+def exportar_fichas():
+    from io import BytesIO
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    # ── Buscar dados com os mesmos filtros do Monitor ─────────────────────────
+    registros = banco_cadastros.listar_submissoes(
+        status   = request.args.get('status',   None),
+        tipo     = request.args.get('tipo',     None),
+        busca    = request.args.get('busca',    None),
+        data_de  = request.args.get('data_de',  None),
+        data_ate = request.args.get('data_ate', None)
+    )
+
+    # ── Configurar workbook ───────────────────────────────────────────────────
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Fichas Cadastrais"
+
+    # Cores
+    COR_TITULO_BG  = "1A2744"
+    COR_TITULO_FT  = "FFFFFF"
+    COR_HEADER_BG  = "0EE6B8"
+    COR_HEADER_FT  = "090D14"
+    COR_LINHA_PAR  = "EEF4FF"
+    COR_LINHA_IMP  = "FFFFFF"
+    COR_STATUS = {
+        "pendente":   ("FEF3C7","92400E"),
+        "aprovado":   ("D1FAE5","065F46"),
+        "reprovado":  ("FEE2E2","991B1B"),
+        "cadastrado": ("EDE9FE","5B21B6"),
+    }
+
+    def fill(cor):
+        return PatternFill("solid", start_color=cor, end_color=cor)
+
+    def borda():
+        s = Side(style="thin", color="CCCCCC")
+        return Border(left=s, right=s, top=s, bottom=s)
+
+    def cel_fmt(cell, bold=False, cor_ft="000000", cor_bg=None, size=9, wrap=False, h_align="left"):
+        cell.font      = Font(name="Arial", bold=bold, color=cor_ft, size=size)
+        cell.alignment = Alignment(horizontal=h_align, vertical="center", wrap_text=wrap)
+        cell.border    = borda()
+        if cor_bg:
+            cell.fill = fill(cor_bg)
+
+    # ── Linha 1: título do relatório ──────────────────────────────────────────
+    ws.merge_cells("A1:R1")
+    ws["A1"] = "CIAMED  —  Relatório de Fichas Cadastrais"
+    ws["A1"].font      = Font(name="Arial", bold=True, size=15, color=COR_TITULO_BG)
+    ws["A1"].alignment = Alignment(horizontal="left", vertical="center")
+    ws["A1"].fill      = fill("F0F4FF")
+    ws.row_dimensions[1].height = 30
+
+    # ── Linha 2: subtítulo com data e filtros ─────────────────────────────────
+    from datetime import datetime as _dt
+    params = request.args
+    partes = []
+    if params.get("status"):   partes.append(f"Status: {params['status']}")
+    if params.get("tipo"):     partes.append(f"Tipo: {params['tipo']}")
+    if params.get("busca"):    partes.append(f"Busca: {params['busca']}")
+    if params.get("data_de"):  partes.append(f"De: {params['data_de']}")
+    if params.get("data_ate"): partes.append(f"Até: {params['data_ate']}")
+    filtros_str = "  |  ".join(partes) if partes else "Sem filtros — todos os registros"
+
+    ws.merge_cells("A2:R2")
+    ws["A2"] = f"Gerado em: {_dt.now().strftime('%d/%m/%Y às %H:%M')}     •     Filtros: {filtros_str}     •     Total: {len(registros)} ficha(s)"
+    ws["A2"].font      = Font(name="Arial", size=9, color="555555", italic=True)
+    ws["A2"].alignment = Alignment(horizontal="left", vertical="center")
+    ws["A2"].fill      = fill("F0F4FF")
+    ws.row_dimensions[2].height = 16
+
+    ws.row_dimensions[3].height = 6  # espaçamento
+
+    # ── Linha 4: cabeçalhos das colunas ──────────────────────────────────────
+    COLUNAS = [
+        ("Data/Hora",             18),
+        ("Razão Social",          32),
+        ("CNPJ",                  17),
+        ("Tipo",                  14),
+        ("Status",                14),
+        ("Tentativa",              9),
+        ("Cód. ERP",              12),
+        ("Vendedor",              15),
+        ("Representante",         16),
+        ("Captação",              15),
+        ("ICMS Contribuinte",     15),
+        ("Regime Especial",       15),
+        ("Regra Faturamento",     15),
+        ("Telefone",              14),
+        ("WhatsApp",              14),
+        ("E-mail XML",            28),
+        ("Documentos",            38),
+        ("Motivo Reprovação",     42),
+    ]
+
+    NOMES_DOCS = {
+        "doc_regime_especial": "Regime Especial ICMS",
+        "doc_alvara":          "Alvará Sanitário",
+        "doc_crt":             "Certidão de Regularidade",
+        "doc_afe":             "AFE / AE",
+        "doc_balanco":         "Balanço e DRE",
+        "doc_balancete":       "Balancete",
+        "doc_contrato":        "Contrato Social",
+    }
+
+    LIN_HEADER = 4
+    for col_idx, (titulo, largura) in enumerate(COLUNAS, start=1):
+        letra = get_column_letter(col_idx)
+        cell  = ws.cell(row=LIN_HEADER, column=col_idx, value=titulo)
+        cel_fmt(cell, bold=True, cor_ft=COR_HEADER_FT, cor_bg=COR_HEADER_BG,
+                size=9, h_align="center")
+        ws.column_dimensions[letra].width = largura
+    ws.row_dimensions[LIN_HEADER].height = 22
+
+    # ── Linhas de dados ───────────────────────────────────────────────────────
+    LABEL_STATUS = {
+        "pendente":   "⏳ Em Análise",
+        "aprovado":   "✅ Aprovado",
+        "reprovado":  "❌ Reprovado",
+        "cadastrado": "🤖 Cadastrado ERP",
+    }
+
+    for i, c in enumerate(registros):
+        lin   = LIN_HEADER + 1 + i
+        d     = c.get("dados_json") or {}
+        status= c.get("status", "pendente")
+        bg_lin= COR_LINHA_PAR if i % 2 == 0 else COR_LINHA_IMP
+
+        # Documentos como lista legível
+        docs_lista = [NOMES_DOCS.get(x, x) for x in (c.get("docs_enviados") or [])]
+        docs_str   = ", ".join(docs_lista) if docs_lista else "—"
+
+        # Motivo mais recente
+        motivos    = c.get("motivos_reprovacao") or []
+        motivo_str = motivos[-1]["motivo"] if motivos else "—"
+
+        valores = [
+            c.get("created_at", "—"),
+            c.get("razao_social", "—"),
+            c.get("cnpj", "—"),
+            d.get("tipo_cadastro", "—"),
+            LABEL_STATUS.get(status, status),
+            f"{c.get('tentativa', 1)}ª",
+            d.get("cod_erp", "—"),
+            d.get("vendedor", "—"),
+            d.get("representante", "—"),
+            d.get("captacao", "—"),
+            d.get("contribuinte_icms", "—"),
+            d.get("possui_regime_especial", "—"),
+            d.get("regra_faturamento", "—"),
+            d.get("telefone_empresa", "—"),
+            d.get("whatsapp", "—"),
+            d.get("email_xml_1", "—"),
+            docs_str,
+            motivo_str,
+        ]
+
+        for col_idx, valor in enumerate(valores, start=1):
+            cell = ws.cell(row=lin, column=col_idx, value=valor)
+            h_al = "center" if col_idx in [4,5,6,7] else "left"
+
+            # Cor especial na coluna Status
+            if col_idx == 5:
+                bg_s, ft_s = COR_STATUS.get(status, (bg_lin, "000000"))
+                cel_fmt(cell, cor_ft=ft_s, cor_bg=bg_s, size=9, h_align="center", bold=True)
+            else:
+                cel_fmt(cell, cor_ft="222222", cor_bg=bg_lin, size=9, h_align=h_al, wrap=(col_idx in [16,17,18]))
+
+        ws.row_dimensions[lin].height = 18
+
+    # ── Congelar painel no cabeçalho ──────────────────────────────────────────
+    ws.freeze_panes = "A5"
+
+    # ── Auto-filtro no cabeçalho ──────────────────────────────────────────────
+    ultima_col = get_column_letter(len(COLUNAS))
+    ws.auto_filter.ref = f"A{LIN_HEADER}:{ultima_col}{LIN_HEADER + len(registros)}"
+
+    # ── Exportar para memória e devolver como download ────────────────────────
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    nome_arquivo = f"Fichas_Cadastrais_{_dt.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=nome_arquivo,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
 
 if __name__ == '__main__':
     print("🚀 SERVIDOR ONLINE! Acesse pelo IP da sua máquina.")
