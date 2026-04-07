@@ -20,3 +20,17 @@ cloudflared.exe
 __pycache__/
 uploads/
 uploads_fichas/
+
+# Uploads de sistema
+uploads_fichas/
+
+# Arquivos gerados pelos robôs
+*.xlsx
+*.csv
+*.pdf
+
+# Python e senhas
+__pycache__/
+*.pyc
+venv/
+.env
