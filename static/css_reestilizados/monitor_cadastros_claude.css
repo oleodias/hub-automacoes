@@ -309,7 +309,7 @@ body {
 }
 .filtro-group input,
 .filtro-group select {
-  background: var(--surface);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text);
@@ -514,7 +514,7 @@ tbody td {
   width: 100%;
   max-width: 1000px;
   max-height: 90vh;
-  background: var(--surface);
+  background: var(--bg-card);
   border: 1px solid var(--border-h);
   border-radius: 16px;
   overflow: hidden;
