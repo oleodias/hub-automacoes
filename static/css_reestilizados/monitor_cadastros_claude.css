@@ -160,6 +160,8 @@ body::before {
   padding-right: 40px;
   position: relative;
   z-index: 1;
+  width: calc(100% - var(--sidebar-w));
+  box-sizing: border-box;
 }
 
 body {
@@ -169,8 +171,11 @@ body {
 }
 
 #tela-monitor {
-  max-width: 1500px;
+  width: 100%;
+  max-width: 100%;
   min-height: 100vh;
+  padding: 28px 32px 60px 32px;
+  box-sizing: border-box;
 }
 
 /* ── PAGE HEADER ─────────────────────────────────────────── */
@@ -499,13 +504,14 @@ tbody td {
   backdrop-filter: blur(8px);
   z-index: 10000;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 20px;
+  padding: 75px 20px 20px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s;
 }
+
 .modal-overlay.active {
   opacity: 1;
   pointer-events: all;

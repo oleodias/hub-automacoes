@@ -150,7 +150,7 @@ body::before {
   padding-right: 40px;
   position: relative;
   z-index: 1;
-  width: calc(100% - var(--sidebar-w)); /* ← preenche o espaço todo */
+  width: calc(100% - var(--sidebar-w));
   box-sizing: border-box;
 }
 .page-header {
