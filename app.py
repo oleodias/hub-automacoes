@@ -10,6 +10,7 @@ import time as time_module
 from werkzeug.utils import secure_filename
 from automacoes.clientes.leitor_ficha import processar_ficha_cliente
 from automacoes.clientes import cadastro_novo
+from automacoes.clientes import cadastro_reativacao
 import re
 import requests
 from bs4 import BeautifulSoup
@@ -329,9 +330,26 @@ def upload_ficha_cliente():
 
 @app.route('/iniciar_cadastro_novo', methods=['POST'])
 def iniciar_cadastro_novo():
-    dados_do_cliente = request.json
-    resultado = cadastro_novo.executar(dados_do_cliente)
-    return jsonify(resultado)
+    try:
+        # Pega todos os dados que o Javascript mandou
+        dados_do_cliente = request.json or {}
+        
+        # Descobre qual botão foi clicado na tela (NOVO ou REATIVACAO)
+        tipo_acao = dados_do_cliente.get('tipo', 'NOVO')
+
+        # 🔀 O GRANDE DESVIO: Escolhe qual robô ligar
+        if tipo_acao == 'REATIVACAO':
+            print("> 🔀 Redirecionando para o Robô de REATIVAÇÃO...")
+            resultado = cadastro_reativacao.executar(dados_do_cliente)
+        else:
+            print("> 🔀 Redirecionando para o Robô de CADASTRO NOVO...")
+            resultado = cadastro_novo.executar(dados_do_cliente)
+            
+        return jsonify(resultado)
+
+    except Exception as e:
+        print(f"> ❌ Erro na rota: {e}")
+        return jsonify({"status": "Erro", "msg": str(e)}), 500
 
 @app.route('/ficha_cliente')
 def ficha_cliente():
