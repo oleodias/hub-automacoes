@@ -294,10 +294,10 @@ def executar(dados_cliente):
 
         # 1. Campo de Motivo do Bloqueio (Sempre "30")
         try:
-            print("   - Definindo Motivo de Bloqueio: 30 (Liberação Financeiro)")
+            print("   - Definindo Motivo de Bloqueio: 99 (Liberação Farmacêutica)")
             campo_motivo = wait.until(EC.presence_of_element_located((By.ID, "subFrmBloqueio:lovPsMotivosBloqueio_txtCod")))
             campo_motivo.clear()
-            campo_motivo.send_keys("30")
+            campo_motivo.send_keys("99")
             campo_motivo.send_keys(Keys.TAB)
             time.sleep(0.5) # Respiro para o ERP validar o código
         except Exception as e:
