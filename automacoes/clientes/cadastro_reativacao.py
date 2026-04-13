@@ -158,59 +158,49 @@ def executar(dados_cliente):
         except Exception as e:
             raise Exception(f"Falha ao clicar na lupa de busca: {e}")
 
-        # ── Passo 1.3: Aguardar o grid de resultado ──
-        # IMPORTANTE: NÃO uso os IDs j_idt208/j_idt210 do grid, porque
-        # esses sufixos numéricos são gerados dinamicamente pelo ADF e
-        # podem mudar entre sessões. Em vez disso, espero pela tabela
-        # estável "tabPsPessoas" e pelo primeiro registro dela (índice 0).
+        # ── Passo 1.3: Aguardar o grid de resultado (estratégia do cadastro_item.py) ──
+        # A tela de busca do NLWeb não atribui IDs com padrão ":0" nas linhas
+        # do resultado, então esperar por isso dava timeout. A solução que
+        # funciona em produção é esperar pela CÉLULA específica via XPath
+        # absoluto — mesmo jeito que o cadastro_item.py faz.
+        xpath_linha_resultado = (
+            "/html/body/form[1]/div[3]/div[1]/section/div[2]/div[2]"
+            "/table/tbody/tr[2]/td[2]/div/div/table[2]/tbody/tr[2]/td[1]"
+        )
         try:
             espera_grid = WebDriverWait(driver, 15)
-            espera_grid.until(
-                EC.presence_of_element_located(
-                    (By.XPATH, "//table[contains(@id, 'tabPsPessoas')]//tr[contains(@id, ':0')]")
-                )
+            time.sleep(2.5)
+            linha_resultado = espera_grid.until(
+                EC.element_to_be_clickable((By.XPATH, xpath_linha_resultado))
             )
-            print("   ✅ Grid de resultado carregou.")
-            time.sleep(0.5)  # Respiro extra para o grid estabilizar
+            print("   ✅ Grid de resultado carregou (linha encontrada).")
+            time.sleep(1.5)  # Respiro extra para o grid estabilizar
         except Exception as e:
             raise Exception(
                 f"Grid de resultado não carregou após a busca pelo NL {codigo_nl}. "
                 f"Verifique se o código existe no ERP. Detalhes: {e}"
             )
 
-        # ── Passo 1.4: Clicar em "Cadastro particionado" ──
-        # PLANO A: Disparar o submitForm do ADF diretamente via JS,
-        # sem precisar abrir o menu dropdown visualmente. É o que o
-        # próprio onclick do link faz. Mais rápido e mais estável.
-        # PLANO B: Se o plano A falhar, abrir o dropdown manualmente
-        # (clicando no botão "show") e clicar no link de forma tradicional.
+        # ── Passo 1.4: Selecionar a linha + clicar em "Cadastro particionado" ──
+        # Fluxo que funciona em produção (mesmo do cadastro_item.py):
+        #   1) Clica na linha pra selecioná-la
+        #   2) Espera 1s pro ADF processar a seleção
+        #   3) Clica no link "Cadastro particionado" (ID estável)
         try:
-            print("   🎯 Tentando PLANO A: submitForm direto via JS...")
-            driver.execute_script(
-                "submitForm('NLForm', 1, {source: 'tabPsPessoas:0:lnkCadastroWizard'});"
-            )
-            print("   ✅ Plano A executado.")
-        except Exception as e_a:
-            print(f"   ⚠️ Plano A falhou ({e_a}). Tentando PLANO B...")
-            try:
-                # Plano B: abrir o menu dropdown da linha 0
-                btn_show = driver.find_element(
-                    By.ID, "tabPsPessoas:0:nlSelectCommand_btnShow_btnSelOpcoes"
-                )
-                driver.execute_script("arguments[0].click();", btn_show)
-                time.sleep(0.8)
+            print("   🖱️ Clicando na linha do resultado...")
+            linha_resultado.click()
+            time.sleep(2.5)
 
-                # Agora o link "Cadastro particionado" deve estar visível
-                link_cadastro = wait.until(
-                    EC.element_to_be_clickable((By.ID, "tabPsPessoas:0:lnkCadastroWizard"))
-                )
-                driver.execute_script("arguments[0].click();", link_cadastro)
-                print("   ✅ Plano B executado.")
-            except Exception as e_b:
-                raise Exception(
-                    f"Ambos os planos de acesso ao Cadastro particionado falharam. "
-                    f"Plano A: {e_a} | Plano B: {e_b}"
-                )
+            print("   🎯 Clicando em 'Cadastro particionado'...")
+            link_cadastro = wait.until(
+                EC.element_to_be_clickable((By.ID, "tabPsPessoas:0:lnkCadastroWizard"))
+            )
+            link_cadastro.click()
+            time.sleep(2.5)
+            print("   ✅ Cadastro particionado acessado.")
+        except Exception as e:
+            raise Exception(f"Falha ao clicar na linha ou no link Cadastro particionado: {e}")
+        
 
         # ── Passo 1.5: Aguardar a tela do cadastro particionado carregar ──
         # ÂNCORA PROVISÓRIA: btnWizardProximoCab. Esse ID é usado pelo
@@ -1045,32 +1035,74 @@ def executar(dados_cliente):
                 time.sleep(0.5)
 
                 # ════════════════════════════════════════════════════
-        # FASE PRÉVIA — RESET TOTAL DE OBSERVAÇÕES
-        # Apaga TODAS as observações antigas antes de recadastrar
-        # as novas. Mesma estratégia das Etapas 4 (Contatos) e 5
-        # (Telefones). Sem isso, a reativação duplicaria as obs.
         # ════════════════════════════════════════════════════
-        print("> 🗑️ Excluindo observações antigas antes de recadastrar...")
+        # FASE PRÉVIA — RESET SELETIVO DE OBSERVAÇÕES
+        # Apaga as observações antigas EXCETO as que tiverem código "1".
+        # A obs com código "1" é intocável (regra de negócio da Ciamed)
+        # e deve ser preservada em toda reativação.
+        #
+        # Diferente dos loops de Contatos/Telefones, esse loop usa
+        # ÍNDICE VARIÁVEL: quando pula uma linha, avança; quando apaga,
+        # fica parado (porque a próxima linha vira a atual).
+        # ════════════════════════════════════════════════════
+        print("> 🗑️ Excluindo observações antigas (preservando código '1')...")
 
-        ID_BTN_REMOVER_OBS = "table_observacoes:0:btnRemover_observacoes"
+        CODIGO_OBS_INTOCAVEL = "1"
         observacoes_excluidas = 0
+        observacoes_preservadas = 0
         LIMITE_SEGURANCA = 50
         wait_alert = WebDriverWait(driver, 5)
 
+        indice_atual = 0  # Índice da linha que estou analisando
+
         for tentativa in range(LIMITE_SEGURANCA):
+            id_btn_remover = f"table_observacoes:{indice_atual}:btnRemover_observacoes"
+
             try:
-                btn_remover = driver.find_element(By.ID, ID_BTN_REMOVER_OBS)
+                btn_remover = driver.find_element(By.ID, id_btn_remover)
             except NoSuchElementException:
-                print(f"   ✅ Grid de observações limpa. Total excluído: {observacoes_excluidas}")
+                # Não achou a linha com esse índice = acabaram as observações
+                print(
+                    f"   ✅ Grid de observações processada. "
+                    f"Excluídas: {observacoes_excluidas} | Preservadas: {observacoes_preservadas}"
+                )
                 break
 
+            # ── Lê o código da observação na linha atual ──
+            # Estratégia: a partir do botão de remover, sobe pro <tr> pai
+            # e procura dentro dele a célula com headers="table_observacoes:colCodObs"
+            try:
+                codigo_obs = driver.execute_script("""
+                    var btn = arguments[0];
+                    // Sobe a árvore até encontrar o <tr> pai
+                    var tr = btn.closest('tr');
+                    if (!tr) return null;
+                    // Dentro da linha, procura a <td> da coluna de código
+                    var cell = tr.querySelector('td[headers*="colCodObs"]');
+                    return cell ? cell.textContent.trim() : null;
+                """, btn_remover)
+
+                print(f"      🔍 Linha {indice_atual}: código observação = {codigo_obs!r}")
+            except Exception as e:
+                print(f"      ⚠️ Não consegui ler o código da linha {indice_atual}: {e}")
+                codigo_obs = None  # Tratamento defensivo
+
+            # ── Decisão: pular ou apagar ──
+            if codigo_obs == CODIGO_OBS_INTOCAVEL:
+                print(f"      ✋ Código '{CODIGO_OBS_INTOCAVEL}' detectado. PRESERVANDO linha {indice_atual}.")
+                observacoes_preservadas += 1
+                indice_atual += 1  # Avança pro próximo índice (essa linha fica)
+                continue
+
+            # ── Apaga a linha ──
             try:
                 driver.execute_script("arguments[0].click();", btn_remover)
                 wait_alert.until(EC.alert_is_present())
                 driver.switch_to.alert.accept()
                 time.sleep(1.5)
                 observacoes_excluidas += 1
-                print(f"      🗑️ Observação {observacoes_excluidas} excluída.")
+                print(f"      🗑️ Observação na linha {indice_atual} excluída. Total: {observacoes_excluidas}")
+                # NÃO incrementa indice_atual: a próxima linha vira essa posição
 
             except NoAlertPresentException:
                 print("      ⚠️ Cliquei no remover mas o popup não apareceu.")
@@ -1305,6 +1337,59 @@ def executar(dados_cliente):
         # ================================================================
         # FASE 8: PREENCHIMENTO DA ABA DE REPRESENTANTES
         # ================================================================
+
+        # ════════════════════════════════════════════════════
+        # FASE PRÉVIA — RESET TOTAL DE REPRESENTANTES
+        # Apaga TODOS os representantes antigos antes de cadastrar
+        # o novo. Mesma estratégia das Etapas 4 (Contatos), 5
+        # (Telefones) e do reset de Observações. Sem isso, a
+        # reativação duplicaria ou daria erro de duplicidade.
+        # ════════════════════════════════════════════════════
+        print("> 🗑️ Excluindo representantes antigos antes de recadastrar...")
+
+        # ⚠️ ID PROVISÓRIO: apostando no padrão do ADF Ciamed (mesma
+        # estratégia de Contatos/Telefones/Observações). Se quebrar
+        # JÁ na primeira iteração sem nenhum representante excluído,
+        # me manda o HTML real do botão de lixeira e eu troco o ID.
+        ID_BTN_REMOVER_REP = "table_clientesRep:0:btnRemover_clientesRep"
+
+        representantes_excluidos = 0
+        LIMITE_SEGURANCA = 50
+        wait_alert = WebDriverWait(driver, 5)
+
+        for tentativa in range(LIMITE_SEGURANCA):
+            try:
+                btn_remover = driver.find_element(By.ID, ID_BTN_REMOVER_REP)
+            except NoSuchElementException:
+                print(f"   ✅ Grid de representantes limpa. Total excluído: {representantes_excluidos}")
+                break
+
+            try:
+                driver.execute_script("arguments[0].click();", btn_remover)
+                wait_alert.until(EC.alert_is_present())
+                driver.switch_to.alert.accept()
+                time.sleep(1.5)
+                representantes_excluidos += 1
+                print(f"      🗑️ Representante {representantes_excluidos} excluído.")
+
+            except NoAlertPresentException:
+                print("      ⚠️ Cliquei no remover mas o popup não apareceu.")
+                registrar_aviso("REVISAR ABA REPRESENTANTES — popup de exclusão não apareceu")
+                break
+
+            except TimeoutException:
+                print("      ⚠️ Timeout esperando o popup de confirmação.")
+                registrar_aviso("REVISAR ABA REPRESENTANTES — timeout no popup de exclusão")
+                break
+
+            except Exception as e:
+                print(f"      ⚠️ Erro inesperado ao excluir representante: {e}")
+                registrar_aviso(f"REVISAR ABA REPRESENTANTES — erro após {representantes_excluidos} exclusões")
+                break
+        else:
+            print("   ⚠️ Limite de segurança (50) atingido na exclusão de representantes!")
+            registrar_aviso("REVISAR ABA REPRESENTANTES — limite de 50 exclusões atingido")
+
         print("> 🤝 Adicionando Representante...")
 
         # Puxa o nome do representante que veio da ficha (célula BD248)
@@ -1312,16 +1397,7 @@ def executar(dados_cliente):
 
         # Só tenta adicionar se realmente existir um representante na ficha
         if representante:
-    # ⚠️⚠️⚠️ ATENÇÃO LEO — POSSÍVEL DUPLICAÇÃO ⚠️⚠️⚠️
-    # Diferente de Contatos/Telefones/Observações, este bloco NÃO faz
-    # reset (não exclui o representante antigo antes de adicionar).
-    # Em uma reativação, o cliente provavelmente JÁ TEM um representante
-    # cadastrado. Os 3 cenários possíveis nos primeiros testes:
-    #   (a) ERP duplica → cliente fica com 2 representantes
-    #   (b) ERP rejeita por duplicidade → erro acumulado em aviso
-    #   (c) ERP sobrescreve → comportamento desejado
-    # Se cair em (a) ou (b), me avisa pra eu implementar o loop de
-    # exclusão (mesmo padrão das outras grids).
+    
             try:
                 # 1. Clicar no botão Adicionar
                 btn_add_rep = wait.until(EC.element_to_be_clickable((By.ID, "btnAdicionar_clientesRep")))
@@ -1859,20 +1935,20 @@ if __name__ == "__main__":
         # ════════════════════════════════════════════════
         # 🔑 CAMPO CRÍTICO — sem isso o robô nem abre o Chrome
         # ════════════════════════════════════════════════
-        "codigo_nl": "8885",  # ← TROCAR pelo NL do cliente que vai testar
+        "codigo_nl": "13477",  # ← TROCAR pelo NL do cliente que vai testar
 
         # ════════════════════════════════════════════════
         # ETAPA 2 — Dados Básicos + Endereço
         # ════════════════════════════════════════════════
-        "cnpj_limpo": "12345678000190",
-        "razao_social": "DOCTORS CENTER UNIDADE MEDICA LAGOA SECA LTDA",
-        "nome_fantasia": "DOCTORS CENTER",
+        "cnpj_limpo": "02293129000160",
+        "razao_social": "ESSE CAMPO DEU CERTO",
+        "nome_fantasia": "ESSE TAMBEM",
         "inscricao_estadual": "ISENTO",  # ou um número real, ou "ISENTO / NÃO ENCONTRADA"
         "cnae_principal_descricao": "8630-5/02 - Atividade médica ambulatorial",
-        "cep": "58400000",
-        "logradouro": "Rua das Flores",
-        "numero": "100",
-        "complemento": "Sala 3",
+        "cep": "95960000",
+        "logradouro": "Rua Antonio Bratti",
+        "numero": "25",
+        "complemento": "Casa",
         "bairro": "Centro",
         "uf": "PB",  # ⚠️ Se mudar pra "RS", o robô PULA o campo de região (trava do RS)
 
@@ -1899,22 +1975,18 @@ if __name__ == "__main__":
         "email_xml": "nfe@doctorscenter.com.br",
         "contatos_da_tela": [
             {
-                "nome": "MARIA DE COMPRAS",
+                "nome": "CLAUD.ANE",
                 "codigo": "39",  # 39 = docs (segundo o cadastro_novo)
                 "tel": "83988887777",
                 "email": "compras@doctorscenter.com.br",
-                "email_xml": "nfe@doctorscenter.com.br",
-                "email_danfe": "danfe@doctorscenter.com.br",
                 "check_boleto": False,
                 "check_docs": True,
             },
             {
-                "nome": "JOAO DO FINANCEIRO",
+                "nome": "BERNARDO DZ",
                 "codigo": "50",  # 50 = boleto
                 "tel": "83988886666",
                 "email": "financeiro@doctorscenter.com.br",
-                "email_xml": "",
-                "email_danfe": "",
                 "check_boleto": True,
                 "check_docs": False,
             },
@@ -1941,15 +2013,15 @@ if __name__ == "__main__":
         # ════════════════════════════════════════════════
         # ABA REPRESENTANTES + MÁSCARAS
         # ════════════════════════════════════════════════
-        "representante": "REPRESENTANTE TESTE",  # vazio "" pra pular
-        "vendedor": "VENDEDOR TESTE",            # vazio "" pra pular
+        "representante": "ALDOVANDO",  # vazio "" pra pular
+        "vendedor": "CLAUDIANE",            # vazio "" pra pular
 
         # ════════════════════════════════════════════════
         # ABA COMPLEMENTOS — Forma de Captação (dropdown)
         # ════════════════════════════════════════════════
         # Esse valor precisa ser um dos códigos válidos do dropdown do ERP.
         # Se não souber, deixa vazio "" — o robô só pula esse campo.
-        "forma_captacao": "",
+        "forma_captacao": "WHATSAPP",
     }
 
     print(f"📋 Cliente NL: {dados_teste['codigo_nl']}")
