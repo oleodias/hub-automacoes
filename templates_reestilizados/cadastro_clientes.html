@@ -19,7 +19,9 @@ content %}
     </button>
     <div class="page-title">
       Cadastro e Reativação de Clientes
-      <span>Módulo Comercial & Fiscal · Ficha Cadastral + Receita Federal</span>
+      <span
+        >Módulo Comercial & Fiscal · Geração de Link para Ficha Digital</span
+      >
     </div>
   </div>
   <span class="badge-api">
@@ -27,13 +29,19 @@ content %}
   </span>
 </div>
 
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!--  CARD ÚNICO: RASTREIO E GERAÇÃO DE LINK DA FICHA DIGITAL       -->
+<!--  Este é o único ponto de entrada do fluxo de clientes agora.   -->
+<!--  O vendedor preenche os dados de rastreio, seleciona o tipo   -->
+<!--  de cadastro e, em caso de REATIVAÇÃO, informa o código NL.   -->
+<!-- ══════════════════════════════════════════════════════════════ -->
 <div
   class="card-dark"
   style="margin-bottom: 20px; border-left: 4px solid var(--blue)"
 >
   <div class="card-title-row">
     <i class="fa-solid fa-link" style="color: var(--blue)"></i>
-    <h5>1. Rastreio e Forma de Preenchimento</h5>
+    <h5>Rastreio e Geração de Link</h5>
   </div>
 
   <form id="formGerarLink" class="form-grid">
@@ -79,6 +87,47 @@ content %}
         </select>
       </div>
     </div>
+
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!--  CAMPO CONDICIONAL — CÓDIGO NL DO CLIENTE                   -->
+    <!--  Aparece APENAS quando o vendedor seleciona "Reativação".   -->
+    <!--  Escondido por padrão (display: none).                      -->
+    <!--  O JS controla a visibilidade e a obrigatoriedade.          -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <div
+      id="container-codigo-nl"
+      class="form-row"
+      style="
+        display: none;
+        background-color: rgba(168, 85, 247, 0.12);
+        padding: 14px 16px;
+        border-radius: 8px;
+        border: 1px solid rgba(168, 85, 247, 0.35);
+        margin-top: 16px;
+      "
+    >
+      <div class="form-field" style="width: 100%">
+        <label style="color: #a855f7; font-weight: bold">
+          <i class="fa-solid fa-rotate me-1"></i>
+          Obrigatório: Informe o Código NL do cliente existente
+        </label>
+        <input
+          type="text"
+          id="linkCodigoNl"
+          class="input-dark"
+          placeholder="Ex: 8885"
+          style="margin-top: 6px; width: 50%"
+          inputmode="numeric"
+          autocomplete="off"
+        />
+        <small
+          style="display: block; margin-top: 6px; color: #a855f7; opacity: 0.85"
+        >
+          Este é o código interno do cliente no ERP (NLWeb). O robô vai buscar
+          por ele.
+        </small>
+      </div>
+    </div>
   </form>
 
   <div
@@ -91,10 +140,6 @@ content %}
       style="background-color: #28a745"
     >
       <i class="fa-brands fa-whatsapp me-2"></i> Gerar Link para Cliente
-    </button>
-
-    <button class="btn-iniciar btn-novo" onclick="abrirFormularioInterno()">
-      <i class="fa-solid fa-desktop me-2"></i> Eu mesmo vou preencher
     </button>
   </div>
 
@@ -118,323 +163,6 @@ content %}
         <i class="fa-regular fa-copy"></i> Copiar
       </button>
     </div>
-  </div>
-</div>
-
-<!-- CARD 1: UPLOAD DA FICHA -->
-<div class="card-dark" style="margin-bottom: 20px; animation-delay: 0.1s">
-  <div class="card-title-row">
-    <i class="fa-solid fa-file-excel" style="color: #10b981"></i>
-    <h5>Upload da Ficha Cadastral</h5>
-  </div>
-
-  <div class="upload-zone" id="dropZoneCliente">
-    <i class="fa-solid fa-cloud-arrow-up upload-icon" id="uploadIcon"></i>
-    <div class="upload-text" id="uploadText">
-      Arraste aqui a Ficha Cadastral ou clique para selecionar
-    </div>
-    <div class="upload-hint">
-      Somente arquivos Excel da Ficha Cadastral Ciamed
-    </div>
-    <input
-      type="file"
-      id="fileFichaCliente"
-      style="display: none"
-      accept=".xlsx,.xls"
-    />
-  </div>
-
-  <div class="status-row" style="margin-top: 16px">
-    <span class="status-dot bg-gray" id="dot-cliente"></span>
-    <span id="txt-cliente">Aguardando upload da ficha...</span>
-  </div>
-</div>
-
-<!-- CARD 2: REVISÃO DE DADOS -->
-<div class="card-dark" style="margin-bottom: 20px; animation-delay: 0.18s">
-  <div class="card-title-row">
-    <i class="fa-solid fa-user-check" style="color: var(--blue)"></i>
-    <h5>Revisão de Dados</h5>
-    <span id="badgeTipoCadastro" class="badge-tipo">Aguardando Ficha...</span>
-  </div>
-
-  <form id="formRevisaoCliente" class="form-grid">
-    <!-- SEÇÃO: DADOS FISCAIS -->
-    <div class="secao-label teal">
-      <i class="fa-solid fa-building me-2"></i>Dados Fiscais & Endereço
-    </div>
-
-    <div class="form-row cols-6-6">
-      <div class="form-field">
-        <label>Razão Social</label>
-        <input type="text" id="cliRazao" readonly />
-      </div>
-      <div class="form-field">
-        <label>Nome Fantasia</label>
-        <input type="text" id="cliFantasia" readonly />
-      </div>
-    </div>
-
-    <div class="form-row cols-4-4-4">
-      <div class="form-field">
-        <label>CNPJ</label>
-        <input type="text" id="cliCnpj" readonly />
-      </div>
-      <div class="form-field">
-        <label>Inscrição Estadual (IE)</label>
-        <input type="text" id="cliIe" readonly />
-      </div>
-      <div class="form-field">
-        <label>Cód. Cliente (Reativação)</label>
-        <input type="text" id="cliCodigo" readonly style="text-align: center" />
-      </div>
-    </div>
-
-    <div class="form-row cols-3-7-2">
-      <div class="form-field">
-        <label>CEP</label>
-        <input type="text" id="cliCep" readonly />
-      </div>
-      <div class="form-field">
-        <label>Logradouro</label>
-        <input type="text" id="cliLogradouro" readonly />
-      </div>
-      <div class="form-field">
-        <label>Número</label>
-        <input type="text" id="cliNumero" readonly style="text-align: center" />
-      </div>
-    </div>
-
-    <div
-      class="form-row"
-      style="display: grid; grid-template-columns: 5fr 5fr 2fr; gap: 15px"
-    >
-      <div class="form-field">
-        <label>Bairro</label>
-        <input type="text" id="cliBairro" readonly />
-      </div>
-      <div class="form-field">
-        <label>Complemento</label>
-        <input type="text" id="cliComplemento" readonly />
-      </div>
-      <div class="form-field">
-        <label>UF</label>
-        <input type="text" id="cliUf" readonly style="text-align: center" />
-      </div>
-    </div>
-
-    <div class="form-row cols-12-1">
-      <div class="form-field">
-        <label>CNAE Principal</label>
-        <input type="text" id="cliCnae" readonly />
-      </div>
-    </div>
-
-    <!-- SEÇÃO: CONTATOS -->
-    <div class="secao-label amber">
-      <i class="fa-solid fa-address-book me-2"></i>Matriz de Contatos
-    </div>
-
-    <div
-      class="form-row"
-      style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px"
-    >
-      <div class="form-field">
-        <label>E-mail para envio de XML</label>
-        <input type="text" id="cliEmailXml" class="input-dark" readonly />
-      </div>
-
-      <div class="form-field">
-        <label>Telefone da Empresa</label>
-        <input type="text" id="cliTelefone" class="input-dark" readonly />
-      </div>
-    </div>
-
-    <div class="contatos-grid">
-      <div class="contatos-header">
-        <span>Setor</span>
-        <span>Nome</span>
-        <span>Telefone</span>
-        <span>E-mail</span>
-      </div>
-      <div class="contato-row">
-        <span class="contato-setor">Compras</span>
-        <input type="text" id="ctoComprasNome" class="input-dark" readonly />
-        <input type="text" id="ctoComprasTel" class="input-dark" readonly />
-        <input type="text" id="ctoComprasEmail" class="input-dark" readonly />
-      </div>
-      <div class="contato-row">
-        <span class="contato-setor">Recebimento</span>
-        <input type="text" id="ctoRecNome" class="input-dark" readonly />
-        <input type="text" id="ctoRecTel" class="input-dark" readonly />
-        <input type="text" id="ctoRecEmail" class="input-dark" readonly />
-      </div>
-      <div class="contato-row">
-        <span class="contato-setor">Financeiro</span>
-        <input type="text" id="ctoFinNome" class="input-dark" readonly />
-        <input type="text" id="ctoFinTel" class="input-dark" readonly />
-        <input type="text" id="ctoFinEmail" class="input-dark" readonly />
-      </div>
-      <div class="contato-row">
-        <span class="contato-setor">Farmacêutico</span>
-        <input type="text" id="ctoFarmaNome" class="input-dark" readonly />
-        <input type="text" id="ctoFarmaTel" class="input-dark" readonly />
-        <input type="text" id="ctoFarmaEmail" class="input-dark" readonly />
-      </div>
-    </div>
-
-    <!-- SEÇÃO: COMERCIAL -->
-    <div class="secao-label purple">
-      <i class="fa-solid fa-boxes-packing me-2"></i>Comercial & Logística
-    </div>
-
-    <div class="form-row cols-6-6">
-      <div class="form-field">
-        <label>Regra de Faturamento</label>
-        <input
-          type="text"
-          id="cliRegraFat"
-          readonly
-          placeholder="Caixa ou Unitário?"
-        />
-      </div>
-      <div class="form-field">
-        <label>Forma de Captação</label>
-        <input type="text" id="cliCaptacao" readonly />
-      </div>
-    </div>
-
-    <div class="form-row cols-6-6">
-      <div class="form-field">
-        <label>Vendedor</label>
-        <input type="text" id="cliVendedor" readonly />
-      </div>
-      <div class="form-field">
-        <label>Representante</label>
-        <input type="text" id="cliRepresentante" readonly />
-      </div>
-    </div>
-
-    <div
-      id="container-captacao"
-      class="form-row"
-      style="
-        background-color: rgba(52, 152, 219, 0.2);
-        padding: 10px;
-        border-radius: 8px;
-        border: 1px solid #3498db;
-        margin-top: 15px;
-      "
-    >
-      <div class="form-field" style="width: 100%">
-        <label style="color: #3498db; font-weight: bold"
-          >🎯 Obrigatório: Qual foi a forma de captação deste cliente?</label
-        >
-        <select
-          id="cliNovaCaptacao"
-          class="input-dark"
-          style="margin-top: 5px; width: 50%"
-        >
-          <option value="">-- Selecione uma opção --</option>
-          <option value="0">1 - WhatsApp</option>
-          <option value="1">2 - Plataforma de cotação</option>
-          <option value="2">3 - E-mail</option>
-          <option value="3">4 - Ligação</option>
-          <option value="4">5 - Visita de representante</option>
-          <option value="5">6 - Site</option>
-        </select>
-      </div>
-    </div>
-
-    <div
-      id="container-cebas"
-      class="form-row"
-      style="
-        display: none;
-        background-color: rgba(255, 193, 7, 0.2);
-        padding: 10px;
-        border-radius: 8px;
-        border: 1px solid #ffc107;
-        margin-top: 15px;
-      "
-    >
-      <div class="form-field" style="width: 100%">
-        <label style="color: #ffc107; font-weight: bold"
-          >⚠️ Atenção: Este CNPJ não é Varejista nem Atacadista. Ele possui
-          CEBAS?</label
-        >
-        <select
-          id="cliCebas"
-          class="input-dark"
-          style="margin-top: 5px; width: 50%"
-        >
-          <option value="">-- Selecione uma opção --</option>
-          <option value="SIM">Sim (Possui CEBAS)</option>
-          <option value="NAO">Não (Não possui CEBAS)</option>
-        </select>
-      </div>
-    </div>
-  </form>
-
-  <!-- BOTÕES DE AÇÃO -->
-  <div class="botoes-acao">
-    <button
-      class="btn-iniciar btn-novo"
-      id="btnAprovarNovo"
-      disabled
-      onclick="iniciarCadastroNovo()"
-    >
-      <i class="fa-solid fa-play me-2"></i> Iniciar Cadastro NOVO
-    </button>
-    <button
-      class="btn-iniciar btn-reativacao"
-      id="btnAprovarReativacao"
-      disabled
-      onclick="iniciarReativacao()"
-    >
-      <i class="fa-solid fa-rotate me-2"></i> Iniciar REATIVAÇÃO
-    </button>
-  </div>
-</div>
-
-<!-- CONSOLE -->
-<div class="term-wrap">
-  <div class="term-titlebar">
-    <div class="term-titlebar-left">
-      <div class="term-dots">
-        <div class="dot dot-r"></div>
-        <div class="dot dot-y"></div>
-        <div class="dot dot-g"></div>
-      </div>
-      <div class="term-tab">
-        Console do Robô de Clientes
-        <div class="term-status-pill">
-          <div class="term-pulse-dot"></div>
-          ao vivo
-        </div>
-      </div>
-    </div>
-    <div class="term-actions">
-      <button class="term-btn" id="btnCopiarLog" onclick="copiarLog()">
-        <i class="fa-regular fa-copy"></i> Copiar log
-      </button>
-    </div>
-  </div>
-  <div class="term-body" id="terminal-cliente">
-    <div class="log-line log-muted">
-      <span class="log-time">--:--:--</span>
-      <span class="log-prefix">·</span>
-      <span class="log-text"
-        >> Sistema de Clientes pronto. Aguardando ficha cadastral...</span
-      >
-    </div>
-  </div>
-  <div class="term-footer">
-    <span class="term-footer-info">
-      processo:
-      <span id="footerProc" class="term-footer-highlight">–</span> &nbsp;|&nbsp;
-      linhas: <span id="footerLines" class="term-footer-highlight">1</span>
-    </span>
   </div>
 </div>
 

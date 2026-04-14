@@ -73,6 +73,110 @@ def posicao_na_fila(meu_id):
         return -1
 # ─────────────────────────────────────────
 
+# ══════════════════════════════════════════════════════════════════════════════
+# CONSULTA CNPJ.WS — Enriquecimento dos dados da ficha
+# ══════════════════════════════════════════════════════════════════════════════
+# Esta função é chamada pelo /receber_ficha quando o cliente envia a ficha.
+# Ela consulta a Receita Federal (via cnpj.ws) e devolve os campos quebrados
+# (cep, logradouro, numero, ie, cnae, etc) num dict pronto pra ser merged
+# no `campos` que vai pro SQLite.
+#
+# FILOSOFIA: a API é um BÔNUS, não um REQUISITO.
+# Se ela falhar (timeout, 404, fora do ar), devolve dict com strings vazias
+# e o fluxo continua. O robô lida com campos vazios acumulando avisos.
+# ══════════════════════════════════════════════════════════════════════════════
+
+def consultar_cnpj_ws(cnpj_limpo):
+    """
+    Consulta a API cnpj.ws e devolve um dict com os campos enriquecidos.
+    Em caso de erro, devolve o mesmo dict mas com todos os valores vazios.
+    Nunca levanta exceção — o caller pode confiar que sempre vai receber o dict.
+    """
+    # Estrutura padrão de retorno (vazia). Garante que o caller sempre tem
+    # as chaves esperadas, mesmo se a API falhar.
+    dados_vazios = {
+        "nome_fantasia":            "",
+        "inscricao_estadual":       "",
+        "cnae_principal_descricao": "",
+        "cep":                      "",
+        "logradouro":               "",
+        "numero":                   "",
+        "complemento":              "",
+        "bairro":                   "",
+        "uf":                       "",
+        "_cnpj_ws_status":          "vazio",  # marcador pra debug
+    }
+
+    if not cnpj_limpo or len(cnpj_limpo) != 14:
+        print(f"⚠️ [CNPJ.ws] CNPJ inválido ou vazio: {cnpj_limpo!r}")
+        return dados_vazios
+
+    try:
+        url = f"https://publica.cnpj.ws/cnpj/{cnpj_limpo}"
+        headers = {"User-Agent": "Mozilla/5.0"}
+        resp = requests.get(url, headers=headers, timeout=10)
+
+        if resp.status_code != 200:
+            print(f"⚠️ [CNPJ.ws] Status {resp.status_code} para CNPJ {cnpj_limpo}")
+            dados_vazios["_cnpj_ws_status"] = f"http_{resp.status_code}"
+            return dados_vazios
+
+        api_json = resp.json()
+        estab = api_json.get("estabelecimento", {}) or {}
+
+        # ── Logradouro: junta tipo + nome (ex: "RUA" + "DAS FLORES") ──
+        tipo_log = estab.get("tipo_logradouro", "") or ""
+        nome_log = estab.get("logradouro", "") or ""
+        logradouro = f"{tipo_log} {nome_log}".strip()
+
+        # ── Complemento: aspirador de espaços (mesma técnica do leitor antigo) ──
+        complemento_sujo = estab.get("complemento") or ""
+        complemento = " ".join(str(complemento_sujo).split())
+
+        # ── CNAE: junta código + descrição ──
+        cnae_id = estab.get("atividade_principal", {}).get("id", "") or ""
+        cnae_desc = estab.get("atividade_principal", {}).get("descricao", "") or ""
+        cnae_completo = f"{cnae_id} - {cnae_desc}" if cnae_id else cnae_desc
+
+        # ── Inscrição Estadual: pega APENAS as ativas, junta com vírgula ──
+        ies_ativas = []
+        for ie in estab.get("inscricoes_estaduais", []) or []:
+            if ie.get("ativo") is True:
+                numero_ie = ie.get("inscricao_estadual")
+                if numero_ie:
+                    ies_ativas.append(numero_ie)
+        ie_final = ", ".join(ies_ativas) if ies_ativas else "Isento / Não encontrada"
+
+        dados_enriquecidos = {
+            "nome_fantasia":            estab.get("nome_fantasia", "") or "",
+            "inscricao_estadual":       ie_final,
+            "cnae_principal_descricao": cnae_completo,
+            "cep":                      estab.get("cep", "") or "",
+            "logradouro":               logradouro,
+            "numero":                   estab.get("numero", "") or "",
+            "complemento":              complemento,
+            "bairro":                   estab.get("bairro", "") or "",
+            "uf":                       (estab.get("estado", {}) or {}).get("sigla", "") or "",
+            "_cnpj_ws_status":          "ok",
+        }
+        print(f"✅ [CNPJ.ws] Dados extraídos para CNPJ {cnpj_limpo}")
+        return dados_enriquecidos
+
+    except requests.Timeout:
+        print(f"⚠️ [CNPJ.ws] Timeout consultando CNPJ {cnpj_limpo}")
+        dados_vazios["_cnpj_ws_status"] = "timeout"
+        return dados_vazios
+
+    except requests.ConnectionError as e:
+        print(f"⚠️ [CNPJ.ws] Falha de conexão: {e}")
+        dados_vazios["_cnpj_ws_status"] = "connection_error"
+        return dados_vazios
+
+    except Exception as e:
+        print(f"⚠️ [CNPJ.ws] Erro inesperado: {e}")
+        dados_vazios["_cnpj_ws_status"] = "erro_inesperado"
+        return dados_vazios
+
 app = Flask(__name__, template_folder='templates_reestilizados')
 app.secret_key = 'ciamed_super_secreta_2026'
 
@@ -308,48 +412,6 @@ def run_fornecedor():
 def cadastro_clientes():
     return render_template('cadastro_clientes.html')
 
-@app.route('/api/upload_ficha_cliente', methods=['POST'])
-def upload_ficha_cliente():
-    if 'file' not in request.files:
-        return jsonify({"erro": True, "mensagem": "Nenhum arquivo enviado."}), 400
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({"erro": True, "mensagem": "Arquivo vazio."}), 400
-    if file and (file.filename.endswith('.xlsx') or file.filename.endswith('.xls')):
-        pasta_uploads = os.path.join(app.root_path, 'uploads')
-        os.makedirs(pasta_uploads, exist_ok=True)
-        filename     = secure_filename(file.filename)
-        caminho_salvo = os.path.join(pasta_uploads, filename)
-        file.save(caminho_salvo)
-        resultado = processar_ficha_cliente(caminho_salvo)
-        if os.path.exists(caminho_salvo):
-            os.remove(caminho_salvo)
-        return jsonify(resultado)
-    else:
-        return jsonify({"erro": True, "mensagem": "Formato inválido. Envie um arquivo Excel (.xlsx ou .xls)"}), 400
-
-@app.route('/iniciar_cadastro_novo', methods=['POST'])
-def iniciar_cadastro_novo():
-    try:
-        # Pega todos os dados que o Javascript mandou
-        dados_do_cliente = request.json or {}
-        
-        # Descobre qual botão foi clicado na tela (NOVO ou REATIVACAO)
-        tipo_acao = dados_do_cliente.get('tipo', 'NOVO')
-
-        # 🔀 O GRANDE DESVIO: Escolhe qual robô ligar
-        if tipo_acao == 'REATIVACAO':
-            print("> 🔀 Redirecionando para o Robô de REATIVAÇÃO...")
-            resultado = cadastro_reativacao.executar(dados_do_cliente)
-        else:
-            print("> 🔀 Redirecionando para o Robô de CADASTRO NOVO...")
-            resultado = cadastro_novo.executar(dados_do_cliente)
-            
-        return jsonify(resultado)
-
-    except Exception as e:
-        print(f"> ❌ Erro na rota: {e}")
-        return jsonify({"status": "Erro", "msg": str(e)}), 500
 
 @app.route('/ficha_cliente')
 def ficha_cliente():
@@ -390,6 +452,7 @@ def receber_ficha():
         'representante':          request.form.get('representante',           ''),
         'captacao':               request.form.get('captacao',                ''),
         'tipo_cadastro':          request.form.get('tipo_cadastro',           ''),
+        'codigo_nl':              request.form.get('codigo_nl',               ''),
         'contribuinte_icms':      request.form.get('contribuinte_icms',       ''),
         'possui_regime_especial': request.form.get('possui_regime_especial',  ''),
         'regra_faturamento':      request.form.get('regra_faturamento',       ''),
@@ -415,6 +478,32 @@ def receber_ficha():
         'farma_email':            request.form.get('farma_email',             ''),
     }
 
+    # ── 2.1. ENRIQUECIMENTO via CNPJ.ws ────────────────────────────────────
+    # Consulta a Receita Federal pra preencher campos que a ficha digital
+    # não captura (cep, logradouro separado, IE, CNAE, etc). Roda "por
+    # debaixo dos panos" — o cliente nem sabe que isso aconteceu.
+    #
+    # IMPORTANTE: essa consulta NUNCA bloqueia o fluxo. Se a API falhar,
+    # os campos enriquecidos ficam vazios e o robô acumula avisos depois.
+    cnpj_limpo = re.sub(r'\D', '', campos['cnpj'])
+    dados_cnpj_ws = consultar_cnpj_ws(cnpj_limpo)
+
+    # Faz o merge: tudo que veio da CNPJ.ws entra no `campos` com prefixo
+    # claro pra não conflitar com nada que já existe ali. Quando a rota
+    # /n8n_iniciar_reativacao for criada, ela vai ler esses campos.
+    campos['cnpj_limpo']               = cnpj_limpo
+    campos['nome_fantasia']            = dados_cnpj_ws['nome_fantasia']
+    campos['inscricao_estadual']       = dados_cnpj_ws['inscricao_estadual']
+    campos['cnae_principal_descricao'] = dados_cnpj_ws['cnae_principal_descricao']
+    campos['cep']                      = dados_cnpj_ws['cep']
+    campos['logradouro']               = dados_cnpj_ws['logradouro']
+    campos['numero']                   = dados_cnpj_ws['numero']
+    campos['complemento']              = dados_cnpj_ws['complemento']
+    campos['bairro']                   = dados_cnpj_ws['bairro']
+    campos['uf']                       = dados_cnpj_ws['uf']
+    campos['_cnpj_ws_status']          = dados_cnpj_ws['_cnpj_ws_status']
+
+    
     # ── 3. Salvar arquivos em uploads_fichas/{uuid}/ ───────────────────────
     lista_docs  = [
         'doc_regime_especial', 'doc_alvara', 'doc_crt', 'doc_afe',

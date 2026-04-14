@@ -18,6 +18,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const representante = params.get("rep");
   const captacao = params.get("cap");
   const tipo = params.get("tipo");
+  const codigoNl = params.get("codigo_nl"); // presente só quando tipo=REATIVACAO
   const correcaoUuid = params.get("correcao"); // presente só em modo correção
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -28,6 +29,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (representante)
     document.getElementById("hdnRepresentante").value = representante;
   if (captacao) document.getElementById("hdnCaptacao").value = captacao;
+  if (codigoNl) document.getElementById("hdnCodigoNl").value = codigoNl;
 
   // ──────────────────────────────────────────────────────────────────────────
   // 3. MÁSCARA DO CNPJ
@@ -219,6 +221,10 @@ async function preencherModoCorrecao(uuid) {
       const el = document.getElementById(id);
       if (el && val !== undefined && val !== null) el.value = val;
     };
+
+    // Em correção, o codigo_nl vem do SQLite e precisa voltar pro hidden
+    // (senão o fluxo de reativação perde a referência do cliente).
+    if (d.codigo_nl) document.getElementById("hdnCodigoNl").value = d.codigo_nl;
 
     set("cliCnpj", d.cnpj);
     set("cliRazao", d.razao_social);
@@ -447,7 +453,6 @@ async function enviarParaN8N() {
 
   // ── Monta o FormData ─────────────────────────────────────────────────────
   const formData = new FormData();
-
   // Rastreadores
   formData.append("vendedor", vendedor);
   formData.append(
@@ -459,6 +464,7 @@ async function enviarParaN8N() {
     "tipo_cadastro",
     document.getElementById("hdnTipoCadastro").value,
   );
+  formData.append("codigo_nl", document.getElementById("hdnCodigoNl").value);
 
   // Regras comerciais
   formData.append("contribuinte_icms", icmsSelecionado.value);
