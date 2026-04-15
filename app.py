@@ -20,6 +20,14 @@ import requests as req_ext
 import uuid as uuid_lib          # ← NOVO: para gerar o UUID de cada submissão
 import banco_cadastros           # ← NOVO: módulo SQLite de cadastros
 
+from dotenv import load_dotenv
+
+load_dotenv() # Carrega as variáveis de ambiente
+
+app = Flask(__name__, template_folder='templates_reestilizados')
+# Substitua a chave fixa por esta linha:
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'chave_reserva_caso_falhe')
+
 # Desliga os avisos chatos de segurança quando usamos verify=False
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -582,7 +590,8 @@ def receber_ficha():
     }
 
     # ── 8. Disparar para o Webhook do N8N (multipart com arquivos) ────────
-    N8N_WEBHOOK_URL = "https://ciamedrs.app.n8n.cloud/webhook-test/receber-cadastro-teste-em-casa"
+    # Substitua a string inteira por isto:
+    N8N_WEBHOOK_URL = os.getenv('N8N_WEBHOOK_CADASTRO')
 
     payload_str = {k: str(v) for k, v in payload_n8n.items()}
 

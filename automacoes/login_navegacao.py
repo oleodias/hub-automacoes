@@ -6,6 +6,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def iniciar_navegador(modo_fantasma= False):
     """Configura e abre o navegador Chrome."""
@@ -44,9 +48,11 @@ def iniciar_navegador(modo_fantasma= False):
 
 def fazer_login(driver):
     """Realiza o login automático e trata as sessões abertas."""
-    url = "http://192.168.200.252:8585/NLWeb/site/9000/emp/1"
-    usuario = "LEONARDO DIA"
-    senha = "123"
+    # Puxa os dados do .env
+    url = os.getenv('NLWEB_URL')
+    usuario = os.getenv('NLWEB_USER')
+    senha = os.getenv('NLWEB_PASS')
+
     wait = WebDriverWait(driver, 20)
 
     try:
