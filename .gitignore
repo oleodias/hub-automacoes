@@ -1,36 +1,50 @@
-# --- CACHE DO PYTHON (Lixo reciclável) ---
-__pycache__/
-*.pyc
+# ══════════════════════════════════════════════════════════════
+# .gitignore — Hub de Automações Ciamed
+# ══════════════════════════════════════════════════════════════
 
-# --- DADOS SENSÍVEIS DA EMPRESA (NÃO SUBIR!) ---
+# ── SEGURANÇA: nunca mandar senhas pro Git ────────────────────
+.env
+
+# ── PYTHON: arquivos gerados automaticamente ──────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# ── DADOS LOCAIS: cada ambiente tem os seus ───────────────────
 dados/
-XML_Entrada/
-Logs/
-RELATORIOS/
+*.db
+*.db-journal
 
-# --- AMBIENTES VIRTUAIS ---
-venv/
-env/
-
-# --- CACHE DO NAVEGADOR E PLANILHAS ---
-chrome_perfil/
-*.xlsx
-
-cloudflared.exe
-__pycache__/
+# ── UPLOADS DE USUÁRIOS: não pertencem ao código ─────────────
 uploads/
 uploads_fichas/
 
-# Uploads de sistema
-uploads_fichas/
+# ── LOGS: gerados em runtime, não são código ─────────────────
+Logs/
+*.log
 
-# Arquivos gerados pelos robôs
-*.xlsx
-*.csv
-*.pdf
+# ── SELENIUM: perfil do Chrome gerado pelo robô ─────────────
+# (essa pasta sozinha tem centenas de MB de lixo)
+chrome_data/
 
-# Python e senhas
-__pycache__/
-*.pyc
-venv/
-.env
+# ── XMLS DE ENTRADA: dados temporários do robô ──────────────
+XML_Entrada/*.xml
+
+# ── DOCKER: volumes locais (se existirem) ────────────────────
+docker-data/
+
+# ── SISTEMA OPERACIONAL ──────────────────────────────────────
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# ── IDEs e EDITORES ──────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
