@@ -1,0 +1,69 @@
+# ══════════════════════════════════════════════════════════════
+# docker-compose.yml — Hub de Automações Ciamed
+# ══════════════════════════════════════════════════════════════
+# Este arquivo descreve dois "containers" (caixas isoladas):
+#   1. postgres  → banco de dados do Hub
+#   2. n8n       → motor de workflows (substituto local do cloud)
+#
+# Comandos principais:
+#   Subir tudo:     docker compose up -d
+#   Parar tudo:     docker compose down
+#   Ver status:     docker compose ps
+#   Ver logs:       docker compose logs -f
+# ══════════════════════════════════════════════════════════════
+
+services:
+
+  # ── POSTGRESQL ──────────────────────────────────────────────
+  # Banco de dados relacional que vai substituir o SQLite.
+  # Os dados ficam salvos no volume "postgres_data", então mesmo
+  # se você parar o container, nada se perde.
+  postgres:
+    image: postgres:16           # Versão 16 (estável e atual)
+    container_name: hub_postgres
+    restart: unless-stopped      # Reinicia sozinho se cair (exceto se VOCÊ parar)
+    environment:
+      POSTGRES_USER: hub_user           # Usuário do banco
+      POSTGRES_PASSWORD: hub_local_2026 # Senha (só vale no seu PC, não é produção)
+      POSTGRES_DB: hub_automacoes       # Nome do banco criado automaticamente
+    ports:
+      - "5432:5432"              # Porta padrão do Postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data   # Onde os dados ficam salvos
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hub_user -d hub_automacoes"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── N8N (ambiente local de dev) ─────────────────────────────
+  # Instância local do N8N para testes seguros.
+  # Acesse em: http://localhost:5678
+  # Primeira vez que abrir, ele vai pedir para criar uma conta
+  # (é local, só no seu PC, pode colocar qualquer email/senha).
+  n8n:
+    image: n8nio/n8n
+    container_name: hub_n8n
+    restart: unless-stopped
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n       # Dados do N8N (workflows, credenciais)
+    depends_on:
+      postgres:
+        condition: service_healthy      # Só sobe depois que o Postgres estiver OK
+
+# ── VOLUMES ───────────────────────────────────────────────────
+# Volumes são "HDs virtuais" que o Docker cria para guardar dados.
+# Mesmo que você pare os containers, os dados continuam aqui.
+# Para apagar TUDO e recomeçar do zero:
+#   docker compose down -v    (o -v deleta os volumes)
+volumes:
+  postgres_data:
+  n8n_data:
