@@ -18,15 +18,22 @@ from flask import jsonify, render_template
 import urllib3
 import requests as req_ext
 import uuid as uuid_lib          # ← NOVO: para gerar o UUID de cada submissão
-import banco_cadastros           # ← NOVO: módulo SQLite de cadastros
+import banco_cadastros           # ← módulo de cadastros (agora PostgreSQL)
+from extensions import db        # ← instância do SQLAlchemy
 
 from dotenv import load_dotenv
 
 load_dotenv() # Carrega as variáveis de ambiente
 
 app = Flask(__name__, template_folder='templates_reestilizados')
-# Substitua a chave fixa por esta linha:
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'chave_reserva_caso_falhe')
+
+# ── BANCO DE DADOS (PostgreSQL via SQLAlchemy) ────────────────
+# A DATABASE_URL vem do .env. Exemplo:
+# postgresql://hub_user:hub_local_2026@localhost:5432/hub_automacoes
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # desliga um aviso chato
+db.init_app(app)  # conecta o SQLAlchemy ao Flask
 
 # Desliga os avisos chatos de segurança quando usamos verify=False
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -185,11 +192,9 @@ def consultar_cnpj_ws(cnpj_limpo):
         dados_vazios["_cnpj_ws_status"] = "erro_inesperado"
         return dados_vazios
 
-app = Flask(__name__, template_folder='templates_reestilizados')
-app.secret_key = 'ciamed_super_secreta_2026'
-
-# ← NOVO: Inicializa o banco de cadastros ao subir o servidor
-banco_cadastros.init_db()
+# ── Inicializa o banco de dados (cria tabelas se não existirem) ──
+with app.app_context():
+    banco_cadastros.init_db()
 
 # Configura pasta de Upload
 UPLOAD_FOLDER = 'XML_Entrada'

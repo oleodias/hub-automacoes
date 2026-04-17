@@ -1,64 +1,94 @@
-import sqlite3
-import os
-import json
+# ══════════════════════════════════════════════════════════════
+# banco_cadastros.py — Operações do Banco de Dados (SQLAlchemy)
+# ══════════════════════════════════════════════════════════════
+# Este arquivo substitui a versão antiga que usava SQLite puro.
+#
+# IMPORTANTE: a interface (nomes das funções, parâmetros e retornos)
+# é IDÊNTICA à versão anterior. O app.py e o restante do código
+# continuam chamando as mesmas funções sem saber que o banco mudou.
+#
+# Mudanças internas:
+#   - sqlite3.connect()       →  db.session (SQLAlchemy)
+#   - SQL escrito na mão      →  métodos do ORM
+#   - json.dumps/json.loads   →  PostgreSQL JSON nativo (automático)
+#   - Datas como texto        →  DateTime de verdade
+# ══════════════════════════════════════════════════════════════
+
 from datetime import datetime
-
-# ── CAMINHO DO BANCO ───────────────────────────────────────────────────────────
-# Fica dentro de 'dados/', mesma pasta usada pelos chamados
-DB_PATH = os.path.join('dados', 'cadastros.db')
+from extensions import db
+from models import Submissao
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# INICIALIZAÇÃO — chame isso uma vez ao subir o Flask
-# ══════════════════════════════════════════════════════════════════════════════
+# ── Helper: converter objeto Submissao → dict ─────────────────
+# O app.py acessa os dados como dicionário (ex: sub['cnpj']).
+# Este helper converte o objeto SQLAlchemy para dict, mantendo
+# a compatibilidade total com o código existente.
+# ──────────────────────────────────────────────────────────────
+
+def _submissao_to_dict(sub):
+    """
+    Converte um objeto Submissao do SQLAlchemy em dicionário,
+    no mesmo formato que a versão antiga retornava.
+    """
+    return {
+        'uuid':               sub.uuid,
+        'cnpj':               sub.cnpj,
+        'razao_social':       sub.razao_social,
+        'tentativa':          sub.tentativa,
+        'status':             sub.status,
+        'dados_json':         sub.dados_json or {},
+        'docs_enviados':      sub.docs_enviados or [],
+        'motivos_reprovacao': sub.motivos_reprovacao or [],
+        'created_at':         sub.created_at.strftime('%d/%m/%Y %H:%M') if sub.created_at else '',
+        'updated_at':         sub.updated_at.strftime('%d/%m/%Y %H:%M') if sub.updated_at else '',
+    }
+
+
+# ══════════════════════════════════════════════════════════════
+# INICIALIZAÇÃO
+# ══════════════════════════════════════════════════════════════
 
 def init_db():
-    """Cria a tabela 'submissoes' se ainda não existir."""
-    os.makedirs('dados', exist_ok=True)
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS submissoes (
-                uuid                TEXT PRIMARY KEY,
-                cnpj                TEXT NOT NULL,
-                razao_social        TEXT,
-                tentativa           INTEGER DEFAULT 1,
-                status              TEXT DEFAULT 'pendente',
-                dados_json          TEXT,
-                docs_enviados       TEXT DEFAULT '[]',
-                motivos_reprovacao  TEXT DEFAULT '[]',
-                created_at          TEXT,
-                updated_at          TEXT
-            )
-        ''')
-        conn.commit()
-    print("✅ [BD] Banco de cadastros inicializado.")
+    """
+    Cria todas as tabelas definidas em models.py no PostgreSQL.
+    Chame isso uma vez ao subir o Flask.
+
+    NOTA: quando adotarmos Alembic (migrations), esta função será
+    substituída pelo comando 'alembic upgrade head'. Por enquanto,
+    ela garante que as tabelas existam no banco.
+    """
+    db.create_all()
+    print("✅ [BD] Banco PostgreSQL inicializado (tabelas verificadas).")
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# OPERAÇÕES
-# ══════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════
+# OPERAÇÕES — mesma interface da versão SQLite
+# ══════════════════════════════════════════════════════════════
 
 def salvar_submissao(uuid, cnpj, razao_social, dados_json, docs_enviados):
     """
     Salva uma nova submissão (1ª tentativa).
 
-    docs_enviados: lista com nomes dos campos que tiveram arquivo enviado.
-    Exemplo: ['doc_alvara', 'doc_crt', 'doc_contrato']
+    Parâmetros:
+        uuid          → identificador único da submissão
+        cnpj          → CNPJ do cliente
+        razao_social  → nome da empresa
+        dados_json    → dict com todos os campos da ficha
+        docs_enviados → lista com nomes dos campos de documento enviados
+                        ex: ['doc_alvara', 'doc_crt', 'doc_contrato']
     """
-    agora = datetime.now().strftime('%d/%m/%Y %H:%M')
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute('''
-            INSERT INTO submissoes
-            (uuid, cnpj, razao_social, tentativa, status,
-             dados_json, docs_enviados, motivos_reprovacao, created_at, updated_at)
-            VALUES (?, ?, ?, 1, 'pendente', ?, ?, '[]', ?, ?)
-        ''', (
-            uuid, cnpj, razao_social,
-            json.dumps(dados_json, ensure_ascii=False),
-            json.dumps(docs_enviados),
-            agora, agora
-        ))
-        conn.commit()
+    submissao = Submissao(
+        uuid=uuid,
+        cnpj=cnpj,
+        razao_social=razao_social,
+        tentativa=1,
+        status='pendente',
+        dados_json=dados_json,
+        docs_enviados=docs_enviados,
+        motivos_reprovacao=[],
+    )
+    db.session.add(submissao)
+    db.session.commit()
     print(f"✅ [BD] Submissão salva | UUID: {uuid} | Empresa: {razao_social}")
 
 
@@ -67,107 +97,82 @@ def buscar_submissao(uuid):
     Retorna dados de uma submissão pelo UUID.
     Retorna None se não encontrar.
 
-    Campos já desserializados no retorno:
-      - dados_json          → dict
-      - docs_enviados       → list
-      - motivos_reprovacao  → list de dicts {'tentativa', 'motivo', 'data'}
+    O retorno é um DICIONÁRIO (igual à versão antiga) com:
+        dados_json         → dict
+        docs_enviados      → list
+        motivos_reprovacao → list de dicts
     """
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.row_factory = sqlite3.Row
-        row = conn.execute('SELECT * FROM submissoes WHERE uuid = ?', (uuid,)).fetchone()
-        if not row:
-            return None
-        dados = dict(row)
-        dados['dados_json']         = json.loads(dados['dados_json'])
-        dados['docs_enviados']      = json.loads(dados['docs_enviados'])
-        dados['motivos_reprovacao'] = json.loads(dados['motivos_reprovacao'])
-        return dados
+    sub = db.session.get(Submissao, uuid)
+    if not sub:
+        return None
+    return _submissao_to_dict(sub)
 
 
 def registrar_reprovacao(uuid, motivo):
     """
-    Adiciona um motivo de reprovação ao histórico e muda o status para 'reprovado'.
-    O histórico é acumulativo — cada tentativa reprovada fica registrada.
+    Adiciona um motivo de reprovação ao histórico e muda o status
+    para 'reprovado'. O histórico é acumulativo — cada tentativa
+    reprovada fica registrada.
+
     Retorna True se encontrou o UUID, False caso contrário.
     """
-    agora = datetime.now().strftime('%d/%m/%Y %H:%M')
-    sub   = buscar_submissao(uuid)
-
+    sub = db.session.get(Submissao, uuid)
     if not sub:
         print(f"⚠️ [BD] UUID não encontrado para reprovação: {uuid}")
         return False
 
-    motivos = sub['motivos_reprovacao']
+    # Copia a lista atual e adiciona o novo motivo
+    # (precisamos fazer uma cópia para o SQLAlchemy detectar a mudança)
+    motivos = list(sub.motivos_reprovacao or [])
     motivos.append({
-        'tentativa': sub['tentativa'],
+        'tentativa': sub.tentativa,
         'motivo':    motivo,
-        'data':      agora
+        'data':      datetime.now().strftime('%d/%m/%Y %H:%M'),
     })
 
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute('''
-            UPDATE submissoes
-            SET status = 'reprovado', motivos_reprovacao = ?, updated_at = ?
-            WHERE uuid = ?
-        ''', (json.dumps(motivos, ensure_ascii=False), agora, uuid))
-        conn.commit()
+    sub.motivos_reprovacao = motivos
+    sub.status = 'reprovado'
+    db.session.commit()
 
-    print(f"❌ [BD] Reprovação registrada | UUID: {uuid} | Tentativa: {sub['tentativa']}")
+    print(f"❌ [BD] Reprovação registrada | UUID: {uuid} | Tentativa: {sub.tentativa}")
     return True
 
 
 def incrementar_tentativa(uuid, dados_json, docs_enviados):
     """
     Atualiza a submissão com os dados da correção:
-      - Incrementa o contador de tentativas
-      - Volta o status para 'pendente'
-      - Substitui dados_json e docs_enviados pelos novos valores
+        - Incrementa o contador de tentativas
+        - Volta o status para 'pendente'
+        - Substitui dados_json e docs_enviados pelos novos valores
+
     Retorna o número da nova tentativa, ou None se UUID não existir.
     """
-    agora = datetime.now().strftime('%d/%m/%Y %H:%M')
-    sub   = buscar_submissao(uuid)
-
+    sub = db.session.get(Submissao, uuid)
     if not sub:
         print(f"⚠️ [BD] UUID não encontrado para incrementar: {uuid}")
         return None
 
-    nova_tentativa = sub['tentativa'] + 1
+    sub.tentativa += 1
+    sub.status = 'pendente'
+    sub.dados_json = dados_json
+    sub.docs_enviados = docs_enviados
+    db.session.commit()
 
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute('''
-            UPDATE submissoes
-            SET tentativa = ?, status = 'pendente',
-                dados_json = ?, docs_enviados = ?, updated_at = ?
-            WHERE uuid = ?
-        ''', (
-            nova_tentativa,
-            json.dumps(dados_json, ensure_ascii=False),
-            json.dumps(docs_enviados),
-            agora, uuid
-        ))
-        conn.commit()
-
-    print(f"🔄 [BD] Nova tentativa | UUID: {uuid} | Tentativa: {nova_tentativa}")
-    return nova_tentativa
+    print(f"🔄 [BD] Nova tentativa | UUID: {uuid} | Tentativa: {sub.tentativa}")
+    return sub.tentativa
 
 
 def atualizar_status(uuid, status):
     """
     Atualiza apenas o status de uma submissão.
-    Status válidos: 'pendente', 'aprovado', 'reprovado'
+    Status válidos: 'pendente', 'aprovado', 'reprovado', 'cadastrado'
     """
-    agora = datetime.now().strftime('%d/%m/%Y %H:%M')
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute(
-            'UPDATE submissoes SET status = ?, updated_at = ? WHERE uuid = ?',
-            (status, agora, uuid)
-        )
-        conn.commit()
-    print(f"📋 [BD] Status atualizado | UUID: {uuid} | Status: {status}")
+    sub = db.session.get(Submissao, uuid)
+    if sub:
+        sub.status = status
+        db.session.commit()
+        print(f"📋 [BD] Status atualizado | UUID: {uuid} | Status: {status}")
 
-# ══════════════════════════════════════════════════════════════════════════════
-# ADICIONAR ESTAS DUAS FUNÇÕES NO FINAL DO banco_cadastros.py
-# ══════════════════════════════════════════════════════════════════════════════
 
 def listar_submissoes(status=None, tipo=None, busca=None, data_de=None, data_ate=None):
     """
@@ -175,70 +180,69 @@ def listar_submissoes(status=None, tipo=None, busca=None, data_de=None, data_ate
     Usada pela tela de Monitor de Cadastros.
 
     Filtros:
-      status   → 'pendente' | 'aprovado' | 'reprovado' | 'cadastrado'
-      tipo     → 'NOVO' | 'REATIVACAO' (busca dentro do dados_json)
-      busca    → texto livre para empresa ou CNPJ
-      data_de  → string 'dd/mm/yyyy'
-      data_ate → string 'dd/mm/yyyy'
+        status   → 'pendente' | 'aprovado' | 'reprovado' | 'cadastrado'
+        tipo     → 'NOVO' | 'REATIVACAO' (busca dentro do dados_json)
+        busca    → texto livre para empresa ou CNPJ
+        data_de  → string 'dd/mm/yyyy' — filtra a partir desta data
+        data_ate → string 'dd/mm/yyyy' — filtra até esta data
     """
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.row_factory = sqlite3.Row
-        rows = conn.execute(
-            'SELECT * FROM submissoes ORDER BY created_at DESC'
-        ).fetchall()
+    # Começa com uma query base ordenada por data (mais recente primeiro)
+    query = Submissao.query.order_by(Submissao.created_at.desc())
 
+    # ── Filtro por status ─────────────────────────────────────
+    if status:
+        query = query.filter(Submissao.status == status)
+
+    # ── Filtro por busca (empresa ou CNPJ) ────────────────────
+    # ilike = case-insensitive LIKE (busca sem diferenciar maiúscula/minúscula)
+    if busca:
+        termo = f'%{busca}%'
+        query = query.filter(
+            db.or_(
+                Submissao.razao_social.ilike(termo),
+                Submissao.cnpj.ilike(termo),
+            )
+        )
+
+    # ── Filtro por data ───────────────────────────────────────
+    # Agora com DateTime de verdade! Muito mais confiável que comparar strings.
+    if data_de:
+        try:
+            # Aceita formato 'dd/mm/yyyy' ou 'yyyy-mm-dd'
+            if '/' in data_de:
+                dt_de = datetime.strptime(data_de, '%d/%m/%Y')
+            else:
+                dt_de = datetime.strptime(data_de, '%Y-%m-%d')
+            query = query.filter(Submissao.created_at >= dt_de)
+        except ValueError:
+            pass
+
+    if data_ate:
+        try:
+            if '/' in data_ate:
+                dt_ate = datetime.strptime(data_ate, '%d/%m/%Y')
+            else:
+                dt_ate = datetime.strptime(data_ate, '%Y-%m-%d')
+            # Adiciona 1 dia para incluir o dia inteiro
+            dt_ate = dt_ate.replace(hour=23, minute=59, second=59)
+            query = query.filter(Submissao.created_at <= dt_ate)
+        except ValueError:
+            pass
+
+    # ── Executa a query ───────────────────────────────────────
+    submissoes = query.all()
+
+    # ── Filtro por tipo (dentro do JSON) ──────────────────────
+    # Este filtro é feito em Python porque o campo 'tipo_cadastro'
+    # está dentro do dados_json. No futuro, se precisar de performance,
+    # podemos usar o operador JSON do PostgreSQL.
     resultado = []
-    for row in rows:
-        dados = dict(row)
-        try:
-            dados['dados_json']         = json.loads(dados['dados_json'])
-        except Exception:
-            dados['dados_json']         = {}
-        try:
-            dados['docs_enviados']      = json.loads(dados['docs_enviados'])
-        except Exception:
-            dados['docs_enviados']      = []
-        try:
-            dados['motivos_reprovacao'] = json.loads(dados['motivos_reprovacao'])
-        except Exception:
-            dados['motivos_reprovacao'] = []
-
-        d = dados['dados_json']
-
-        # Filtro por status
-        if status and dados.get('status') != status:
-            continue
-
-        # Filtro por tipo (dentro do dados_json)
-        if tipo and d.get('tipo_cadastro') != tipo:
-            continue
-
-        # Filtro por busca (empresa ou CNPJ)
-        if busca:
-            b = busca.lower()
-            empresa = (dados.get('razao_social') or '').lower()
-            cnpj    = (dados.get('cnpj') or '').lower()
-            if b not in empresa and b not in cnpj:
+    for sub in submissoes:
+        if tipo:
+            tipo_cadastro = (sub.dados_json or {}).get('tipo_cadastro', '')
+            if tipo_cadastro != tipo:
                 continue
-
-        # Filtro por data
-        if data_de or data_ate:
-            created = dados.get('created_at', '')  # formato 'dd/mm/yyyy HH:MM'
-            try:
-                partes = created.split(' ')[0].split('/')  # ['dd','mm','yyyy']
-                data_iso = f"{partes[2]}-{partes[1]}-{partes[0]}"  # 'yyyy-mm-dd'
-                if data_de:
-                    de_iso = '-'.join(reversed(data_de.split('/'))) if '/' in data_de else data_de
-                    if data_iso < de_iso:
-                        continue
-                if data_ate:
-                    ate_iso = '-'.join(reversed(data_ate.split('/'))) if '/' in data_ate else data_ate
-                    if data_iso > ate_iso:
-                        continue
-            except Exception:
-                pass
-
-        resultado.append(dados)
+        resultado.append(_submissao_to_dict(sub))
 
     return resultado
 
@@ -246,18 +250,28 @@ def listar_submissoes(status=None, tipo=None, busca=None, data_de=None, data_ate
 def stats_submissoes():
     """
     Retorna contagem por status para o painel de estatísticas.
+    Retorno: dict com chaves 'total', 'pendente', 'aprovado',
+             'reprovado', 'cadastrado'.
     """
-    with sqlite3.connect(DB_PATH) as conn:
-        rows = conn.execute(
-            'SELECT status, COUNT(*) as total FROM submissoes GROUP BY status'
-        ).fetchall()
+    contagem = {
+        'total': 0,
+        'pendente': 0,
+        'aprovado': 0,
+        'reprovado': 0,
+        'cadastrado': 0,
+    }
 
-    contagem = {'total': 0, 'pendente': 0, 'aprovado': 0, 'reprovado': 0, 'cadastrado': 0}
-    for row in rows:
-        status = row[0] or 'pendente'
-        qtd    = row[1]
-        if status in contagem:
-            contagem[status] += qtd
+    # Uma única query agrupada por status — eficiente e limpa
+    resultados = (
+        db.session.query(Submissao.status, db.func.count())
+        .group_by(Submissao.status)
+        .all()
+    )
+
+    for status, qtd in resultados:
+        chave = status or 'pendente'
+        if chave in contagem:
+            contagem[chave] = qtd
         contagem['total'] += qtd
 
     return contagem
