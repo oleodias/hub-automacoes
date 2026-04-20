@@ -1,5 +1,27 @@
+# ══════════════════════════════════════════════════════════════
+# requirements.txt — Hub de Automações Ciamed
+# ══════════════════════════════════════════════════════════════
+# Instalar tudo: pip install -r requirements.txt
+# ══════════════════════════════════════════════════════════════
+
+# ── Framework Web ─────────────────────────────────────────────
 Flask
+flask-sqlalchemy
+
+# ── Banco de Dados ────────────────────────────────────────────
+sqlalchemy
+psycopg2-binary
+alembic
+
+# ── Automação (RPA) ──────────────────────────────────────────
 selenium
 webdriver-manager
+
+# ── Processamento de Dados ───────────────────────────────────
 pandas
 openpyxl
+
+# ── Utilitários ──────────────────────────────────────────────
+python-dotenv
+requests
+beautifulsoup4
