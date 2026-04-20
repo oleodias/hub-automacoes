@@ -121,7 +121,7 @@ function renderizar(d) {
   document.getElementById("eNome").textContent = nome;
   const fantasia = estab.nome_fantasia || d.nome_fantasia;
   document.getElementById("eFantasia").textContent = fantasia
-    ? `"${fantasia}"`
+    ? `${fantasia}`
     : "Sem nome fantasia";
   document.getElementById("eCnpj").textContent = fmtCNPJ(estab.cnpj || d.cnpj);
 

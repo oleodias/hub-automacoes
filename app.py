@@ -1,24 +1,16 @@
 # ══════════════════════════════════════════════════════════════
 # app.py — Hub de Automações Ciamed (Ponto de Entrada)
 # ══════════════════════════════════════════════════════════════
-# Este arquivo agora é ENXUTO. Ele só faz 4 coisas:
+# Este arquivo faz 5 coisas:
 #   1. Cria o Flask e configura o banco
-#   2. Registra todos os blueprints (rotas organizadas por módulo)
-#   3. Define o porteiro digital (controle de horário)
-#   4. Inicia o servidor
-#
-# As rotas estão em:
-#   routes/main.py       → home, upload, fila genérica
-#   routes/itens.py      → cadastro de itens, fase1, fase2
-#   routes/mdf.py        → relatório MDF-e
-#   routes/fornecedor.py → cadastro de fornecedor
-#   routes/clientes.py   → clientes, ficha, monitor, N8N
-#   routes/cnpj.py       → consultas CNPJ
-#   routes/admin.py      → painel admin, chamados, suporte
+#   2. Registra todos os blueprints
+#   3. Exige login em TODAS as rotas (exceto as públicas)
+#   4. Define o porteiro digital (controle de horário)
+#   5. Inicia o servidor
 # ══════════════════════════════════════════════════════════════
 
 import os
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from flask import Flask, request, session, redirect, url_for
 import urllib3
 
@@ -37,6 +29,9 @@ from utils.logging_config import configurar_logging
 app = Flask(__name__, template_folder='templates_reestilizados')
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'chave_reserva_caso_falhe')
 
+# Sessão expira após 8 horas de inatividade
+app.permanent_session_lifetime = timedelta(hours=1)
+
 # Banco de Dados (PostgreSQL)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -53,6 +48,7 @@ configurar_logging()
 # REGISTRAR BLUEPRINTS
 # ══════════════════════════════════════════════════════════════
 
+from routes.auth import auth_bp
 from routes.main import main_bp
 from routes.itens import itens_bp
 from routes.mdf import mdf_bp
@@ -61,6 +57,7 @@ from routes.clientes import clientes_bp
 from routes.cnpj import cnpj_bp
 from routes.admin import admin_bp
 
+app.register_blueprint(auth_bp)
 app.register_blueprint(main_bp)
 app.register_blueprint(itens_bp)
 app.register_blueprint(mdf_bp)
@@ -68,6 +65,51 @@ app.register_blueprint(fornecedor_bp)
 app.register_blueprint(clientes_bp)
 app.register_blueprint(cnpj_bp)
 app.register_blueprint(admin_bp)
+
+
+# ══════════════════════════════════════════════════════════════
+# PROTEÇÃO GLOBAL: LOGIN OBRIGATÓRIO
+# ══════════════════════════════════════════════════════════════
+# Em vez de colocar @login_required em cada rota individualmente,
+# usamos um before_request GLOBAL que intercepta TUDO.
+# Rotas públicas ficam numa lista de exceções.
+# ══════════════════════════════════════════════════════════════
+
+# Rotas que NÃO precisam de login (públicas)
+ROTAS_PUBLICAS = {
+    'auth.login',                    # tela de login (óbvio)
+    'static',                        # arquivos CSS, JS, imagens
+    'clientes.ficha_cliente',        # vendedores externos preenchem a ficha
+    'clientes.receber_ficha',        # endpoint que recebe a ficha
+    'clientes.api_ficha',            # pré-preenchimento na correção
+    'clientes.confirmar_acao',       # farmacêutica aprova/reprova via email
+    'clientes.motivo_reprovacao',    # farmacêutica preenche motivo
+    'cnpj.consulta_cnpj',           # usado pela ficha do cliente
+    'cnpj.api_cnpj_completo',       # usado pela ficha do cliente
+    'clientes.fila_cadastro_entrar',     # N8N chama direto
+    'clientes.fila_cadastro_liberar',    # N8N chama direto
+    'clientes.n8n_iniciar_cadastro',     # N8N chama direto
+}
+
+@app.before_request
+def exigir_login():
+    """
+    Intercepta TODAS as requisições. Se o usuário não está logado
+    e a rota não é pública, redireciona para o login.
+    """
+    # Ignora rotas públicas
+    if request.endpoint in ROTAS_PUBLICAS:
+        return None
+
+    # Ignora arquivos estáticos
+    if request.endpoint and 'static' in request.endpoint:
+        return None
+
+    # Se não está logado, redireciona para login
+    if 'usuario_id' not in session:
+        return redirect(url_for('auth.login', next=request.path))
+
+    return None
 
 
 # ══════════════════════════════════════════════════════════════
@@ -80,14 +122,10 @@ DIAS_UTEIS  = [0, 1, 2, 3, 4, 5, 6]
 
 @app.before_request
 def verificar_horario():
-    if request.endpoint and 'static' in request.endpoint:
+    # Não aplica para rotas públicas ou login
+    if request.endpoint in ROTAS_PUBLICAS:
         return None
-
-    if request.endpoint in [
-        'clientes.ficha_cliente', 'cnpj.api_cnpj_completo', 'cnpj.consulta_cnpj',
-        'clientes.confirmar_acao', 'clientes.motivo_reprovacao',
-        'clientes.receber_ficha', 'clientes.api_ficha'
-    ]:
+    if request.endpoint and 'static' in request.endpoint:
         return None
 
     if request.args.get('bypass') == 'leo_admin':
@@ -110,11 +148,26 @@ def verificar_horario():
                 <strong style="color: white;">Horário de Funcionamento:</strong><br>
                 <span style="color: #b0bec5;">Segunda a Sexta: 08:00 às 18:00</span>
             </div>
-            <p style="margin-top: 40px; font-size: 0.85rem; color: #6c757d;">
-                Controladoria • Acesso Restrito
-            </p>
         </body>
         """, 403
+
+
+# ══════════════════════════════════════════════════════════════
+# CONTEXT PROCESSOR: dados do usuário disponíveis em TODOS os templates
+# ══════════════════════════════════════════════════════════════
+
+@app.context_processor
+def injetar_usuario():
+    """
+    Injeta o nome e cargo do usuário logado em todos os templates.
+    Assim, qualquer página pode mostrar "Olá, Leonardo" ou esconder
+    botões de admin sem precisar passar dados manualmente.
+    """
+    return {
+        'usuario_nome':  session.get('usuario_nome', ''),
+        'usuario_cargo': session.get('usuario_cargo', ''),
+        'is_admin':      session.get('usuario_cargo') == 'admin',
+    }
 
 
 # ══════════════════════════════════════════════════════════════

@@ -3,30 +3,123 @@
 # ══════════════════════════════════════════════════════════════
 # Cada classe aqui representa uma TABELA no PostgreSQL.
 # Cada atributo da classe representa uma COLUNA na tabela.
-#
-# Exemplo visual:
-#
-#   class Submissao     →  tabela "submissoes" no banco
-#       uuid            →  coluna "uuid" (chave primária)
-#       cnpj            →  coluna "cnpj"
-#       razao_social    →  coluna "razao_social"
-#       ...
-#
-# O SQLAlchemy cuida de criar a tabela, inserir, buscar, atualizar
-# e deletar registros — sem você escrever SQL na mão.
 # ══════════════════════════════════════════════════════════════
 
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
 from extensions import db
 
+
+# ── MÓDULOS DO HUB (lista central de permissões) ─────────────
+# Usada para gerar o JSON de permissões padrão e para o painel admin.
+# Se um dia criar um módulo novo, basta adicionar aqui.
+
+MODULOS_HUB = {
+    'itens':       'Cadastro de Itens',
+    'mdf':         'Relatório MDF-e',
+    'fornecedor':  'Cadastro de Fornecedor',
+    'clientes':    'Cadastro de Clientes',
+    'cnpj':        'Consulta CNPJ',
+    'monitor':     'Monitor de Cadastros',
+}
+
+
+def permissoes_padrao():
+    """Retorna dict com todos os módulos liberados (padrão para novos usuários)."""
+    return {modulo: True for modulo in MODULOS_HUB}
+
+
+# ══════════════════════════════════════════════════════════════
+# MODELO: Usuário
+# ══════════════════════════════════════════════════════════════
+
+class Usuario(db.Model):
+    """
+    Representa um usuário do Hub de Automações.
+
+    Cargos:
+        'admin'    → acesso total, gerencia usuários e permissões
+        'operador' → acesso controlado por módulo (campo permissoes)
+
+    Permissões:
+        JSON com cada módulo como chave e true/false como valor.
+        Ex: {"itens": true, "mdf": true, "fornecedor": false, ...}
+        Quando cargo = 'admin', as permissões são ignoradas (tudo liberado).
+    """
+
+    __tablename__ = 'usuarios'
+
+    # Identificador único auto-incrementado
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Nome completo do usuário
+    nome = db.Column(db.String(150), nullable=False)
+
+    # Email (usado para login) — único, não pode repetir
+    email = db.Column(db.String(150), unique=True, nullable=False)
+
+    # Senha hasheada (criptografada de forma irreversível)
+    # Nunca armazenamos a senha em texto. O hash é gerado pelo
+    # werkzeug.security e não pode ser "desfeito" — só comparado.
+    senha_hash = db.Column(db.String(256), nullable=False)
+
+    # Cargo: 'admin' ou 'operador'
+    cargo = db.Column(db.String(20), default='operador')
+
+    # Permissões por módulo (JSON)
+    # Exemplo: {"itens": true, "mdf": true, "fornecedor": false}
+    permissoes = db.Column(db.JSON, default=permissoes_padrao)
+
+    # Conta ativa ou desativada (desativar sem deletar)
+    ativo = db.Column(db.Boolean, default=True)
+
+    # Datas
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+
+    # ── Métodos de senha ──────────────────────────────────────
+
+    def definir_senha(self, senha_texto):
+        """
+        Recebe a senha em texto puro e salva o HASH.
+        A senha original nunca é armazenada.
+        Exemplo: "minhasenha123" → "pbkdf2:sha256:260000$..."
+        """
+        self.senha_hash = generate_password_hash(senha_texto)
+
+    def verificar_senha(self, senha_texto):
+        """
+        Compara a senha digitada no login com o hash salvo.
+        Retorna True se bater, False se não.
+        """
+        return check_password_hash(self.senha_hash, senha_texto)
+
+    # ── Métodos de permissão ──────────────────────────────────
+
+    def is_admin(self):
+        """Retorna True se o usuário é admin."""
+        return self.cargo == 'admin'
+
+    def tem_permissao(self, modulo):
+        """
+        Verifica se o usuário tem acesso a um módulo específico.
+        Admin SEMPRE tem acesso a tudo.
+        """
+        if self.is_admin():
+            return True
+        return (self.permissoes or {}).get(modulo, False)
+
+    def __repr__(self):
+        return f'<Usuario {self.nome} | {self.cargo}>'
+
+
+# ══════════════════════════════════════════════════════════════
+# MODELO: Submissão (ficha cadastral de cliente)
+# ══════════════════════════════════════════════════════════════
 
 class Submissao(db.Model):
     """
     Representa uma submissão de ficha cadastral de cliente.
-
-    Cada vez que um vendedor envia uma ficha pelo formulário digital,
-    uma Submissao é criada. Se a farmacêutica reprovar, o vendedor
-    corrige e a mesma Submissao é atualizada (incrementa tentativa).
 
     Ciclo de vida do status:
         'pendente'   → ficha enviada, aguardando análise
@@ -35,58 +128,18 @@ class Submissao(db.Model):
         'cadastrado' → robô RPA finalizou o cadastro no ERP
     """
 
-    # ── Nome da tabela no banco ───────────────────────────────
-    # Sem isso, o SQLAlchemy usaria "submissao" (nome da classe).
-    # Definimos explicitamente para manter o mesmo nome do SQLite.
     __tablename__ = 'submissoes'
 
-    # ── Colunas ───────────────────────────────────────────────
-
-    # Identificador único da submissão (gerado pelo Python com uuid4)
-    # db.String(36) = texto de até 36 caracteres (tamanho padrão de um UUID)
-    # primary_key=True = esta é a chave primária da tabela
     uuid = db.Column(db.String(36), primary_key=True)
-
-    # CNPJ do cliente (obrigatório)
-    # nullable=False = não pode ser vazio (equivale ao NOT NULL do SQL)
     cnpj = db.Column(db.String(20), nullable=False)
-
-    # Razão social do cliente
     razao_social = db.Column(db.String(255))
-
-    # Número da tentativa atual (1 = primeira vez, 2 = primeira correção, etc)
-    # default=1 = se não informar, começa em 1
     tentativa = db.Column(db.Integer, default=1)
-
-    # Status atual da submissão
-    # Valores possíveis: 'pendente', 'aprovado', 'reprovado', 'cadastrado'
     status = db.Column(db.String(20), default='pendente')
-
-    # Dados completos da ficha em formato JSON
-    # db.JSON = o PostgreSQL tem suporte NATIVO a JSON, muito melhor que
-    # guardar como texto e ficar fazendo json.loads/json.dumps manual.
-    # Você pode buscar, filtrar e até indexar campos dentro do JSON!
     dados_json = db.Column(db.JSON, default=dict)
-
-    # Lista dos documentos enviados (ex: ['doc_contrato', 'doc_afe'])
-    # Também JSON nativo — antes era texto com json.dumps/loads
     docs_enviados = db.Column(db.JSON, default=list)
-
-    # Histórico de reprovações acumulado
-    # Lista de dicts: [{'tentativa': 1, 'motivo': '...', 'data': '...'}]
     motivos_reprovacao = db.Column(db.JSON, default=list)
-
-    # Data de criação — agora é DateTime de verdade, não texto!
-    # O banco sabe que é uma data e pode ordenar/filtrar corretamente.
-    # default=datetime.now = preenche automaticamente ao criar
     created_at = db.Column(db.DateTime, default=datetime.now)
-
-    # Data da última atualização
-    # onupdate=datetime.now = atualiza automaticamente toda vez que salvar
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
-    # ── Método de representação ───────────────────────────────
-    # Quando você der print() num objeto Submissao, aparece algo legível
-    # em vez de <Submissao object at 0x...>
     def __repr__(self):
         return f'<Submissao {self.uuid[:8]}... | {self.razao_social} | {self.status}>'

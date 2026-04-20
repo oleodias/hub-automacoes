@@ -349,7 +349,7 @@ if itens_processar:
     options.add_experimental_option("detach", True)
     
     # --- 👻 MODO INVISÍVEL (HEADLESS) ATIVADO ---
-    #options.add_argument("--headless=new") 
+    options.add_argument("--headless=new") 
     options.add_argument("--window-size=1920,1080") # Garante que o robô "enxergue" a tela inteira
     # --------------------------------------------
     

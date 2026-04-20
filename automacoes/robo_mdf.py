@@ -9,6 +9,10 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Pega a pasta principal de execução para garantir que salve no lugar certo
 DIRETORIO_ATUAL = os.getcwd()
@@ -34,7 +38,6 @@ chrome_options.add_argument("--window-size=1920,1080")
 # ----------------------------------------
 
 dados_para_planilha = []
-URL_SISTEMA = "http://192.168.200.252:8585/NLWeb/site/9000/emp/1"
 
 # Inicia o Navegador
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
@@ -75,15 +78,19 @@ def desmarcar_checkbox_js(id_checkbox):
     except Exception as e:
         print(f"   ⚠️ Aviso: Não conseguiu interagir com o checkbox {id_checkbox}.")
 
+
 def fazer_login(driver):
     """Realiza o login automático e trata as sessões abertas."""
-    usuario = "LEONARDO DIA"
-    senha = "123"
+    # Puxa os dados do .env
+    url = os.getenv('NLWEB_URL')
+    usuario = os.getenv('NLWEB_USER')
+    senha = os.getenv('NLWEB_PASS')
+    
     wait = WebDriverWait(driver, 20)
 
     try:
         print("🌐 Acessando sistema...")
-        driver.get(URL_SISTEMA)
+        driver.get('NLWEB_URL')
 
         # 1. Login Inicial
         wait.until(EC.element_to_be_clickable((By.ID, "txtUsername"))).send_keys(usuario)

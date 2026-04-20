@@ -1,0 +1,93 @@
+[
+    {
+        "index": 1,
+        "desc": "CAIXA 4 X 2 DRY WALL P/GESSO DRWL AMARELA",
+        "ean": "7890000002226",
+        "ncm": "39269090",
+        "unid": "UN"
+    },
+    {
+        "index": 2,
+        "desc": "LUMINARIA LED EMB. QUAD. 18W 4.000K 22 X 22 CM OUROLUX 03207B",
+        "ean": "7899771500870",
+        "ncm": "94051190",
+        "unid": "UN"
+    },
+    {
+        "index": 3,
+        "desc": "DISJUNTOR CAIXA MOLDADA DWB160 100A 16KA WEG 11322258",
+        "ean": "7909018028576",
+        "ncm": "85362000",
+        "unid": "UN"
+    },
+    {
+        "index": 4,
+        "desc": "DISJUNTOR DIN CURVA C 2 X 63A WEG MDW 10076463",
+        "ean": "7890355193839",
+        "ncm": "85362000",
+        "unid": "UN"
+    },
+    {
+        "index": 5,
+        "desc": "RELE FOTOCONTROLADOR LUXON 105 A 305V EXATRON LUXON FL",
+        "ean": "7897418811686",
+        "ncm": "85364900",
+        "unid": "PC"
+    },
+    {
+        "index": 6,
+        "desc": "REFLETOR LED 200W 6500K OUROLUX 03269",
+        "ean": "7898324006401",
+        "ncm": "94051190",
+        "unid": "UN"
+    },
+    {
+        "index": 7,
+        "desc": "REFLETOR LED 50W 6500K AVANT 259501372",
+        "ean": "7899825505943",
+        "ncm": "94051190",
+        "unid": "UN"
+    },
+    {
+        "index": 8,
+        "desc": "CABO FLEXIVEL 1 X 2.5 MM 750V AZUL CORFIO/ SIL",
+        "ean": "7897381600607",
+        "ncm": "85444900",
+        "unid": "MT"
+    },
+    {
+        "index": 9,
+        "desc": "CABO FLEXIVEL 1 X 2.5 MM 750V VERMELHO CORFIO/ SIL",
+        "ean": "7897381600645",
+        "ncm": "85444900",
+        "unid": "MT"
+    },
+    {
+        "index": 10,
+        "desc": "CABO FLEXIVEL 1 X 2.5 MM 750V VERDE CORFIO/ SIL",
+        "ean": "7897381600638",
+        "ncm": "85444900",
+        "unid": "MT"
+    },
+    {
+        "index": 11,
+        "desc": "60.000 BR 2 TOMADAS 2P + T 20A 250V PEZZI 60.515 C/ CAIXA",
+        "ean": "7908095100380",
+        "ncm": "85366990",
+        "unid": "UN"
+    },
+    {
+        "index": 12,
+        "desc": "DISJUNTOR DIN CURVA C 1 X 25A WEG MDWP 15265685",
+        "ean": "7909522567738",
+        "ncm": "85362000",
+        "unid": "UN"
+    },
+    {
+        "index": 13,
+        "desc": "DISJUNTOR DIN CURVA B 1 X 20A WEG MDWP 15265845",
+        "ean": "17909522568169",
+        "ncm": "85362000",
+        "unid": "UN"
+    }
+]

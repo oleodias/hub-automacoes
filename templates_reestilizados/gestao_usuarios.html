@@ -1,0 +1,786 @@
+{% extends "base.html" %} {% block title %}Gestão de Usuários - Hub Ciamed{%
+endblock %} {% block css %}
+<style>
+  /* Layout — respeita sidebar (64px) e navbar (64px) */
+  .pagina-gestao {
+    padding: 84px 30px 30px 84px;
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .page-header .left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .btn-back {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .btn-back:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+  .page-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: white;
+    line-height: 1.2;
+  }
+  .page-title span {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  /* Stats */
+  .stats-row {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    flex: 1;
+    min-width: 140px;
+  }
+  .stat-card .valor {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: white;
+  }
+  .stat-card .label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  /* Tabela */
+  .tabela-container {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .tabela-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tabela-header h5 {
+    color: white;
+    font-size: 0.95rem;
+    margin: 0;
+  }
+  .btn-criar {
+    background: linear-gradient(135deg, #05776c, #0a9e8f);
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .btn-criar:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(5, 119, 108, 0.4);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  thead th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+  }
+  tbody td {
+    padding: 12px 16px;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    vertical-align: middle;
+  }
+  tbody tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .badge-admin {
+    background: rgba(139, 92, 246, 0.15);
+    color: #a78bfa;
+  }
+  .badge-operador {
+    background: rgba(14, 230, 184, 0.1);
+    color: #0ee6b8;
+  }
+  .badge-ativo {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+  }
+  .badge-inativo {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+  }
+
+  .acoes {
+    display: flex;
+    gap: 6px;
+  }
+  .btn-acao {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    border-radius: 6px;
+    padding: 5px 8px;
+    cursor: pointer;
+    transition: 0.2s;
+    font-size: 0.75rem;
+  }
+  .btn-acao:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+  .btn-acao.danger:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.ativo {
+    display: flex;
+  }
+  .modal-box {
+    background: #1a2332;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 30px;
+    width: 100%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: fadeIn 0.2s ease;
+  }
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  .modal-box h3 {
+    color: white;
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+  }
+  .modal-box label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .modal-box input,
+  .modal-box select {
+    width: 100%;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: white;
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+    outline: none;
+    transition: 0.2s;
+  }
+  .modal-box input:focus,
+  .modal-box select:focus {
+    border-color: #4db6ac;
+    box-shadow: 0 0 0 3px rgba(77, 182, 172, 0.12);
+  }
+  .modal-box select option {
+    background: #1a2332;
+  }
+
+  /* Permissões toggle */
+  .permissoes-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .perm-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 10px 14px;
+  }
+  .perm-item span {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.8);
+  }
+  .toggle {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    cursor: pointer;
+  }
+  .toggle input {
+    display: none;
+  }
+  .toggle-slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 11px;
+    transition: 0.3s;
+  }
+  .toggle-slider::before {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    left: 3px;
+    top: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: 0.3s;
+  }
+  .toggle input:checked + .toggle-slider {
+    background: #05776c;
+  }
+  .toggle input:checked + .toggle-slider::before {
+    transform: translateX(18px);
+  }
+
+  .modal-footer {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 10px;
+  }
+  .btn-modal {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+    border: none;
+  }
+  .btn-salvar {
+    background: linear-gradient(135deg, #05776c, #0a9e8f);
+    color: white;
+  }
+  .btn-salvar:hover {
+    transform: translateY(-1px);
+  }
+  .btn-cancelar {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.5);
+  }
+  .btn-cancelar:hover {
+    color: white;
+  }
+
+  .msg-feedback {
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .msg-erro {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #fca5a5;
+  }
+  .msg-ok {
+    background: rgba(34, 197, 94, 0.12);
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    color: #86efac;
+  }
+</style>
+{% endblock %} {% block navbar_title %}Hub de Automações{% endblock %} {% block
+content %}
+<div class="pagina-gestao">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="left">
+      <button
+        class="btn-back"
+        onclick="window.location.href = '/'"
+        title="Voltar"
+      >
+        <i class="fa-solid fa-arrow-left" style="font-size: 13px"></i>
+      </button>
+      <div class="page-title">
+        Gestão de Usuários
+        <span>Cadastro, permissões e controle de acesso</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="valor" id="stat-total">-</div>
+      <div class="label">Total de Usuários</div>
+    </div>
+    <div class="stat-card">
+      <div class="valor" id="stat-ativos">-</div>
+      <div class="label">Ativos</div>
+    </div>
+    <div class="stat-card">
+      <div class="valor" id="stat-admins">-</div>
+      <div class="label">Administradores</div>
+    </div>
+    <div class="stat-card">
+      <div class="valor" id="stat-operadores">-</div>
+      <div class="label">Operadores</div>
+    </div>
+  </div>
+
+  <!-- Tabela -->
+  <div class="tabela-container">
+    <div class="tabela-header">
+      <h5>
+        <i
+          class="fa-solid fa-users"
+          style="margin-right: 8px; color: #0ee6b8"
+        ></i
+        >Usuários Cadastrados
+      </h5>
+      <button class="btn-criar" onclick="abrirModalCriar()">
+        <i class="fa-solid fa-plus" style="margin-right: 6px"></i> Novo Usuário
+      </button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Email</th>
+          <th>Cargo</th>
+          <th>Status</th>
+          <th>Criado em</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="tabela-usuarios">
+        <tr>
+          <td
+            colspan="6"
+            style="
+              text-align: center;
+              color: rgba(255, 255, 255, 0.4);
+              padding: 30px;
+            "
+          >
+            Carregando...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════ MODAL: Criar / Editar Usuário ══════════ -->
+<div class="modal-overlay" id="modal-usuario">
+  <div class="modal-box">
+    <h3 id="modal-titulo">Novo Usuário</h3>
+    <div class="msg-feedback msg-erro" id="modal-erro"></div>
+    <div class="msg-feedback msg-ok" id="modal-ok"></div>
+
+    <input type="hidden" id="edit-id" />
+
+    <label>Nome completo</label>
+    <input type="text" id="edit-nome" placeholder="Ex: João da Silva" />
+
+    <label>Email (usado para login)</label>
+    <input type="email" id="edit-email" placeholder="Ex: joao@ciamed.com.br" />
+
+    <div id="campo-senha">
+      <label>Senha</label>
+      <input
+        type="password"
+        id="edit-senha"
+        placeholder="Mínimo 4 caracteres"
+      />
+    </div>
+
+    <label>Cargo</label>
+    <select id="edit-cargo">
+      <option value="operador">Operador</option>
+      <option value="admin">Administrador</option>
+    </select>
+
+    <label>Permissões de Acesso</label>
+    <div class="permissoes-grid" id="permissoes-grid">
+      {% for chave, nome in modulos.items() %}
+      <div class="perm-item">
+        <span>{{ nome }}</span>
+        <label class="toggle">
+          <input type="checkbox" data-modulo="{{ chave }}" checked />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-modal btn-cancelar" onclick="fecharModal()">
+        Cancelar
+      </button>
+      <button class="btn-modal btn-salvar" onclick="salvarUsuario()">
+        Salvar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MODAL: Resetar Senha ══════════ -->
+<div class="modal-overlay" id="modal-senha">
+  <div class="modal-box">
+    <h3>Resetar Senha</h3>
+    <p
+      style="
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 0.85rem;
+        margin-bottom: 16px;
+      "
+    >
+      Definir nova senha para:
+      <strong id="reset-nome" style="color: white"></strong>
+    </p>
+    <div class="msg-feedback msg-erro" id="senha-erro"></div>
+
+    <input type="hidden" id="reset-id" />
+    <label>Nova Senha</label>
+    <input
+      type="password"
+      id="reset-nova-senha"
+      placeholder="Mínimo 4 caracteres"
+    />
+
+    <div class="modal-footer">
+      <button class="btn-modal btn-cancelar" onclick="fecharModalSenha()">
+        Cancelar
+      </button>
+      <button class="btn-modal btn-salvar" onclick="resetarSenha()">
+        Resetar
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Variáveis globais ────────────────────────────────────────
+  let usuarios = [];
+
+  // ── Carregar usuários ────────────────────────────────────────
+  function carregarUsuarios() {
+    fetch("/api/usuarios")
+      .then((r) => r.json())
+      .then((data) => {
+        usuarios = data;
+        renderizarTabela();
+        atualizarStats();
+      });
+  }
+
+  function atualizarStats() {
+    document.getElementById("stat-total").textContent = usuarios.length;
+    document.getElementById("stat-ativos").textContent = usuarios.filter(
+      (u) => u.ativo,
+    ).length;
+    document.getElementById("stat-admins").textContent = usuarios.filter(
+      (u) => u.cargo === "admin",
+    ).length;
+    document.getElementById("stat-operadores").textContent = usuarios.filter(
+      (u) => u.cargo === "operador",
+    ).length;
+  }
+
+  function renderizarTabela() {
+    const tbody = document.getElementById("tabela-usuarios");
+    if (usuarios.length === 0) {
+      tbody.innerHTML =
+        '<tr><td colspan="6" style="text-align:center; color: rgba(255,255,255,0.4); padding: 30px;">Nenhum usuário cadastrado.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = usuarios
+      .map(
+        (u) => `
+        <tr>
+            <td style="font-weight: 600; color: white;">${u.nome}</td>
+            <td>${u.email}</td>
+            <td><span class="badge ${u.cargo === "admin" ? "badge-admin" : "badge-operador"}">${u.cargo}</span></td>
+            <td><span class="badge ${u.ativo ? "badge-ativo" : "badge-inativo"}">${u.ativo ? "Ativo" : "Inativo"}</span></td>
+            <td style="color: rgba(255,255,255,0.4); font-size: 0.8rem;">${u.created_at}</td>
+            <td>
+                <div class="acoes">
+                    <button class="btn-acao" onclick="abrirModalEditar(${u.id})" title="Editar">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    <button class="btn-acao" onclick="abrirModalResetSenha(${u.id})" title="Resetar Senha">
+                        <i class="fa-solid fa-key"></i>
+                    </button>
+                    <button class="btn-acao" onclick="toggleUsuario(${u.id})" title="${u.ativo ? "Desativar" : "Ativar"}">
+                        <i class="fa-solid fa-${u.ativo ? "toggle-on" : "toggle-off"}"></i>
+                    </button>
+                    <button class="btn-acao danger" onclick="deletarUsuario(${u.id}, '${u.nome}')" title="Deletar">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `,
+      )
+      .join("");
+  }
+
+  // ── Modal Criar ──────────────────────────────────────────────
+  function abrirModalCriar() {
+    document.getElementById("modal-titulo").textContent = "Novo Usuário";
+    document.getElementById("edit-id").value = "";
+    document.getElementById("edit-nome").value = "";
+    document.getElementById("edit-email").value = "";
+    document.getElementById("edit-senha").value = "";
+    document.getElementById("edit-cargo").value = "operador";
+    document.getElementById("campo-senha").style.display = "block";
+    esconderFeedback();
+    document
+      .querySelectorAll("#permissoes-grid input[type=checkbox]")
+      .forEach((cb) => (cb.checked = true));
+    document.getElementById("modal-usuario").classList.add("ativo");
+  }
+
+  // ── Modal Editar ─────────────────────────────────────────────
+  function abrirModalEditar(id) {
+    const u = usuarios.find((x) => x.id === id);
+    if (!u) return;
+
+    document.getElementById("modal-titulo").textContent = "Editar Usuário";
+    document.getElementById("edit-id").value = u.id;
+    document.getElementById("edit-nome").value = u.nome;
+    document.getElementById("edit-email").value = u.email;
+    document.getElementById("edit-cargo").value = u.cargo;
+    document.getElementById("campo-senha").style.display = "none";
+    esconderFeedback();
+
+    document
+      .querySelectorAll("#permissoes-grid input[type=checkbox]")
+      .forEach((cb) => {
+        const modulo = cb.getAttribute("data-modulo");
+        cb.checked = u.permissoes[modulo] !== false;
+      });
+
+    document.getElementById("modal-usuario").classList.add("ativo");
+  }
+
+  function fecharModal() {
+    document.getElementById("modal-usuario").classList.remove("ativo");
+  }
+
+  // ── Salvar (criar ou editar) ─────────────────────────────────
+  function salvarUsuario() {
+    const id = document.getElementById("edit-id").value;
+    const nome = document.getElementById("edit-nome").value.trim();
+    const email = document.getElementById("edit-email").value.trim();
+    const senha = document.getElementById("edit-senha").value.trim();
+    const cargo = document.getElementById("edit-cargo").value;
+
+    const permissoes = {};
+    document
+      .querySelectorAll("#permissoes-grid input[type=checkbox]")
+      .forEach((cb) => {
+        permissoes[cb.getAttribute("data-modulo")] = cb.checked;
+      });
+
+    if (!nome || !email) {
+      mostrarErro("modal-erro", "Nome e email são obrigatórios.");
+      return;
+    }
+
+    if (!id && !senha) {
+      mostrarErro("modal-erro", "Senha é obrigatória para novos usuários.");
+      return;
+    }
+
+    const url = id ? `/api/usuarios/${id}` : "/api/usuarios";
+    const method = id ? "PUT" : "POST";
+    const body = { nome, email, cargo, permissoes };
+    if (!id) body.senha = senha;
+
+    fetch(url, {
+      method: method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.erro) {
+          mostrarErro("modal-erro", data.erro);
+        } else {
+          fecharModal();
+          carregarUsuarios();
+        }
+      });
+  }
+
+  // ── Toggle ativo/inativo ─────────────────────────────────────
+  function toggleUsuario(id) {
+    const u = usuarios.find((x) => x.id === id);
+    if (!u) return;
+
+    const acao = u.ativo ? "desativar" : "ativar";
+    if (!confirm(`Tem certeza que deseja ${acao} o usuário "${u.nome}"?`))
+      return;
+
+    fetch(`/api/usuarios/${id}/toggle`, { method: "POST" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.erro) {
+          alert(data.erro);
+          return;
+        }
+        carregarUsuarios();
+      });
+  }
+
+  // ── Deletar ──────────────────────────────────────────────────
+  function deletarUsuario(id, nome) {
+    if (
+      !confirm(
+        `⚠️ ATENÇÃO: Deletar permanentemente o usuário "${nome}"?\n\nEsta ação não pode ser desfeita.`,
+      )
+    )
+      return;
+
+    fetch(`/api/usuarios/${id}`, { method: "DELETE" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.erro) {
+          alert(data.erro);
+          return;
+        }
+        carregarUsuarios();
+      });
+  }
+
+  // ── Modal Reset Senha ────────────────────────────────────────
+  function abrirModalResetSenha(id) {
+    const u = usuarios.find((x) => x.id === id);
+    if (!u) return;
+
+    document.getElementById("reset-id").value = u.id;
+    document.getElementById("reset-nome").textContent = u.nome;
+    document.getElementById("reset-nova-senha").value = "";
+    esconderFeedback();
+    document.getElementById("modal-senha").classList.add("ativo");
+  }
+
+  function fecharModalSenha() {
+    document.getElementById("modal-senha").classList.remove("ativo");
+  }
+
+  function resetarSenha() {
+    const id = document.getElementById("reset-id").value;
+    const senha = document.getElementById("reset-nova-senha").value.trim();
+
+    if (senha.length < 4) {
+      mostrarErro("senha-erro", "A senha deve ter pelo menos 4 caracteres.");
+      return;
+    }
+
+    fetch(`/api/usuarios/${id}/reset_senha`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ senha: senha }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.erro) {
+          mostrarErro("senha-erro", data.erro);
+        } else {
+          fecharModalSenha();
+          alert("✅ Senha resetada com sucesso!");
+        }
+      });
+  }
+
+  // ── Helpers de feedback ──────────────────────────────────────
+  function mostrarErro(elementId, msg) {
+    const el = document.getElementById(elementId);
+    el.textContent = msg;
+    el.style.display = "block";
+  }
+
+  function esconderFeedback() {
+    document
+      .querySelectorAll(".msg-feedback")
+      .forEach((el) => (el.style.display = "none"));
+  }
+
+  // ── Inicialização ────────────────────────────────────────────
+  document.addEventListener("DOMContentLoaded", carregarUsuarios);
+</script>
+{% endblock %}
