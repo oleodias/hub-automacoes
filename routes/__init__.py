@@ -1,0 +1,1 @@
+# Pacote de rotas (blueprints) do Hub de Automações
