@@ -14,9 +14,12 @@
 #   - Datas como texto        →  DateTime de verdade
 # ══════════════════════════════════════════════════════════════
 
+import logging
 from datetime import datetime
 from extensions import db
 from models import Submissao
+
+logger = logging.getLogger(__name__)
 
 
 # ── Helper: converter objeto Submissao → dict ─────────────────
@@ -58,7 +61,7 @@ def init_db():
     ela garante que as tabelas existam no banco.
     """
     db.create_all()
-    print("✅ [BD] Banco PostgreSQL inicializado (tabelas verificadas).")
+    logger.info("Banco PostgreSQL inicializado (tabelas verificadas).")
 
 
 # ══════════════════════════════════════════════════════════════
@@ -89,7 +92,7 @@ def salvar_submissao(uuid, cnpj, razao_social, dados_json, docs_enviados):
     )
     db.session.add(submissao)
     db.session.commit()
-    print(f"✅ [BD] Submissão salva | UUID: {uuid} | Empresa: {razao_social}")
+    logger.info(f"Submissão salva | UUID: {uuid} | Empresa: {razao_social}")
 
 
 def buscar_submissao(uuid):
@@ -118,7 +121,7 @@ def registrar_reprovacao(uuid, motivo):
     """
     sub = db.session.get(Submissao, uuid)
     if not sub:
-        print(f"⚠️ [BD] UUID não encontrado para reprovação: {uuid}")
+        logger.warning(f"UUID não encontrado para reprovação: {uuid}")
         return False
 
     # Copia a lista atual e adiciona o novo motivo
@@ -134,7 +137,7 @@ def registrar_reprovacao(uuid, motivo):
     sub.status = 'reprovado'
     db.session.commit()
 
-    print(f"❌ [BD] Reprovação registrada | UUID: {uuid} | Tentativa: {sub.tentativa}")
+    logger.info(f"Reprovação registrada | UUID: {uuid} | Tentativa: {sub.tentativa}")
     return True
 
 
@@ -149,7 +152,7 @@ def incrementar_tentativa(uuid, dados_json, docs_enviados):
     """
     sub = db.session.get(Submissao, uuid)
     if not sub:
-        print(f"⚠️ [BD] UUID não encontrado para incrementar: {uuid}")
+        logger.warning(f"UUID não encontrado para incrementar: {uuid}")
         return None
 
     sub.tentativa += 1
@@ -158,7 +161,7 @@ def incrementar_tentativa(uuid, dados_json, docs_enviados):
     sub.docs_enviados = docs_enviados
     db.session.commit()
 
-    print(f"🔄 [BD] Nova tentativa | UUID: {uuid} | Tentativa: {sub.tentativa}")
+    logger.info(f"Nova tentativa | UUID: {uuid} | Tentativa: {sub.tentativa}")
     return sub.tentativa
 
 
@@ -171,7 +174,7 @@ def atualizar_status(uuid, status):
     if sub:
         sub.status = status
         db.session.commit()
-        print(f"📋 [BD] Status atualizado | UUID: {uuid} | Status: {status}")
+        logger.info(f"Status atualizado | UUID: {uuid} | Status: {status}")
 
 
 def listar_submissoes(status=None, tipo=None, busca=None, data_de=None, data_ate=None):

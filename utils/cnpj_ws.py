@@ -11,6 +11,8 @@
 
 import requests
 
+import logging
+logger = logging.getLogger(__name__)
 
 def consultar_cnpj_ws(cnpj_limpo):
     """
@@ -32,7 +34,7 @@ def consultar_cnpj_ws(cnpj_limpo):
     }
 
     if not cnpj_limpo or len(cnpj_limpo) != 14:
-        print(f"⚠️ [CNPJ.ws] CNPJ inválido ou vazio: {cnpj_limpo!r}")
+        logger.warning(f"[CNPJ.ws] CNPJ inválido ou vazio: {cnpj_limpo!r}")
         return dados_vazios
 
     try:
@@ -79,7 +81,7 @@ def consultar_cnpj_ws(cnpj_limpo):
             "uf":                       (estab.get("estado", {}) or {}).get("sigla", "") or "",
             "_cnpj_ws_status":          "ok",
         }
-        print(f"✅ [CNPJ.ws] Dados extraídos para CNPJ {cnpj_limpo}")
+        logger.info(f"[CNPJ.ws] Dados extraídos para CNPJ {cnpj_limpo}")
         return dados_enriquecidos
 
     except requests.Timeout:

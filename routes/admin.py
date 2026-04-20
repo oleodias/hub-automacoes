@@ -7,6 +7,9 @@ import json
 from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify
 
+import logging
+logger = logging.getLogger(__name__)
+
 admin_bp = Blueprint('admin', __name__)
 
 ARQUIVO_CHAMADOS = 'dados/chamados.json'
@@ -57,7 +60,7 @@ def enviar_chamado():
         salvar_chamados(chamados)
         return jsonify({'status': 'ok'})
     except Exception as e:
-        print(f"ERRO AO SALVAR CHAMADO: {str(e)}")
+        logger.error(f"Erro ao salvar chamado: {str(e)}")
         return jsonify({'status': 'erro', 'msg': 'Erro interno ao salvar no banco.'})
 
 

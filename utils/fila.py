@@ -15,6 +15,9 @@ import time as time_module
 import uuid as uuid_lib
 import requests as req_ext
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 # ── FILA GENÉRICA (itens, MDF, fornecedor) ────────────────────
 
@@ -95,7 +98,7 @@ def cadastro_entrar(resume_url):
         posicao = len(_fila_cadastro)
         sua_vez = posicao == 1 and not _cadastro_em_execucao
 
-    print(f"📥 [FILA] Entrada | ID: {novo_id} | Posição: {posicao}")
+    logger.info(f"[FILA] Entrada | ID: {novo_id} | Posição: {posicao}")
 
     if sua_vez:
         _liberar_proximo_cadastro()
@@ -110,7 +113,7 @@ def cadastro_liberar_proximo():
     with _fila_cadastro_lock:
         if _fila_cadastro:
             concluido = _fila_cadastro.pop(0)
-            print(f"✅ [FILA] Concluído | ID: {concluido['id']}")
+            logger.info(f"[FILA] Concluído | ID: {concluido['id']}")
         _cadastro_em_execucao = False
 
     _liberar_proximo_cadastro()
@@ -126,13 +129,13 @@ def _liberar_proximo_cadastro():
         proximo = _fila_cadastro[0]
         _cadastro_em_execucao = True
 
-    print(f"🚀 [FILA] Liberando | ID: {proximo['id']}")
+    logger.info(f"[FILA] Liberando | ID: {proximo['id']}")
 
     def chamar_n8n():
         try:
             req_ext.get(proximo['resume_url'], timeout=10)
-            print(f"✅ [FILA] N8N acordado | ID: {proximo['id']}")
+            logger.info(f"[FILA] N8N acordado | ID: {proximo['id']}")
         except Exception as e:
-            print(f"⚠️ [FILA] Erro ao acordar N8N: {e}")
+            logger.error(f"[FILA] Erro ao acordar N8N: {e}")
 
     threading.Thread(target=chamar_n8n, daemon=True).start()

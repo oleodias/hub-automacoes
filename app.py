@@ -27,6 +27,7 @@ load_dotenv()
 
 from extensions import db
 import banco_cadastros
+from utils.logging_config import configurar_logging
 
 
 # ══════════════════════════════════════════════════════════════
@@ -43,6 +44,9 @@ db.init_app(app)
 
 # Desliga avisos de SSL do Selenium
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# Configura o sistema de logging (terminal + arquivo)
+configurar_logging()
 
 
 # ══════════════════════════════════════════════════════════════

@@ -27,6 +27,9 @@ from utils.fila import cadastro_entrar, cadastro_liberar_proximo
 from automacoes.clientes import cadastro_novo
 from automacoes.clientes import cadastro_reativacao
 
+import logging
+logger = logging.getLogger(__name__)
+
 clientes_bp = Blueprint('clientes', __name__)
 
 
@@ -200,10 +203,10 @@ def receber_ficha():
             files=arquivos_abertos if arquivos_abertos else None,
             timeout=60
         )
-        print(f"✅ [N8N] Status: {resposta_n8n.status_code} | UUID: {submission_uuid}")
+        logger.info(f"[N8N] Status: {resposta_n8n.status_code} | UUID: {submission_uuid}")
         return jsonify({'status': 'ok', 'uuid': submission_uuid})
     except Exception as e:
-        print(f"❌ [N8N] Erro ao disparar webhook: {e}")
+        logger.error(f"[N8N] Erro ao disparar webhook: {e}")
         return jsonify({'status': 'erro', 'mensagem': str(e)}), 500
     finally:
         for nome, (_, fp, _) in arquivos_abertos.items():
@@ -259,7 +262,7 @@ def confirmar_acao():
         elif acao == 'mascaras':
             req_ext.get(resume_url, params={'mascaras': 'confirmadas'}, timeout=10)
     except Exception as e:
-        print(f"⚠️ Aviso ao chamar N8N: {e}")
+        logger.warning(f"Aviso ao chamar N8N: {e}")
 
     return render_template('confirmar_acao.html', acao=acao, empresa=empresa, motivo=motivo)
 
@@ -493,8 +496,8 @@ def n8n_iniciar_cadastro():
     cnpj      = dados_n8n.get('cnpj')
     razao     = dados_n8n.get('razao_social')
     vendedor  = dados_n8n.get('vendedor')
-    print(f"\n🔔 [N8N] Solicitação recebida!")
-    print(f"🏢 Cliente: {razao} | 👤 Vendedor: {vendedor}")
+    logger.info(f"[N8N] Solicitação recebida!")
+    logger.info(f"Cliente: {razao} | 👤 Vendedor: {vendedor}")
     try:
         resultado = cadastro_novo.executar({
             "cnpj": cnpj, "razao_social": razao, "vendedor": vendedor
@@ -505,5 +508,5 @@ def n8n_iniciar_cadastro():
             "resultado": resultado
         }), 200
     except Exception as e:
-        print(f"❌ Erro ao processar chamado do n8n: {e}")
+        logger.error(f"Erro ao processar chamado do n8n: {e}")
         return jsonify({"status": "erro", "detalhes": str(e)}), 500
