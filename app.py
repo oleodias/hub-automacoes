@@ -26,7 +26,7 @@ from utils.logging_config import configurar_logging
 # CRIAR E CONFIGURAR O FLASK
 # ══════════════════════════════════════════════════════════════
 
-app = Flask(__name__, template_folder='templates_reestilizados')
+app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'chave_reserva_caso_falhe')
 
 # Sessão expira após 8 horas de inatividade

@@ -1,16 +1,50 @@
 // --- LÓGICA DO MÓDULO: CADASTRO DE ITENS (FISCAL) ---
 
-function log(mensagem) {
-  const logElement = document.getElementById("terminal");
-  if (!logElement) return;
-  const data = new Date().toLocaleTimeString();
-  logElement.innerHTML += `<div><span class="log-tempo">[${data}]</span> ${mensagem}</div>`;
-  logElement.scrollTop = logElement.scrollHeight;
+function addLogLine(tipo, texto) {
+  const body = document.getElementById("terminal");
+  if (!body) return;
+  const prefixos = {
+    ok: "✓",
+    error: "✗",
+    warn: "!",
+    info: "i",
+    muted: "·",
+    default: "›",
+  };
+  const agora = new Date().toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const linha = document.createElement("div");
+  linha.className = "log-line log-" + tipo;
+  linha.innerHTML = `<span class="log-time">${agora}</span><span class="log-prefix">${prefixos[tipo] || "›"}</span><span class="log-text">${texto}</span>`;
+  body.appendChild(linha);
+  body.scrollTop = body.scrollHeight;
+  const counter = document.getElementById("footerLines");
+  if (counter) counter.textContent = body.querySelectorAll(".log-line").length;
+}
+
+function copiarLog() {
+  const linhas = document.querySelectorAll("#terminal .log-text");
+  const texto = Array.from(linhas)
+    .map((l) => l.textContent)
+    .join("\n");
+  navigator.clipboard.writeText(texto).then(() => {
+    const btn = document.getElementById("btnCopiarLog");
+    if (!btn) return;
+    btn.classList.add("copied");
+    btn.childNodes[btn.childNodes.length - 1].textContent = " Copiado!";
+    setTimeout(() => {
+      btn.classList.remove("copied");
+      btn.childNodes[btn.childNodes.length - 1].textContent = " Copiar log";
+    }, 2200);
+  });
 }
 
 function alternarTelaCheia() {
   const container = document.getElementById("container-do-log");
-  container.classList.toggle("log-expandido");
+  if (container) container.classList.toggle("log-expandido");
 }
 
 // INTEGRAÇÃO UPLOAD XML
@@ -22,9 +56,11 @@ if (fileInput) {
       document.getElementById("dropZone").classList.add("success");
       document.getElementById("uploadText").innerText = file.name;
       document.getElementById("uploadIcon").className =
-        "fa-solid fa-file-circle-check fa-3x text-success";
+        "fa-solid fa-file-circle-check fa-3x";
+      document.getElementById("uploadIcon").style.color = "#34d399";
 
-      console.log(`Carregando XML: ${file.name}...`);
+      addLogLine("info", `Carregando arquivo: ${file.name}`);
+
       let formData = new FormData();
       formData.append("file", file);
 
@@ -35,97 +71,170 @@ if (fileInput) {
         })
         .then((data) => {
           if (data.status === "ok") {
-            log("✅ Arquivo carregado. Pronto para auditoria.");
+            addLogLine("ok", "Arquivo carregado. Pronto para auditoria.");
             document.getElementById("dot-fase1").className =
               "status-dot bg-yellow";
             document.getElementById("badge-fase1").className =
-              "badge bg-warning text-dark";
+              "badge-fase badge-pendente";
             document.getElementById("txt-fase1").innerText =
               "Pronto para iniciar";
             document.getElementById("btn-fase1").disabled = false;
           }
         })
         .catch((err) => {
-          console.error("Erro no upload:", err);
-          alert("⚠️ Erro de conexão! O Servidor Python está rodando?");
+          addLogLine("error", `Erro no upload: ${err.message}`);
         });
     }
   });
 }
 
 // FASE 1
-function rodarFase1() {
+async function rodarFase1() {
   document.getElementById("btn-fase1").disabled = true;
-  log("🚀 <b>Iniciando Robô de Triagem (Fase 1)...</b>");
   document.getElementById("dot-fase1").className = "status-dot bg-yellow";
+  const footerProc = document.getElementById("footerProc");
+  if (footerProc) footerProc.textContent = "fase1_ncm.py";
 
-  const source = new EventSource("/run_fase1");
+  const resp = await fetch("/fila/entrar", { method: "POST" });
+  const { id: filaId, posicao } = await resp.json();
+
+  addLogLine("default", "─────────────────────────────────");
+  if (posicao > 1) {
+    addLogLine(
+      "warn",
+      `Sistema ocupado. Você é o ${posicao}º na fila. Aguardando automaticamente...`,
+    );
+  } else {
+    addLogLine("info", "Iniciando Robô de Triagem — Fase 1...");
+  }
+
+  const source = new EventSource(`/run_fase1?fila_id=${filaId}`);
 
   source.onmessage = function (event) {
+    if (event.data.startsWith("[FILA]")) {
+      const pos = event.data.match(/posição (\d+)/);
+      if (pos) addLogLine("muted", `Aguardando na fila... posição ${pos[1]}`);
+      return;
+    }
+    if (event.data === "[FILA_LIBERADA]") {
+      addLogLine("info", "Fila liberada! Iniciando agora...");
+      return;
+    }
     if (event.data === "[FIM_DO_PROCESSO]") {
       source.close();
-
-      // Trava de segurança do áudio
       const audio = document.getElementById("audioSucesso");
       if (audio) audio.play();
-
-      log("🎉 <b>Fase 1 Concluída! Itens na fila.</b>");
+      addLogLine("ok", "Fase 1 concluída! Itens na fila.");
+      addLogLine("default", "─────────────────────────────────");
+      if (footerProc) footerProc.textContent = "fase1 ok";
       document.getElementById("dot-fase1").className = "status-dot bg-green";
-
-      // AGORA SIM ELE DESTRAVA O BOTÃO!
       document.getElementById("btn-fase2").disabled = false;
-    } else if (event.data === "[FIM_SEM_ITENS]") {
+      return;
+    }
+    if (event.data === "[FIM_SEM_ITENS]") {
       source.close();
-
       const audio = document.getElementById("audioSucesso");
       if (audio) audio.play();
-
-      log("⚠️ <b>Processo finalizado: Nenhum item novo para cadastrar.</b>");
+      addLogLine("warn", "Nenhum item novo para cadastrar.");
+      addLogLine("default", "─────────────────────────────────");
+      if (footerProc) footerProc.textContent = "sem itens";
       document.getElementById("dot-fase1").className = "status-dot bg-green";
       document.getElementById("btn-fase2").disabled = true;
-    } else {
-      log(event.data);
+      return;
     }
+    const msg = event.data;
+    if (msg.includes("✅") || msg.toLowerCase().includes("válido"))
+      addLogLine("ok", msg);
+    else if (msg.includes("❌") || msg.toLowerCase().includes("erro"))
+      addLogLine("error", msg);
+    else if (msg.includes("⚠️")) addLogLine("warn", msg);
+    else addLogLine("default", msg);
   };
 
-  source.onerror = function (err) {
+  source.onerror = function () {
     source.close();
-    log("❌ <b>Erro de conexão com o servidor na Fase 1.</b>");
+    addLogLine("error", "Erro de conexão com o servidor na Fase 1.");
+    if (footerProc) footerProc.textContent = "erro";
     document.getElementById("dot-fase1").className = "status-dot bg-red";
     document.getElementById("btn-fase1").disabled = false;
+    fetch(`/fila/sair/${filaId}`, { method: "POST" });
   };
 }
 
 // FASE 2
-function rodarFase2() {
+async function rodarFase2() {
   document.getElementById("btn-fase2").disabled = true;
   document.getElementById("dot-fase2").className = "status-dot bg-yellow";
-  document.getElementById("txt-fase2").innerHTML = `<b>Rodando...</b>`;
+  document.getElementById("txt-fase2").innerText = "Aguardando fila...";
+  const footerProc = document.getElementById("footerProc");
+  if (footerProc) footerProc.textContent = "fase2_item.py";
 
-  log("🚀 <b>Iniciando Robô de Cadastro (Fase 2)...</b>");
-  log("--------------------------------------------------");
+  const resp = await fetch("/fila/entrar", { method: "POST" });
+  const { id: filaId, posicao } = await resp.json();
 
-  const source = new EventSource("/run_fase2");
+  addLogLine("default", "─────────────────────────────────");
+  if (posicao > 1) {
+    addLogLine(
+      "warn",
+      `Sistema ocupado. Você é o ${posicao}º na fila. Aguardando automaticamente...`,
+    );
+  } else {
+    addLogLine("info", "Iniciando Robô de Cadastro — Fase 2...");
+  }
+
+  const source = new EventSource(`/run_fase2?fila_id=${filaId}`);
 
   source.onmessage = function (event) {
+    if (event.data.startsWith("[FILA]")) {
+      const pos = event.data.match(/posição (\d+)/);
+      if (pos) {
+        const terminal = document.getElementById("terminal");
+        const ultimaLinha = terminal
+          ? terminal.querySelector(".log-line:last-child .log-text")
+          : null;
+        if (
+          ultimaLinha &&
+          ultimaLinha.textContent.startsWith("Aguardando na fila")
+        ) {
+          ultimaLinha.textContent = `Aguardando na fila... posição ${pos[1]}`;
+        } else {
+          addLogLine("muted", `Aguardando na fila... posição ${pos[1]}`);
+        }
+      }
+      return;
+    }
+    if (event.data === "[FILA_LIBERADA]") {
+      addLogLine("info", "Fila liberada! Iniciando agora...");
+      document.getElementById("txt-fase2").innerText = "Rodando...";
+      return;
+    }
     if (event.data === "[FIM_DO_PROCESSO]") {
       source.close();
-      log("--------------------------------------------------");
-      log("🎉 <b>Operação Finalizada! Todos os itens estão no ERP.</b><br>");
+      addLogLine("default", "─────────────────────────────────");
+      addLogLine("ok", "Operação finalizada! Todos os itens estão no ERP.");
+      if (footerProc) footerProc.textContent = "concluído";
       document.getElementById("dot-fase2").className = "status-dot bg-green";
-      document.getElementById("txt-fase2").innerHTML = `<b>Concluído!</b>`;
+      document.getElementById("txt-fase2").innerText = "Concluído!";
       const audio = document.getElementById("audioSucesso");
       if (audio) audio.play();
-    } else {
-      log(`💻 <i>${event.data}</i>`);
+      return;
     }
+    const msg = event.data;
+    if (msg.includes("✅") || msg.toLowerCase().includes("cadastrado"))
+      addLogLine("ok", msg);
+    else if (msg.includes("❌") || msg.toLowerCase().includes("erro"))
+      addLogLine("error", msg);
+    else if (msg.includes("⚠️")) addLogLine("warn", msg);
+    else addLogLine("default", msg);
   };
 
-  source.onerror = function (err) {
+  source.onerror = function () {
     source.close();
-    log("❌ <b>Conexão encerrada com o servidor.</b>");
+    addLogLine("error", "Conexão encerrada com o servidor.");
+    if (footerProc) footerProc.textContent = "erro";
     document.getElementById("dot-fase2").className = "status-dot bg-red";
-    document.getElementById("txt-fase2").innerHTML = `<b>Erro</b>`;
+    document.getElementById("txt-fase2").innerText = "Erro";
     document.getElementById("btn-fase2").disabled = false;
+    fetch(`/fila/sair/${filaId}`, { method: "POST" });
   };
 }

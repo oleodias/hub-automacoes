@@ -4,13 +4,51 @@ document.addEventListener("DOMContentLoaded", () => {
   preencherDatasMDF();
 });
 
-function logMDF(mensagem) {
-  const logElement = document.getElementById("terminal-mdf");
-  if (!logElement) return;
-  const data = new Date().toLocaleTimeString();
-  logElement.innerHTML += `<div><span class="log-tempo">[${data}]</span> ${mensagem}</div>`;
-  logElement.scrollTop = logElement.scrollHeight;
+// --- CONSOLE MODERNO ---
+
+function addLogLine(tipo, texto) {
+  const body = document.getElementById("terminal-mdf");
+  if (!body) return;
+  const prefixos = {
+    ok: "✓",
+    error: "✗",
+    warn: "!",
+    info: "i",
+    muted: "·",
+    default: "›",
+  };
+  const agora = new Date().toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const linha = document.createElement("div");
+  linha.className = "log-line log-" + tipo;
+  linha.innerHTML = `<span class="log-time">${agora}</span><span class="log-prefix">${prefixos[tipo] || "›"}</span><span class="log-text">${texto}</span>`;
+  body.appendChild(linha);
+  body.scrollTop = body.scrollHeight;
+  const counter = document.getElementById("footerLines");
+  if (counter) counter.textContent = body.querySelectorAll(".log-line").length;
 }
+
+function copiarLog() {
+  const linhas = document.querySelectorAll("#terminal-mdf .log-text");
+  const texto = Array.from(linhas)
+    .map((l) => l.textContent)
+    .join("\n");
+  navigator.clipboard.writeText(texto).then(() => {
+    const btn = document.getElementById("btnCopiarLog");
+    if (!btn) return;
+    btn.classList.add("copied");
+    btn.childNodes[btn.childNodes.length - 1].textContent = " Copiado!";
+    setTimeout(() => {
+      btn.classList.remove("copied");
+      btn.childNodes[btn.childNodes.length - 1].textContent = " Copiar log";
+    }, 2200);
+  });
+}
+
+// --- DATAS ---
 
 function preencherDatasMDF() {
   const dataHoje = new Date();
@@ -44,34 +82,71 @@ function preencherDatasMDF() {
 function limparDatas() {
   document.getElementById("mdf-inicio").value = "";
   document.getElementById("mdf-fim").value = "";
-  logMDF("🧹 <b>Datas limpas.</b> Insira o novo período.");
+  addLogLine("muted", "Datas limpas. Insira o novo período.");
 }
 
-function rodarMDF() {
+// --- ROBÔ MDF ---
+
+async function rodarMDF() {
   const inicioRaw = document.getElementById("mdf-inicio").value;
   const fimRaw = document.getElementById("mdf-fim").value;
-
   if (!inicioRaw || !fimRaw) {
-    logMDF(
-      "⚠️ <b>Erro: Selecione as datas de início e fim antes de começar!</b>",
-    );
+    addLogLine("warn", "Selecione as datas de início e fim antes de começar!");
     return;
   }
 
   const formatar = (d) => d.split("-").reverse().join("/");
   const inicio = formatar(inicioRaw);
   const fim = formatar(fimRaw);
+  const footerProc = document.getElementById("footerProc");
+  if (footerProc) footerProc.textContent = "robo_mdf.py";
 
   document.getElementById("btn-mdf").disabled = true;
   document.getElementById("btn-download-mdf").style.display = "none";
   document.getElementById("dot-mdf").className = "status-dot bg-yellow";
-  document.getElementById("txt-mdf").innerText = "Robô operando...";
+  document.getElementById("txt-mdf").innerText = "Aguardando fila...";
 
-  logMDF(`🚀 <b>Iniciando Extração do período ${inicio} até ${fim}...</b>`);
+  const resp = await fetch("/fila/entrar", { method: "POST" });
+  const { id: filaId, posicao } = await resp.json();
 
-  const source = new EventSource(`/run_mdf?inicio=${inicio}&fim=${fim}`);
+  addLogLine("default", "─────────────────────────────────");
+  if (posicao > 1) {
+    addLogLine(
+      "warn",
+      `Sistema ocupado. Você é o ${posicao}º na fila. Aguardando automaticamente...`,
+    );
+  } else {
+    addLogLine("info", `Iniciando extração: ${inicio} até ${fim}...`);
+  }
+
+  const source = new EventSource(
+    `/run_mdf?fila_id=${filaId}&inicio=${inicio}&fim=${fim}`,
+  );
 
   source.onmessage = function (event) {
+    if (event.data.startsWith("[FILA]")) {
+      const pos = event.data.match(/posição (\d+)/);
+      if (pos) {
+        const terminal = document.getElementById("terminal-mdf");
+        const ultimaLinha = terminal
+          ? terminal.querySelector(".log-line:last-child .log-text")
+          : null;
+        if (
+          ultimaLinha &&
+          ultimaLinha.textContent.startsWith("Aguardando na fila")
+        ) {
+          ultimaLinha.textContent = `Aguardando na fila... posição ${pos[1]}`;
+        } else {
+          addLogLine("muted", `Aguardando na fila... posição ${pos[1]}`);
+        }
+      }
+      return;
+    }
+    if (event.data === "[FILA_LIBERADA]") {
+      addLogLine("info", "Fila liberada! Iniciando agora...");
+      document.getElementById("txt-mdf").innerText = "Robô operando...";
+      return;
+    }
     if (event.data === "[FIM_DO_PROCESSO]") {
       source.close();
       const audio = document.getElementById("audioSucesso");
@@ -79,34 +154,51 @@ function rodarMDF() {
         audio.volume = 0.5;
         audio.play();
       }
-      logMDF("🎉 <b>Processo Finalizado com sucesso! Planilha gerada.</b>");
+      addLogLine("ok", "Processo finalizado com sucesso! Planilha gerada.");
+      addLogLine("default", "─────────────────────────────────");
+      if (footerProc) footerProc.textContent = "concluído";
       document.getElementById("dot-mdf").className = "status-dot bg-green";
       document.getElementById("txt-mdf").innerText = "Concluído!";
       document.getElementById("btn-mdf").disabled = false;
-      document.getElementById("btn-download-mdf").style.display = "block";
-    } else {
-      logMDF(event.data);
+      document.getElementById("btn-download-mdf").style.display = "flex";
+      return;
     }
+    const msg = event.data;
+    if (msg.includes("✅") || msg.toLowerCase().includes("sucesso"))
+      addLogLine("ok", msg);
+    else if (msg.includes("❌") || msg.toLowerCase().includes("erro"))
+      addLogLine("error", msg);
+    else if (msg.includes("⚠️")) addLogLine("warn", msg);
+    else addLogLine("default", msg);
   };
 
-  source.onerror = function (err) {
+  source.onerror = function () {
     source.close();
-    logMDF("❌ <b>Erro de conexão. O processo pode ter sido interrompido.</b>");
+    addLogLine(
+      "error",
+      "Erro de conexão. O processo pode ter sido interrompido.",
+    );
+    if (footerProc) footerProc.textContent = "erro";
     document.getElementById("dot-mdf").className = "status-dot bg-red";
     document.getElementById("txt-mdf").innerText = "Erro de Conexão";
     document.getElementById("btn-mdf").disabled = false;
+    fetch(`/fila/sair/${filaId}`, { method: "POST" });
   };
 }
 
+// --- DOWNLOAD ---
+
 let navegarLivremente = false;
-window.addEventListener("beforeunload", (event) => {
+
+/* window.addEventListener("beforeunload", (event) => {
   if (navegarLivremente) return;
   event.preventDefault();
   event.returnValue = "";
-});
+}); */
 
 function baixarRelatorio() {
   navegarLivremente = true;
+  addLogLine("info", "Iniciando download do relatório...");
   window.location.href = "/download_mdf";
   setTimeout(() => {
     navegarLivremente = false;

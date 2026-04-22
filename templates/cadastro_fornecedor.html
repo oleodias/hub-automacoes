@@ -1,215 +1,201 @@
-<!doctype html>
-<html lang="pt-br">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fornecedores - Hub Ciamed</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    />
-    <link rel="icon" href="/static/img/logosvg.svg" />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/index.css') }}"
-    />
-  </head>
-  <body>
-    <div class="sidebar">
-      <a
-        href="/"
-        data-bs-toggle="tooltip"
-        data-bs-placement="right"
-        title="Início"
-        ><i class="fa-solid fa-house"></i
-      ></a>
-      <a
-        href="https://www.ciamed.com.br/home.html"
-        target="_blank"
-        data-bs-toggle="tooltip"
-        data-bs-placement="right"
-        title="Site Oficial"
-        class="mt-md-auto"
-        ><i class="fa-solid fa-globe"></i
-      ></a>
-      <a
-        href="/admin"
-        target="_blank"
-        data-bs-toggle="tooltip"
-        data-bs-placement="right"
-        title="Painel Admin"
-        ><i class="fa-solid fa-circle-user"></i
-      ></a>
-      <a
-        href="/suporte"
-        target="_blank"
-        data-bs-toggle="tooltip"
-        data-bs-placement="right"
-        title="Suporte"
-        ><i class="fa-solid fa-comments"></i
-      ></a>
+{% extends "base.html" %} {% block title %}Fornecedores - Hub Ciamed{% endblock
+%} {% block css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/cadastro_fornecedor.css') }}"
+/>
+{% endblock %} {% block navbar_title %}Hub de Automações{% endblock %} {% block
+content %}
+<div class="page-header">
+  <div class="left">
+    <button
+      class="btn-back"
+      onclick="window.location.href = '/'"
+      title="Voltar ao Painel"
+    >
+      <i class="fa-solid fa-arrow-left" style="font-size: 13px"></i>
+    </button>
+    <div class="page-title">
+      Cadastro de Fornecedores
+      <span>Módulo Fiscal · Integração BrasilAPI</span>
+    </div>
+  </div>
+  <span class="badge-api"><i class="fa-solid fa-plug me-1"></i>BrasilAPI</span>
+</div>
+
+<div class="card-dark" style="margin-bottom: 20px; animation-delay: 0.1s">
+  <div class="card-title-row">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <h5>Busca Automática — Receita Federal</h5>
+  </div>
+  <div class="search-wrap">
+    <p>Digite o CNPJ para buscar os dados antes de iniciar a automação.</p>
+    <div class="input-dark-group">
+      <input
+        type="text"
+        id="cnpjInput"
+        class="input-dark"
+        placeholder="00.000.000/0000-00"
+        maxlength="18"
+      />
+      <button class="btn-teal" type="button" id="btnConsultar">
+        <i class="fa-solid fa-search me-1"></i> Buscar
+      </button>
+    </div>
+    <div class="status-row">
+      <span class="status-dot bg-gray" id="dot-fornecedor"></span>
+      <span id="txt-fornecedor">Aguardando CNPJ...</span>
+    </div>
+  </div>
+</div>
+
+<div class="card-dark" style="margin-bottom: 20px; animation-delay: 0.18s">
+  <div class="card-title-row">
+    <i class="fa-solid fa-list-check"></i>
+    <h5>Revisão de Dados</h5>
+  </div>
+  <form id="formFornecedor" class="form-grid">
+    <div class="form-row cols-9-3">
+      <div class="form-field">
+        <label>Razão Social</label>
+        <input type="text" id="razaoSocial" readonly />
+      </div>
+      <div class="form-field">
+        <label>Tipo</label>
+        <input
+          type="text"
+          id="matrizFilial"
+          readonly
+          style="text-align: center"
+        />
+      </div>
     </div>
 
-    <nav class="navbar-ciamed">
-      <div class="d-flex align-items-center text-white fw-bold fs-4">
-        <img src="/static/img/ciamedia.png" alt="Ciamed" class="brand-logo" />
-        <span class="border-start ps-3 fs-5 fw-light">Hub de Automações</span>
+    <div class="form-row cols-4-4-4">
+      <div class="form-field">
+        <label>Inscrição Estadual (IE)</label>
+        <input type="text" id="inscricaoEstadual" readonly />
       </div>
-    </nav>
-
-    <div class="main-content">
-      <div class="main-content">
-      
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="text-secondary fw-light m-0 d-flex align-items-center">
-          <button
-            class="btn btn-sm btn-light me-3 shadow-sm d-flex justify-content-center align-items-center"
-            onclick="window.location.href='/'"
-            style="
-              border-radius: 50%;
-              width: 35px;
-              height: 35px;
-              border: 1px solid #cbd5e1;
-              transition: 0.3s;
-            "
-            title="Voltar ao Painel Principal"
-          >
-            <i class="fa-solid fa-arrow-left text-secondary"></i>
-          </button>
-          Módulo: Cadastro de Fornecedores
-        </h4>
-        <span class="badge" style="background-color: var(--ciamed-teal); padding: 8px 15px">Integração BrasilAPI</span>
+      <div class="form-field">
+        <label>CNPJ</label>
+        <input type="text" id="cnpjCapturado" readonly />
       </div>
-
-      <div class="row mb-4">
-        <div class="col-md-12 mb-3">
-            <div class="card card-custom p-4 text-center">
-                <h5 class="mb-3">Busca Automática Receita Federal</h5>
-                <p class="text-muted small mb-3">
-                    Digite o CNPJ para buscar os dados antes de iniciar a automação.
-                </p>
-                
-                <div class="row g-2 justify-content-center mb-4">
-                    <div class="col-12 col-md-6 text-center">
-                        <div class="input-group">
-                            <input type="text" id="cnpjInput" class="form-control form-control-sm border-secondary-subtle shadow-sm" placeholder="00.000.000/0000-00" maxlength="18">
-                            <button class="btn btn-ciamed btn-sm px-3" type="button" id="btnConsultar">
-                                Buscar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mb-4">
-                    <span class="status-dot bg-gray" id="dot-fornecedor"></span>
-                    <span id="txt-fornecedor" class="text-muted fw-bold">Aguardando CNPJ...</span>
-                </div>
-            </div>
-        </div>
-      </div>
-
-      <div class="row mb-4">
-        <div class="col-md-12 mb-3">
-            <div class="card card-custom p-4">
-                <h5 class="mb-3 border-bottom pb-2 text-secondary"><i class="fa-solid fa-list-check me-2"></i>Revisão de Dados</h5>
-                <form id="formFornecedor" class="row g-3">
-                    <div class="col-md-9">
-                        <label class="form-label fw-bold text-secondary small mb-1">Razão Social</label>
-                        <input type="text" id="razaoSocial" class="form-control form-control-sm bg-light border-secondary-subtle" readonly>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-bold text-secondary small mb-1">Inscrição Estadual (IE)</label>
-                        <input type="text" class="form-control form-control-sm bg-light border-secondary-subtle" id="inscricaoEstadual" readonly>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-bold text-secondary small mb-1">CNPJ</label>
-                        <input type="text" class="form-control form-control-sm bg-light border-secondary-subtle" id="cnpjCapturado" readonly>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold text-secondary small mb-1">Tipo</label>
-                        <input type="text" id="matrizFilial" class="form-control form-control-sm bg-light border-secondary-subtle text-center" readonly>
-                    </div>
-
-                    <div class="col-md-9">
-                        <label class="form-label fw-bold text-secondary small mb-1">Nome Fantasia</label>
-                        <input type="text" id="nomeFantasia" class="form-control form-control-sm border-secondary-subtle">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold text-secondary small mb-1">Data Abertura</label>
-                        <input type="text" id="dataAbertura" class="form-control form-control-sm bg-light border-secondary-subtle text-center" readonly>
-                    </div>
-                    
-                    <div class="col-md-12">
-                        <label class="form-label fw-bold text-secondary small mb-1">Natureza Jurídica</label>
-                        <input type="text" id="naturezaJuridica" class="form-control form-control-sm bg-light border-secondary-subtle" readonly>
-                    </div>
-                    
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold text-secondary small mb-1">CEP</label>
-                        <input type="text" id="cep" class="form-control form-control-sm bg-light border-secondary-subtle" readonly>
-                    </div>
-                    <div class="col-md-7">
-                        <label class="form-label fw-bold text-secondary small mb-1">Logradouro (Endereço)</label>
-                        <input type="text" id="logradouro" class="form-control form-control-sm bg-light border-secondary-subtle" readonly>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label fw-bold text-secondary small mb-1">Número</label>
-                        <input type="text" id="numero" class="form-control form-control-sm bg-light border-secondary-subtle" readonly>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold text-secondary small mb-1">Complemento</label>
-                        <input type="text" id="complemento" class="form-control form-control-sm bg-light border-secondary-subtle" readonly>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold text-secondary small mb-1">Bairro</label>
-                        <input type="text" id="bairro" class="form-control form-control-sm bg-light border-secondary-subtle" readonly>
-                    </div>
-                    <div class="col-md-5">
-                        <label class="form-label fw-bold text-secondary small mb-1">Cidade / UF</label>
-                        <input type="text" id="cidade" class="form-control form-control-sm bg-light border-secondary-subtle" readonly>
-                    </div>
-
-                    <div class="col-md-12">
-                        <label class="form-label fw-bold text-secondary small mb-1">CNAE Principal</label>
-                        <input type="text" id="cnaePrincipal" class="form-control form-control-sm bg-light border-secondary-subtle" readonly>
-                    </div>
-                </form>
-
-                <button class="btn fw-bold w-100 mt-4 d-none" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 12px; border-radius: 10px;" id="btnIniciarRobo" onclick="iniciarCadastroERP()">
-                    <i class="fa-solid fa-play me-2"></i> Iniciar Cadastro no ERP
-                </button>
-            </div>
-        </div>
-      </div>
-
-      <div class="card card-custom card-log-wrapper">
-        <div class="card-header bg-transparent border-0 pt-3 fw-bold text-secondary d-flex justify-content-between align-items-center">
-          <div>
-            <i class="fa-solid fa-terminal me-2"></i> Console do Robô Fornecedores
-          </div>
-          <i class="fa-solid fa-expand fs-5 icon-expand-hover" onclick="toggleExpandirLog(this)"></i>
-        </div>
-        <div class="console-log mx-3 mb-3" id="terminal-fornecedor">
-          <div>> Sistema de Fornecedores pronto para operar.</div>
-        </div>
-      </div>
-
-    </div>
-        
-      </div>
+      <div class="form-field">
+        <label>Data de Abertura</label>
+        <input
+          type="text"
+          id="dataAbertura"
+          readonly
+          style="text-align: center"
+        />
       </div>
     </div>
-    <audio id="audioSucesso" preload="auto">
-      <source src="{{ url_for('static', filename='som_notificacao.wav') }}" type="audio/wav" />
-    </audio>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ url_for('static', filename='js/index.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cadastro_fornecedor.js') }}"></script>
-  </body>
-</html>
+    <div class="form-row cols-9-3">
+      <div class="form-field">
+        <label>Nome Fantasia</label>
+        <input type="text" id="nomeFantasia" readonly />
+      </div>
+      <div class="form-field">
+        <label>É MEI?</label>
+        <input type="text" id="mei" readonly style="text-align: center" />
+      </div>
+    </div>
+
+    <div class="form-row cols-12-1">
+      <div class="form-field">
+        <label>Natureza Jurídica</label>
+        <input type="text" id="naturezaJuridica" readonly />
+      </div>
+    </div>
+
+    <div class="form-row cols-3-7-2">
+      <div class="form-field">
+        <label>CEP</label>
+        <input type="text" id="cep" readonly />
+      </div>
+      <div class="form-field">
+        <label>Logradouro</label>
+        <input type="text" id="logradouro" readonly />
+      </div>
+      <div class="form-field">
+        <label>Número</label>
+        <input type="text" id="numero" readonly />
+      </div>
+    </div>
+
+    <div class="form-row cols-4-4-4">
+      <div class="form-field">
+        <label>Complemento</label>
+        <input type="text" id="complemento" readonly />
+      </div>
+      <div class="form-field">
+        <label>Bairro</label>
+        <input type="text" id="bairro" readonly />
+      </div>
+      <div class="form-field">
+        <label>Cidade / UF</label>
+        <input type="text" id="cidade" readonly />
+      </div>
+    </div>
+
+    <div class="form-row cols-12-1">
+      <div class="form-field">
+        <label>CNAE Principal</label>
+        <input type="text" id="cnaePrincipal" readonly />
+      </div>
+    </div>
+  </form>
+  <button
+    class="btn-iniciar"
+    id="btnIniciarRobo"
+    onclick="iniciarCadastroERP()"
+  >
+    <i class="fa-solid fa-play me-2"></i> Iniciar Cadastro no ERP
+  </button>
+</div>
+
+<div class="term-wrap">
+  <div class="term-titlebar">
+    <div class="term-titlebar-left">
+      <div class="term-dots">
+        <div class="dot dot-r"></div>
+        <div class="dot dot-y"></div>
+        <div class="dot dot-g"></div>
+      </div>
+      <div class="term-tab">
+        Console do Robô Fornecedores
+        <div class="term-status-pill">
+          <div class="term-pulse-dot"></div>
+          ao vivo
+        </div>
+      </div>
+    </div>
+    <div class="term-actions">
+      <button class="term-btn" id="btnCopiarLog" onclick="copiarLog()">
+        Copiar log
+      </button>
+    </div>
+  </div>
+  <div class="term-body" id="terminal-fornecedor">
+    <div class="log-line log-muted">
+      <span class="log-time">--:--:--</span>
+      <span class="log-prefix">·</span>
+      <span class="log-text"
+        >> Sistema de Fornecedores pronto para operar.</span
+      >
+    </div>
+  </div>
+  <div class="term-footer">
+    <span class="term-footer-info">
+      processo:
+      <span id="footerProc" class="term-footer-highlight">–</span>
+      &nbsp;|&nbsp; linhas:
+      <span id="footerLines" class="term-footer-highlight">1</span>
+    </span>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
+<script src="{{ url_for('static', filename='js/cadastro_fornecedor.js') }}"></script>
+{% endblock %}

@@ -1,350 +1,162 @@
-<!doctype html>
-<html lang="pt-br">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Suporte - Ciamed</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    />
-    <link rel="icon" href="/static/img/logosvg.svg" />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/suporte.css') }}"
-    />
-  </head>
-  <body>
-    <div class="sidebar">
-      <a
-        href="/"
-        data-bs-toggle="tooltip"
-        data-bs-placement="right"
-        title="Início"
-      >
-        <i class="fa-solid fa-house"></i>
-      </a>
-      <a
-        href="https://www.ciamed.com.br/home.html"
-        target="_blank"
-        data-bs-toggle="tooltip"
-        data-bs-placement="right"
-        title="Site Oficial"
-        class="mt-md-auto"
-      >
-        <i class="fa-solid fa-globe"></i>
-      </a>
-      <a
-        href="/admin"
-        data-bs-toggle="tooltip"
-        data-bs-placement="right"
-        title="Painel Admin"
-        target="_blank"
-      >
-        <i class="fa-solid fa-circle-user"></i>
-      </a>
+{% extends "base.html" %} {% block title %}Suporte - Ciamed{% endblock %} {%
+block css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/suporte.css') }}"
+/>
+{% endblock %} {% block navbar_title %}Central de Suporte{% endblock %} {% block
+content %}
+<div class="section-header">
+  <div class="eyebrow">Central de Suporte</div>
+  <h3>Como podemos ajudar?</h3>
+</div>
 
-      <a
-        href="javascript:void(0)"
-        onclick="abrirSobre()"
-        data-bs-toggle="tooltip"
-        data-bs-placement="right"
-        title="Sobre"
-      >
-        <i class="fa-regular fa-circle-question"></i>
-      </a>
+<div class="suporte-grid">
+  <div class="card-dark">
+    <div class="card-title-row">
+      <i class="fa-solid fa-book-open"></i>
+      <h5>Perguntas Frequentes</h5>
     </div>
-
-    <nav class="navbar-ciamed">
-      <div class="d-flex align-items-center text-white fw-bold fs-4">
-        <img src="/static/img/ciamedia.png" alt="Ciamed" class="brand-logo" />
-        <span class="ms-2 border-start ps-3 fs-5 fw-light"
-          >Central de Suporte</span
+    <div class="accordion" id="faqAccordion">
+      <div class="accordion-item-dark">
+        <button
+          class="accordion-button-dark"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#collapseOne"
+          aria-expanded="false"
+          aria-controls="collapseOne"
         >
-      </div>
-    </nav>
-
-    <div class="main-content">
-      <h4 class="mb-4 text-secondary fw-light">Como podemos ajudar?</h4>
-
-      <div class="row">
-        <div class="col-lg-6 mb-4">
-          <div class="card card-custom p-4 h-100">
-            <h5 class="text-secondary mb-4">
-              <i class="fa-solid fa-book-open text-ciamed me-2"></i> Perguntas
-              Frequentes
-            </h5>
-
-            <div class="accordion" id="faqAccordion">
-              <div class="accordion-item">
-                <h2 class="accordion-header" id="headingOne">
-                  <button
-                    class="accordion-button collapsed"
-                    type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#collapseOne"
-                    aria-expanded="true"
-                    aria-controls="collapseOne"
-                  >
-                    A SEFAZ está retornando erro de comunicação. E agora?
-                  </button>
-                </h2>
-                <div
-                  id="collapseOne"
-                  class="accordion-collapse collapse"
-                  aria-labelledby="headingOne"
-                  data-bs-parent="#faqAccordion"
-                >
-                  <div class="accordion-body text-muted small">
-                    Geralmente isso ocorre por instabilidade nos servidores do
-                    governo. Aguarde alguns minutos e tente buscar a nota
-                    novamente. Se o problema persistir, verifique a conexão com
-                    a internet.
-                  </div>
-                </div>
-              </div>
-              <div class="accordion-item">
-                <h2 class="accordion-header" id="headingTwo">
-                  <button
-                    class="accordion-button collapsed"
-                    type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#collapseTwo"
-                    aria-expanded="false"
-                    aria-controls="collapseTwo"
-                  >
-                    O NCM não foi validado no sistema.
-                  </button>
-                </h2>
-                <div
-                  id="collapseTwo"
-                  class="accordion-collapse collapse"
-                  aria-labelledby="headingTwo"
-                  data-bs-parent="#faqAccordion"
-                >
-                  <div class="accordion-body text-muted small">
-                    Isso significa que o NCM presente no arquivo XML não existe
-                    na base de dados do ERP. Você precisará abrir um chamado
-                    para o setor Fiscal cadastrar o novo NCM antes de
-                    prosseguir.
-                  </div>
-                </div>
-              </div>
-              <div class="accordion-item">
-                <h2 class="accordion-header" id="headingThree">
-                  <button
-                    class="accordion-button collapsed"
-                    type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#collapseThree"
-                    aria-expanded="false"
-                    aria-controls="collapseThree"
-                  >
-                    Onde ficam salvos os XMLs baixados?
-                  </button>
-                </h2>
-                <div
-                  id="collapseThree"
-                  class="accordion-collapse collapse"
-                  aria-labelledby="headingThree"
-                  data-bs-parent="#faqAccordion"
-                >
-                  <div class="accordion-body text-muted small">
-                    Todos os arquivos XML processados pelo robô são armazenados
-                    automaticamente na pasta segura do servidor da Ciamed, não
-                    sendo necessário salvar manualmente no seu computador.
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-lg-6 mb-4">
-          <div class="card card-custom p-4 h-100">
-            <h5 class="text-secondary mb-4">
-              <i class="fa-solid fa-envelope-open-text text-ciamed me-2"></i>
-              Abrir um Chamado
-            </h5>
-
-            <form id="formSuporte" onsubmit="enviarChamado(event)">
-              <div class="row">
-                <div class="col-md-6 mb-3">
-                  <label class="form-label text-muted small fw-bold"
-                    >Seu Nome</label
-                  >
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="nomeUser"
-                    required
-                    placeholder="Nome"
-                  />
-                </div>
-                <div class="col-md-6 mb-3">
-                  <label class="form-label text-muted small fw-bold"
-                    >Setor</label
-                  >
-                  <select class="form-select" id="setorUser" required>
-                    <option value="" selected disabled>Selecione</option>
-                    <option value="Controladoria">Controladoria</option>
-                    <option value="TI">TI</option>
-                    <option value="Comercial Público">Comercial Público</option>
-                    <option value="Comerical Privado">Comerical Privado</option>
-                    <option value="Jurídico">Jurídico</option>
-                    <option value="Estoque">Estoque</option>
-                    <option value="Faturamento">Faturamento</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label text-muted small fw-bold"
-                  >Assunto do Erro/Dúvida</label
-                >
-                <input
-                  type="text"
-                  class="form-control"
-                  id="assuntoChamado"
-                  required
-                  placeholder="Ex: Erro ao cadastrar item 105"
-                />
-              </div>
-
-              <div class="mb-4">
-                <label class="form-label text-muted small fw-bold"
-                  >Descrição</label
-                >
-                <textarea
-                  class="form-control"
-                  id="mensagemChamado"
-                  rows="4"
-                  required
-                  placeholder="Descreva o que aconteceu em detalhes..."
-                ></textarea>
-              </div>
-
-              <button
-                type="submit"
-                class="btn btn-ciamed"
-                id="btnEnviarChamado"
-              >
-                <i class="fa-solid fa-paper-plane me-2"></i> Enviar Chamado
-              </button>
-
-              <div
-                id="msgRetorno"
-                class="mt-3 text-center fw-bold d-none"
-              ></div>
-            </form>
-          </div>
-        </div>
-      </div>
-
-      <div class="footer d-none d-md-block">
-        <div class="col-12">
-          <div class="card card-custom py-2">
-            <p class="d-flex justify-content-center small mb-0 text-muted">
-              © 2026 Leonardo Dias | Ciamed Distribuidora de Medicamentos®
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div
-      class="modal fade"
-      id="sobreModal"
-      tabindex="-1"
-      aria-labelledby="sobreModalLabel"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog modal-dialog-centered">
+          A SEFAZ está retornando erro de comunicação. E agora?
+          <i class="fa-solid fa-chevron-down chevron"></i>
+        </button>
         <div
-          class="modal-content"
-          style="
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-          "
+          id="collapseOne"
+          class="accordion-collapse collapse"
+          data-bs-parent="#faqAccordion"
         >
-          <div
-            class="modal-header"
-            style="
-              background-color: var(--bg-light);
-              border-bottom: none;
-              border-radius: 12px 12px 0 0;
-            "
-          >
-            <h5 class="modal-title fw-bold text-secondary" id="sobreModalLabel">
-              <i
-                class="fa-solid fa-robot"
-                style="color: var(--ciamed-teal)"
-              ></i>
-              Automação Fiscal Ciamed
-            </h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Close"
-            ></button>
+          <div class="accordion-body-dark">
+            Geralmente isso ocorre por instabilidade nos servidores do governo.
+            Aguarde alguns minutos e tente buscar a nota novamente. Se o
+            problema persistir, verifique a conexão com a internet.
           </div>
-          <div class="modal-body px-4 pb-4 pt-2">
-            <div class="text-center mb-4">
-              <span class="badge" style="background-color: var(--ciamed-teal)"
-                >Versão 1.0.1</span
-              >
-            </div>
-            <h6 class="fw-bold text-dark">
-              <i class="fa-solid fa-bullseye me-2 text-secondary"></i> Missão do
-              Sistema
-            </h6>
-            <p class="text-muted small mb-4" style="text-align: justify">
-              Ferramenta desenvolvida para eliminar o trabalho manual e
-              repetitivo na entrada de Notas Fiscais. O robô atua validando NCMs
-              e automatizando o cadastro de novos itens diretamente no
-              <span
-                tabindex="0"
-                style="
-                  color: var(--ciamed-teal);
-                  cursor: pointer;
-                  font-weight: 600;
-                "
-                data-bs-toggle="popover"
-                data-bs-placement="top"
-                data-bs-trigger="focus"
-                data-bs-content="A sigla ERP significa Enterprise Resource Planning (Planejamento de Recursos Empresariais). Em termos simples, é o 'software principal' de uma empresa."
-                >ERP</span
-              >
-              da Ciamed, garantindo velocidade extrema e blindando o processo
-              contra erros de digitação.
-            </p>
-            <h6 class="fw-bold text-dark">
-              <i class="fa-solid fa-code me-2 text-secondary"></i> Autoria &
-              Desenvolvimento
-            </h6>
-            <div
-              class="p-3 mt-2"
-              style="
-                background-color: #f8f9fa;
-                border-left: 4px solid var(--ciamed-teal);
-                border-radius: 4px;
-              "
-            >
-              <p class="mb-1 text-dark fw-bold">Leonardo Dias</p>
-              <p class="mb-0 text-muted small">Controladoria - 2026</p>
-            </div>
+        </div>
+      </div>
+
+      <div class="accordion-item-dark">
+        <button
+          class="accordion-button-dark"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#collapseTwo"
+          aria-expanded="false"
+          aria-controls="collapseTwo"
+        >
+          O NCM não foi validado no sistema.
+          <i class="fa-solid fa-chevron-down chevron"></i>
+        </button>
+        <div
+          id="collapseTwo"
+          class="accordion-collapse collapse"
+          data-bs-parent="#faqAccordion"
+        >
+          <div class="accordion-body-dark">
+            Isso significa que o NCM presente no arquivo XML não existe na base
+            de dados do ERP. Você precisará abrir um chamado para o setor Fiscal
+            cadastrar o novo NCM antes de prosseguir.
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion-item-dark">
+        <button
+          class="accordion-button-dark"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#collapseThree"
+          aria-expanded="false"
+          aria-controls="collapseThree"
+        >
+          Onde ficam salvos os XMLs baixados?
+          <i class="fa-solid fa-chevron-down chevron"></i>
+        </button>
+        <div
+          id="collapseThree"
+          class="accordion-collapse collapse"
+          data-bs-parent="#faqAccordion"
+        >
+          <div class="accordion-body-dark">
+            Todos os arquivos XML processados pelo robô são armazenados
+            automaticamente na pasta segura do servidor da Ciamed, não sendo
+            necessário salvar manualmente no seu computador.
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ url_for('static', filename='js/suporte.js') }}"></script>
-  </body>
-</html>
+  <div class="card-dark">
+    <div class="card-title-row">
+      <i class="fa-solid fa-envelope-open-text"></i>
+      <h5>Abrir um Chamado</h5>
+    </div>
+    <form id="formSuporte" onsubmit="enviarChamado(event)" class="form-dark">
+      <div class="form-row-2">
+        <div class="form-field">
+          <label>Seu Nome</label>
+          <input type="text" id="nomeUser" required placeholder="Nome" />
+        </div>
+        <div class="form-field">
+          <label>Setor</label>
+          <select id="setorUser" required>
+            <option value="" selected disabled>Selecione</option>
+            <option value="Controladoria">Controladoria</option>
+            <option value="TI">TI</option>
+            <option value="Comercial Público">Comercial Público</option>
+            <option value="Comercial Privado">Comercial Privado</option>
+            <option value="Jurídico">Jurídico</option>
+            <option value="Estoque">Estoque</option>
+            <option value="Faturamento">Faturamento</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-field">
+        <label>Assunto do Erro / Dúvida</label>
+        <input
+          type="text"
+          id="assuntoChamado"
+          required
+          placeholder="Ex: Erro ao cadastrar item 105"
+        />
+      </div>
+      <div class="form-field">
+        <label>Descrição</label>
+        <textarea
+          id="mensagemChamado"
+          rows="4"
+          required
+          placeholder="Descreva o que aconteceu em detalhes..."
+        ></textarea>
+      </div>
+      <div>
+        <button type="submit" class="btn-enviar" id="btnEnviarChamado">
+          <i class="fa-solid fa-paper-plane"></i> Enviar Chamado
+        </button>
+        <div id="msgRetorno" class="mt-3 text-center fw-bold d-none"></div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="footer">
+  <p>© 2026 Leonardo Dias · Ciamed Distribuidora de Medicamentos®</p>
+</div>
+{% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='js/suporte.js') }}"></script>
+<script>
+  // Inicializar Popovers (os tooltips já estão no base.html)
+  document.querySelectorAll('[data-bs-toggle="popover"]').forEach((el) => {
+    new bootstrap.Popover(el);
+  });
+</script>
+{% endblock %}
