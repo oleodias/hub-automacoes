@@ -143,3 +143,63 @@ class Submissao(db.Model):
 
     def __repr__(self):
         return f'<Submissao {self.uuid[:8]}... | {self.razao_social} | {self.status}>'
+    
+
+# ══════════════════════════════════════════════════════════════
+# ROBÔS DO HUB (lista central para rastreamento)
+# ══════════════════════════════════════════════════════════════
+
+ROBOS_HUB = {
+    'itens_fase1':  'Cadastro de Itens — Fase 1 (NCM)',
+    'itens_fase2':  'Cadastro de Itens — Fase 2 (ERP)',
+    'mdf':          'Relatório MDF-e',
+    'fornecedor':   'Cadastro de Fornecedor',
+    'cliente_novo': 'Cadastro de Cliente (Novo)',
+}
+
+
+# ══════════════════════════════════════════════════════════════
+# MODELO: Execução de Robô
+# ══════════════════════════════════════════════════════════════
+
+class Execucao(db.Model):
+    """
+    Registra cada execução de robô no Hub.
+
+    Ciclo de vida:
+        1. Usuário dispara o robô → cria registro com status 'executando'
+        2. Robô termina → atualiza para 'sucesso', 'erro' ou 'aviso'
+        3. Duração é calculada automaticamente (fim - inicio)
+
+    O campo 'detalhes' é um JSON livre para guardar informações extras:
+        - Em caso de erro: {"erro": "mensagem do erro"}
+        - Em caso de aviso: {"avisos": ["msg1", "msg2"]}
+        - Qualquer dado relevante do robô
+    """
+
+    __tablename__ = 'execucoes'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Quem disparou
+    usuario_id   = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True)
+    usuario_nome = db.Column(db.String(150), default='Sistema')
+
+    # Qual robô
+    robo = db.Column(db.String(50), nullable=False)
+
+    # Status: 'executando', 'sucesso', 'erro', 'aviso'
+    status = db.Column(db.String(20), default='executando')
+
+    # Timestamps
+    inicio     = db.Column(db.DateTime, default=datetime.now)
+    fim        = db.Column(db.DateTime, nullable=True)
+    duracao_seg = db.Column(db.Integer, nullable=True)
+
+    # Detalhes extras (JSON livre)
+    detalhes = db.Column(db.JSON, default=dict)
+
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    def __repr__(self):
+        return f'<Execucao {self.id} | {self.robo} | {self.status}>'

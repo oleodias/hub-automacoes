@@ -4,6 +4,7 @@
 
 import requests
 from flask import Blueprint, render_template, jsonify
+from utils.auth import permissao_required
 
 cnpj_bp = Blueprint('cnpj', __name__)
 
@@ -79,5 +80,6 @@ def api_cnpj_completo(cnpj):
 
 
 @cnpj_bp.route('/consulta_cnpj_completa')
+@permissao_required('cnpj')
 def consulta_cnpj_completa():
     return render_template('consulta_cnpj.html')

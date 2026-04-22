@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Meu Histórico - Hub Ciamed{% endblock %}
+{% block css %}
+<style>
+:root { --card: rgba(255,255,255,0.03); --border: rgba(255,255,255,0.08); --text-primary: rgba(255,255,255,0.85); --text-secondary: rgba(255,255,255,0.45); --teal: #0ee6b8; --teal-dim: rgba(14,230,184,0.1); }
+.pagina-historico { padding: 84px 30px 30px 84px; }
+.navbar-ciamed .brand-logo { height: 45px; }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.page-header .left { display: flex; align-items: center; gap: 14px; }
+.btn-back { background: var(--card); border: 1px solid var(--border); color: var(--text-secondary); border-radius: 8px; padding: 8px 12px; cursor: pointer; transition: 0.2s; }
+.btn-back:hover { background: rgba(255,255,255,0.08); color: white; }
+.page-title { font-size: 1.3rem; font-weight: 700; color: white; line-height: 1.2; }
+.page-title span { display: block; font-size: 0.75rem; font-weight: 400; color: var(--text-secondary); margin-top: 2px; }
+.stats-row { display: flex; gap: 14px; margin-bottom: 24px; flex-wrap: wrap; }
+.stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; flex: 1; min-width: 140px; }
+.stat-card .valor { font-size: 1.6rem; font-weight: 700; color: white; }
+.stat-card .label { font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px; }
+.tabela-container { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.tabela-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
+.tabela-header h5 { color: white; font-size: 0.95rem; margin: 0; }
+.filtros { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.filtros select { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: white; border-radius: 6px; padding: 6px 10px; font-size: 0.8rem; outline: none; }
+.filtros select option { background: #1a2332; }
+table { width: 100%; border-collapse: collapse; }
+thead th { padding: 12px 16px; text-align: left; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); border-bottom: 1px solid var(--border); }
+tbody td { padding: 12px 16px; font-size: 0.85rem; color: var(--text-primary); border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+tbody tr:hover { background: rgba(255,255,255,0.02); }
+.badge { padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+.badge-sucesso { background: rgba(34,197,94,0.15); color: #4ade80; }
+.badge-erro { background: rgba(239,68,68,0.15); color: #f87171; }
+.badge-executando { background: rgba(251,191,36,0.15); color: #fbbf24; }
+.badge-aviso { background: rgba(96,165,250,0.15); color: #60a5fa; }
+.vazio { text-align: center; padding: 40px; color: var(--text-secondary); font-size: 0.9rem; }
+</style>
+{% endblock %}
+{% block navbar_title %}Hub de Automações{% endblock %}
+{% block content %}
+<div class="pagina-historico">
+
+    <div class="page-header">
+        <div class="left">
+            <button class="btn-back" onclick="window.location.href='/'" title="Voltar">
+                <i class="fa-solid fa-arrow-left" style="font-size: 13px"></i>
+            </button>
+            <div class="page-title">
+                Meu Histórico
+                <span>Suas execuções de robôs</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="valor" id="mh-total">-</div>
+            <div class="label">Total de Execuções</div>
+        </div>
+        <div class="stat-card">
+            <div class="valor" id="mh-sucesso" style="color: #4ade80;">-</div>
+            <div class="label">Sucesso</div>
+        </div>
+        <div class="stat-card">
+            <div class="valor" id="mh-erro" style="color: #f87171;">-</div>
+            <div class="label">Erros</div>
+        </div>
+        <div class="stat-card">
+            <div class="valor" id="mh-taxa">-</div>
+            <div class="label">Taxa de Sucesso</div>
+        </div>
+    </div>
+
+    <div class="tabela-container">
+        <div class="tabela-header">
+            <h5><i class="fa-solid fa-clock-rotate-left" style="margin-right: 8px; color: var(--teal);"></i>Minhas Execuções</h5>
+            <div class="filtros">
+                <select id="filtro-robo" onchange="carregar()">
+                    <option value="">Todos os robôs</option>
+                    <option value="itens_fase1">Itens — Fase 1</option>
+                    <option value="itens_fase2">Itens — Fase 2</option>
+                    <option value="mdf">Relatório MDF-e</option>
+                    <option value="fornecedor">Fornecedor</option>
+                    <option value="cliente_novo">Cliente Novo</option>
+                </select>
+                <select id="filtro-status" onchange="carregar()">
+                    <option value="">Todos os status</option>
+                    <option value="sucesso">Sucesso</option>
+                    <option value="erro">Erro</option>
+                    <option value="executando">Executando</option>
+                </select>
+            </div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Robô</th>
+                    <th>Data / Hora</th>
+                    <th>Duração</th>
+                    <th>Status</th>
+                    <th>Detalhes</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-historico">
+                <tr><td colspan="5" class="vazio">Carregando...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+function carregar() {
+    const robo = document.getElementById('filtro-robo').value;
+    const status = document.getElementById('filtro-status').value;
+
+    let url = '/api/meu_historico?limite=100';
+    if (robo) url += '&robo=' + robo;
+    if (status) url += '&status=' + status;
+
+    fetch(url)
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('mh-total').textContent = data.stats.total;
+            document.getElementById('mh-sucesso').textContent = data.stats.sucesso;
+            document.getElementById('mh-erro').textContent = data.stats.erro;
+            document.getElementById('mh-taxa').textContent = data.stats.taxa_sucesso + '%';
+            renderizar(data.execucoes);
+        });
+}
+
+function renderizar(execucoes) {
+    const tbody = document.getElementById('tabela-historico');
+
+    if (!execucoes.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="vazio">Nenhuma execução encontrada.</td></tr>';
+        return;
+    }
+
+    const badgeClass = {
+        'sucesso': 'badge-sucesso',
+        'erro': 'badge-erro',
+        'executando': 'badge-executando',
+        'aviso': 'badge-aviso'
+    };
+
+    const badgeLabel = {
+        'sucesso': 'Sucesso',
+        'erro': 'Erro',
+        'executando': 'Executando',
+        'aviso': 'Aviso'
+    };
+
+    tbody.innerHTML = execucoes.map(e => {
+        const d = e.detalhes || {};
+        const partes = [];
+        if (d.periodo_inicio) partes.push('Período: ' + d.periodo_inicio + ' a ' + d.periodo_fim);
+        if (d.cnpj) partes.push('CNPJ: ' + d.cnpj);
+        if (d.razao_social) partes.push(d.razao_social);
+        if (d.arquivo_xml) partes.push('XML: ' + d.arquivo_xml);
+        if (d.erro) partes.push('Erro: ' + d.erro);
+        const detStr = partes.length ? partes.join(' | ') : '—';
+
+        return `<tr>
+            <td style="font-weight:600; color:white;">${e.robo_nome}</td>
+            <td style="font-size:0.8rem; color:var(--text-secondary);">${e.inicio}</td>
+            <td style="font-weight:600;">${e.duracao_fmt}</td>
+            <td><span class="badge ${badgeClass[e.status] || ''}">${badgeLabel[e.status] || e.status}</span></td>
+            <td style="font-size:0.78rem; color:var(--text-secondary); max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${detStr}">${detStr}</td>
+        </tr>`;
+    }).join('');
+}
+
+document.addEventListener('DOMContentLoaded', carregar);
+</script>
+{% endblock %}

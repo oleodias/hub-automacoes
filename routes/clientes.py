@@ -24,6 +24,8 @@ import uuid as uuid_lib
 import banco_cadastros
 from utils.cnpj_ws import consultar_cnpj_ws
 from utils.fila import cadastro_entrar, cadastro_liberar_proximo
+from utils.auth import permissao_required
+from utils.rastreio import iniciar_execucao_robo, finalizar_execucao_robo
 from automacoes.clientes import cadastro_novo
 from automacoes.clientes import cadastro_reativacao
 
@@ -36,6 +38,7 @@ clientes_bp = Blueprint('clientes', __name__)
 # ── Páginas ───────────────────────────────────────────────────
 
 @clientes_bp.route('/cadastro_clientes')
+@permissao_required('clientes')
 def cadastro_clientes():
     return render_template('cadastro_clientes.html')
 
@@ -285,11 +288,13 @@ def motivo_reprovacao():
 # ══════════════════════════════════════════════════════════════
 
 @clientes_bp.route('/monitor_cadastros')
+@permissao_required('monitor')
 def monitor_cadastros():
     return render_template('monitor_cadastros.html')
 
 
 @clientes_bp.route('/api/monitor_cadastros')
+@permissao_required('monitor')
 def api_monitor_cadastros():
     cadastros = banco_cadastros.listar_submissoes(
         status   = request.args.get('status'),
@@ -303,6 +308,7 @@ def api_monitor_cadastros():
 
 
 @clientes_bp.route('/download_doc/<uuid>/<doc_nome>')
+@permissao_required('monitor')
 def download_doc(uuid, doc_nome):
     pasta_cliente = os.path.join(os.getcwd(), 'uploads_fichas', uuid)
     if os.path.exists(pasta_cliente):
@@ -319,6 +325,7 @@ def download_doc(uuid, doc_nome):
 # ══════════════════════════════════════════════════════════════
 
 @clientes_bp.route('/api/exportar_fichas')
+@permissao_required('monitor')
 def exportar_fichas():
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -498,15 +505,18 @@ def n8n_iniciar_cadastro():
     vendedor  = dados_n8n.get('vendedor')
     logger.info(f"[N8N] Solicitação recebida!")
     logger.info(f"Cliente: {razao} | 👤 Vendedor: {vendedor}")
+    exec_id = iniciar_execucao_robo('cliente_novo')
     try:
         resultado = cadastro_novo.executar({
             "cnpj": cnpj, "razao_social": razao, "vendedor": vendedor
         })
+        finalizar_execucao_robo(exec_id, 'sucesso')
         return jsonify({
             "status": "sucesso",
             "mensagem": f"Robô finalizou o cadastro de {razao}",
             "resultado": resultado
         }), 200
     except Exception as e:
+        finalizar_execucao_robo(exec_id, 'erro', {'erro': str(e)})
         logger.error(f"Erro ao processar chamado do n8n: {e}")
         return jsonify({"status": "erro", "detalhes": str(e)}), 500

@@ -50,6 +50,8 @@
         z-index: 9999 !important;
         background: #0f1623 !important;
         border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
+        display: flex !important;
+        flex-direction: column !important;
       }
 
       /* 4. BLINDA A NAVBAR (Efeito vidro, borda e posição) */
@@ -85,11 +87,14 @@
         data-bs-toggle="tooltip"
         data-bs-placement="right"
         title="Site Oficial"
-        class="mt-md-auto"
       >
         <i class="fa-solid fa-globe"></i>
       </a>
       <a
+        {%
+        if
+        is_admin
+        %}
         href="/admin"
         target="_blank"
         data-bs-toggle="tooltip"
@@ -98,6 +103,7 @@
       >
         <i class="fa-solid fa-circle-user"></i>
       </a>
+      {% endif %}
       <a
         href="/suporte"
         data-bs-toggle="tooltip"
@@ -114,6 +120,15 @@
         title="Sobre"
       >
         <i class="fa-regular fa-circle-question"></i>
+      </a>
+      <a
+        href="/logout"
+        data-bs-toggle="tooltip"
+        data-bs-placement="right"
+        title="Sair ({{ usuario_nome }})"
+        style="margin-top: auto; color: #e53935"
+      >
+        <i class="fa-solid fa-right-from-bracket"></i>
       </a>
     </div>
 

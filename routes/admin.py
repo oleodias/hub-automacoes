@@ -221,3 +221,104 @@ def deletar_usuario(id):
     db.session.commit()
     logger.info(f"Usuário deletado: {nome} (ID: {id}) por {session.get('usuario_nome')}")
     return jsonify({'status': 'ok'})
+
+
+# ══════════════════════════════════════════════════════════════
+# HISTÓRICO DE EXECUÇÕES
+# ══════════════════════════════════════════════════════════════
+
+@admin_bp.route('/api/execucoes', methods=['GET'])
+@admin_required
+def listar_execucoes():
+    """
+    Retorna lista de execuções com filtros opcionais.
+    Query params: robo, status, usuario, data_de, data_ate, limite
+    """
+    from models import Execucao, ROBOS_HUB
+    from datetime import datetime
+
+    query = Execucao.query.order_by(Execucao.inicio.desc())
+
+    # Filtro por robô
+    robo = request.args.get('robo')
+    if robo:
+        query = query.filter(Execucao.robo == robo)
+
+    # Filtro por status
+    status = request.args.get('status')
+    if status:
+        query = query.filter(Execucao.status == status)
+
+    # Filtro por usuário
+    usuario = request.args.get('usuario')
+    if usuario:
+        query = query.filter(Execucao.usuario_nome.ilike(f'%{usuario}%'))
+
+    # Filtro por data
+    data_de = request.args.get('data_de')
+    if data_de:
+        try:
+            if '/' in data_de:
+                dt = datetime.strptime(data_de, '%d/%m/%Y')
+            else:
+                dt = datetime.strptime(data_de, '%Y-%m-%d')
+            query = query.filter(Execucao.inicio >= dt)
+        except ValueError:
+            pass
+
+    data_ate = request.args.get('data_ate')
+    if data_ate:
+        try:
+            if '/' in data_ate:
+                dt = datetime.strptime(data_ate, '%d/%m/%Y')
+            else:
+                dt = datetime.strptime(data_ate, '%Y-%m-%d')
+            dt = dt.replace(hour=23, minute=59, second=59)
+            query = query.filter(Execucao.inicio <= dt)
+        except ValueError:
+            pass
+
+    # Limite
+    limite = request.args.get('limite', 100, type=int)
+    execucoes = query.limit(limite).all()
+
+    lista = []
+    for e in execucoes:
+        # Formata duração
+        if e.duracao_seg is not None:
+            mins = e.duracao_seg // 60
+            segs = e.duracao_seg % 60
+            duracao_fmt = f"{mins}min {segs}s" if mins > 0 else f"{segs}s"
+        else:
+            duracao_fmt = "—"
+
+        lista.append({
+            'id':            e.id,
+            'robo':          e.robo,
+            'robo_nome':     ROBOS_HUB.get(e.robo, e.robo),
+            'status':        e.status,
+            'usuario_nome':  e.usuario_nome,
+            'inicio':        e.inicio.strftime('%d/%m/%Y %H:%M:%S') if e.inicio else '',
+            'fim':           e.fim.strftime('%d/%m/%Y %H:%M:%S') if e.fim else '',
+            'duracao_fmt':   duracao_fmt,
+            'duracao_seg':   e.duracao_seg,
+            'detalhes':      e.detalhes or {},
+        })
+
+    # Stats rápidas
+    from sqlalchemy import func
+    total = Execucao.query.count()
+    sucessos = Execucao.query.filter_by(status='sucesso').count()
+    erros = Execucao.query.filter_by(status='erro').count()
+    executando = Execucao.query.filter_by(status='executando').count()
+
+    return jsonify({
+        'execucoes': lista,
+        'stats': {
+            'total': total,
+            'sucesso': sucessos,
+            'erro': erros,
+            'executando': executando,
+            'taxa_sucesso': round((sucessos / total * 100), 1) if total > 0 else 0,
+        }
+    })

@@ -158,15 +158,20 @@ def verificar_horario():
 
 @app.context_processor
 def injetar_usuario():
-    """
-    Injeta o nome e cargo do usuário logado em todos os templates.
-    Assim, qualquer página pode mostrar "Olá, Leonardo" ou esconder
-    botões de admin sem precisar passar dados manualmente.
-    """
+    from utils.auth import get_usuario_logado
+    usuario = get_usuario_logado()
+    if usuario:
+        return {
+            'usuario_nome':  usuario.nome,
+            'usuario_cargo': usuario.cargo,
+            'is_admin':      usuario.is_admin(),
+            'tem_permissao': usuario.tem_permissao,
+        }
     return {
-        'usuario_nome':  session.get('usuario_nome', ''),
-        'usuario_cargo': session.get('usuario_cargo', ''),
-        'is_admin':      session.get('usuario_cargo') == 'admin',
+        'usuario_nome':  '',
+        'usuario_cargo': '',
+        'is_admin':      False,
+        'tem_permissao': lambda m: False,
     }
 
 
