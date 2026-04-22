@@ -29,7 +29,7 @@ Logs/
 
 # ── SELENIUM: perfil do Chrome gerado pelo robô ─────────────
 # (essa pasta sozinha tem centenas de MB de lixo)
-chrome_data/
+chrome_perfil/
 
 # ── XMLS DE ENTRADA: dados temporários do robô ──────────────
 XML_Entrada/*.xml
