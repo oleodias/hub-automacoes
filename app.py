@@ -89,6 +89,7 @@ ROTAS_PUBLICAS = {
     'clientes.fila_cadastro_entrar',     # N8N chama direto
     'clientes.fila_cadastro_liberar',    # N8N chama direto
     'clientes.n8n_iniciar_cadastro',     # N8N chama direto
+    'clientes.n8n_iniciar_reativacao',     # N8N chama direto
 }
 
 @app.before_request

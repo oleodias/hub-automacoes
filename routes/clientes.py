@@ -442,7 +442,7 @@ def exportar_fichas():
         valores = [
             c.get("created_at", "—"), c.get("razao_social", "—"), c.get("cnpj", "—"),
             d.get("tipo_cadastro", "—"), LABEL_STATUS.get(status, status),
-            f"{c.get('tentativa', 1)}ª", d.get("cod_erp", "—"),
+            f"{c.get('tentativa', 1)}ª", d.get("codigo_nl", "—"),
             d.get("vendedor", "—"), d.get("representante", "—"),
             d.get("captacao", "—"), d.get("contribuinte_icms", "—"),
             d.get("possui_regime_especial", "—"), d.get("regra_faturamento", "—"),
@@ -519,4 +519,137 @@ def n8n_iniciar_cadastro():
     except Exception as e:
         finalizar_execucao_robo(exec_id, 'erro', {'erro': str(e)})
         logger.error(f"Erro ao processar chamado do n8n: {e}")
+        return jsonify({"status": "erro", "detalhes": str(e)}), 500
+
+
+# ══════════════════════════════════════════════════════════════
+# Integração N8N → Robô de REATIVAÇÃO
+# ══════════════════════════════════════════════════════════════
+# O n8n chama esta rota DEPOIS que a farmacêutica aprovou a ficha.
+# Em vez de mandar todos os campos no payload (como faz o cadastro
+# novo), essa rota LÊ DO BANCO pelo uuid — porque o /receber_ficha
+# já enriqueceu e salvou tudo (endereço, CNAE, IE, etc).
+#
+# O n8n só precisa mandar:
+#   uuid           → pra buscar os dados completos no banco
+#   acao_bloqueio  → decisão da farmacêutica (manter/alterar/null)
+#   valor_bloqueio → valor novo (só quando acao_bloqueio == "alterar")
+# ══════════════════════════════════════════════════════════════
+
+@clientes_bp.route('/n8n_iniciar_reativacao', methods=['POST'])
+def n8n_iniciar_reativacao():
+    dados_n8n = request.json or {}
+
+    # ── 1. Validar campos obrigatórios do payload ──
+    uuid_ficha = dados_n8n.get('uuid', '').strip()
+    if not uuid_ficha:
+        return jsonify({"status": "erro", "detalhes": "Campo 'uuid' ausente no payload."}), 400
+
+    # ── 2. Buscar dados completos no banco ──
+    sub = banco_cadastros.buscar_submissao(uuid_ficha)
+    if not sub:
+        return jsonify({"status": "erro", "detalhes": f"UUID {uuid_ficha} não encontrado no banco."}), 404
+
+    d = sub['dados_json']
+
+    # Validar que é reativação e tem código NL
+    if d.get('tipo_cadastro') != 'REATIVACAO':
+        return jsonify({"status": "erro", "detalhes": f"Submissão {uuid_ficha} não é REATIVACAO (tipo: {d.get('tipo_cadastro')})."}), 400
+
+    codigo_nl = d.get('codigo_nl', '').strip()
+    if not codigo_nl:
+        return jsonify({"status": "erro", "detalhes": "Código NL ausente nos dados da submissão."}), 400
+
+    razao = d.get('razao_social', '') or sub.get('razao_social', '')
+    logger.info(f"[N8N] Reativação recebida | NL: {codigo_nl} | Empresa: {razao}")
+
+    # ── 3. Montar contatos (campos planos → lista de dicts) ──
+    contatos = []
+    if d.get('compras_nome'):
+        contatos.append({
+            "nome": d['compras_nome'], "codigo": "30",
+            "tel": d.get('compras_tel', ''), "email": d.get('compras_email', ''),
+            "email_xml": d.get('email_xml_1', ''), "email_danfe": "",
+            "check_boleto": False, "check_docs": True,
+        })
+    if d.get('rec_nome'):
+        contatos.append({
+            "nome": d['rec_nome'], "codigo": "35",
+            "tel": d.get('rec_tel', ''), "email": d.get('rec_email', ''),
+            "email_xml": "", "email_danfe": "",
+            "check_boleto": False, "check_docs": False,
+        })
+    if d.get('fin_nome'):
+        contatos.append({
+            "nome": d['fin_nome'], "codigo": "50",
+            "tel": d.get('fin_tel', ''), "email": d.get('fin_email', ''),
+            "email_xml": "", "email_danfe": "",
+            "check_boleto": True, "check_docs": False,
+        })
+    if d.get('farma_nome'):
+        contatos.append({
+            "nome": d['farma_nome'], "codigo": "20",
+            "tel": d.get('farma_tel', ''), "email": d.get('farma_email', ''),
+            "email_xml": "", "email_danfe": "",
+            "check_boleto": False, "check_docs": False,
+        })
+
+    # ── 4. Mapear pro formato que executar() espera ──
+    dados_robo = {
+        # Chave crítica
+        "codigo_nl":                codigo_nl,
+
+        # Dados enriquecidos (já vieram do CNPJ.ws no /receber_ficha)
+        "cnpj_limpo":               d.get('cnpj_limpo', ''),
+        "razao_social":             razao,
+        "nome_fantasia":            d.get('nome_fantasia', ''),
+        "inscricao_estadual":       d.get('inscricao_estadual', ''),
+        "cnae_principal_descricao": d.get('cnae_principal_descricao', ''),
+        "cep":                      d.get('cep', ''),
+        "logradouro":               d.get('logradouro', ''),
+        "numero":                   d.get('numero', ''),
+        "complemento":              d.get('complemento', ''),
+        "bairro":                   d.get('bairro', ''),
+        "uf":                       d.get('uf', ''),
+
+        # Bloqueio (vem do payload do n8n, NÃO do banco)
+        "acao_bloqueio":            dados_n8n.get('acao_bloqueio'),
+        "valor_bloqueio":           dados_n8n.get('valor_bloqueio'),
+
+        # Comercial
+        "regra_faturamento":        d.get('regra_faturamento', ''),
+        "representante":            d.get('representante', ''),
+        "vendedor":                 d.get('vendedor', ''),
+        "forma_captacao":           d.get('captacao', ''),
+
+        # Contatos
+        "email_xml":                d.get('email_xml_1', ''),
+        "contatos_da_tela":         contatos,
+
+        # Telefone
+        "telefone_empresa":         d.get('telefone_empresa', ''),
+
+        # CEBAS — TODO: integrar consulta futura
+        "tem_cebas":                "NAO",
+    }
+
+    # ── 5. Disparar o robô ──
+    exec_id = iniciar_execucao_robo('cliente_reativacao')
+    try:
+        resultado = cadastro_reativacao.executar(dados_robo)
+        finalizar_execucao_robo(exec_id, 'sucesso', resultado)
+
+        # Atualiza status no banco
+        banco_cadastros.atualizar_status(uuid_ficha, 'cadastrado')
+
+        return jsonify({
+            "status":         "sucesso",
+            "mensagem":       f"Robô finalizou a reativação do NL {codigo_nl}",
+            "resultado":      resultado,
+            "codigo_cliente": resultado.get('codigo_cliente'),
+        }), 200
+
+    except Exception as e:
+        finalizar_execucao_robo(exec_id, 'erro', {'erro': str(e)})
+        logger.error(f"Erro na reativação do NL {codigo_nl}: {e}")
         return jsonify({"status": "erro", "detalhes": str(e)}), 500
