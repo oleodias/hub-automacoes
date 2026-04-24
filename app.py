@@ -84,6 +84,7 @@ ROTAS_PUBLICAS = {
     'clientes.api_ficha',            # pré-preenchimento na correção
     'clientes.confirmar_acao',       # farmacêutica aprova/reprova via email
     'clientes.motivo_reprovacao',    # farmacêutica preenche motivo
+    'clientes.decidir_bloqueio',
     'cnpj.consulta_cnpj',           # usado pela ficha do cliente
     'cnpj.api_cnpj_completo',       # usado pela ficha do cliente
     'clientes.fila_cadastro_entrar',     # N8N chama direto

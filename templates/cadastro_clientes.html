@@ -49,7 +49,7 @@ content %}
       <div class="form-field">
         <label>Nome do Vendedor</label>
         <input
-          type="text"
+          span
           id="linkVendedor"
           class="input-dark"
           placeholder="Ex: João Silva"
@@ -156,12 +156,60 @@ content %}
         style="flex: 1; border-color: #10b981"
       />
       <button
-        class="btn-term"
         onclick="copiarLinkMagico()"
-        style="padding: 0 15px; cursor: pointer"
+        style="
+          padding: 12px 20px;
+          cursor: pointer;
+          background: #0ee6b8;
+          color: #090d14;
+          border: none;
+          border-radius: 8px;
+          font-family: &quot;DM Sans&quot;, sans-serif;
+          font-size: 13px;
+          font-weight: 700;
+          transition: filter 0.2s;
+          white-space: nowrap;
+        "
+        onmouseover="this.style.filter = 'brightness(1.15)'"
+        onmouseout="this.style.filter = 'brightness(1)'"
       >
         <i class="fa-regular fa-copy"></i> Copiar
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!--  MODAL DE SELEÇÃO (reutilizável pra vendedor e representante) -->
+<!--  O JS controla: título, lista, e qual campo preencher.        -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="modal-selecao-overlay" id="modalSelecao">
+  <div class="modal-selecao-card">
+    <div class="modal-selecao-header">
+      <h3 id="modalSelecaoTitulo">Selecionar</h3>
+      <button class="modal-selecao-fechar" onclick="fecharModalSelecao()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div class="modal-selecao-busca">
+      <div class="modal-selecao-busca-wrap">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input
+          type="text"
+          id="modalSelecaoBusca"
+          placeholder="Buscar por nome..."
+          autocomplete="off"
+        />
+      </div>
+    </div>
+
+    <div class="modal-selecao-lista" id="modalSelecaoLista">
+      <!-- Itens gerados pelo JS -->
+    </div>
+
+    <div class="modal-selecao-footer">
+      <span id="modalSelecaoContador">0 resultado(s)</span>
     </div>
   </div>
 </div>

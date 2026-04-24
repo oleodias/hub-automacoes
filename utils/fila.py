@@ -133,6 +133,10 @@ def _liberar_proximo_cadastro():
 
     def chamar_n8n():
         try:
+            # Espera 3 segundos para o n8n ter tempo de chegar no Wait node.
+            # Sem esse delay, o Flask tenta acordar o Wait ANTES dele começar
+            # a escutar (race condition entre o response do HTTP e o início do Wait).
+            time_module.sleep(3)
             req_ext.get(proximo['resume_url'], timeout=10)
             logger.info(f"[FILA] N8N acordado | ID: {proximo['id']}")
         except Exception as e:

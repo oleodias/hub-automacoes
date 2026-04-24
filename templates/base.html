@@ -218,6 +218,7 @@
         if (a.href === window.location.href) a.classList.add("active");
       });
     </script>
+    <script src="{{ url_for('static', filename='js/session_memory.js') }}"></script>
 
     {% block scripts %}{% endblock %}
   </body>

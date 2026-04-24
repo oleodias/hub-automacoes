@@ -160,7 +160,7 @@ content %}
               <th>Vendedor</th>
               <th>Tentativa</th>
               <th>Status</th>
-              <th>Cód. ERP</th>
+              <th>Código NL</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -521,7 +521,7 @@ content %}
         .map((c) => {
           const d = c.dados_json || {};
           const st = STATUS_CONFIG[c.status] || STATUS_CONFIG.pendente;
-          const codErp = d.cod_erp || "—";
+          const codErp = d.codigo_nl || "—";
           const tipo =
             d.tipo_cadastro === "REATIVACAO" ? "🔄 Reativação" : "🆕 Novo";
 
@@ -573,7 +573,7 @@ content %}
       document.getElementById("modalTipo").textContent = tipo;
       document.getElementById("modalTentativa").textContent =
         `${c.tentativa}ª tentativa`;
-      document.getElementById("modalCodErp").textContent = d.cod_erp || "—";
+      document.getElementById("modalCodErp").textContent = d.codigo_nl || "—";
       document.getElementById("modalCreatedAt").textContent =
         c.created_at || "—";
       document.getElementById("modalUpdatedAt").textContent =

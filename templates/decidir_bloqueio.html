@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Decisão de Bloqueio — Ciamed</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" href="/static/img/logosvg.svg" />
+    <style>
+      :root {
+        --bg: #090d14;
+        --surface: #0f1623;
+        --card: #131c2e;
+        --border: rgba(255, 255, 255, 0.07);
+        --border-hover: rgba(255, 255, 255, 0.13);
+        --amber: #f59e0b;
+        --amber-dim: rgba(245, 158, 11, 0.1);
+        --amber-border: rgba(245, 158, 11, 0.25);
+        --green: #34d399;
+        --teal: #0ee6b8;
+        --text: #e8edf5;
+        --muted: #7a8ba3;
+        --faint: #4a5a72;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "DM Sans", sans-serif;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        overflow: hidden;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(14, 230, 184, 0.02) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(14, 230, 184, 0.02) 1px, transparent 1px);
+        background-size: 48px 48px;
+        pointer-events: none;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 48px 44px;
+        max-width: 520px;
+        width: 100%;
+        position: relative;
+        z-index: 1;
+        opacity: 0;
+        transform: translateY(20px);
+        animation: cardIn 0.45s 0.05s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+      }
+      .card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 10%;
+        right: 10%;
+        height: 2px;
+        background: var(--amber);
+        border-radius: 0 0 4px 4px;
+        opacity: 0;
+        animation: lineIn 0.4s 0.4s ease forwards;
+      }
+      @keyframes cardIn {
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes lineIn {
+        to { opacity: 1; }
+      }
+      @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .logo-wrap {
+        text-align: center;
+        margin-bottom: 28px;
+        opacity: 0;
+        animation: fadeUp 0.3s 0.1s ease forwards;
+      }
+      .logo-wrap img { height: 32px; }
+
+      .header {
+        text-align: center;
+        margin-bottom: 28px;
+        opacity: 0;
+        animation: fadeUp 0.3s 0.2s ease forwards;
+      }
+      .tag {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--amber);
+        background: var(--amber-dim);
+        border: 1px solid var(--amber-border);
+        padding: 4px 14px;
+        border-radius: 100px;
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-family: "Syne", sans-serif;
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 8px;
+      }
+      .subtitle {
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .empresa-chip {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 24px;
+        opacity: 0;
+        animation: fadeUp 0.3s 0.3s ease forwards;
+      }
+      .empresa-chip i {
+        color: var(--amber);
+        font-size: 14px;
+      }
+      .empresa-chip .nome {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      /* ── OPÇÕES DE BLOQUEIO ── */
+      .opcoes-wrap {
+        opacity: 0;
+        animation: fadeUp 0.3s 0.35s ease forwards;
+      }
+      .field-label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--faint);
+        display: block;
+        margin-bottom: 12px;
+      }
+      .opcao-bloqueio {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 18px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .opcao-bloqueio:hover {
+        border-color: var(--amber-border);
+        background: rgba(245, 158, 11, 0.04);
+      }
+      .opcao-bloqueio.selecionada {
+        border-color: var(--amber);
+        background: var(--amber-dim);
+      }
+      .opcao-bloqueio input[type="radio"] {
+        display: none;
+      }
+      .opcao-radio {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid var(--faint);
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+      }
+      .opcao-bloqueio.selecionada .opcao-radio {
+        border-color: var(--amber);
+      }
+      .opcao-radio::after {
+        content: "";
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--amber);
+        transform: scale(0);
+        transition: transform 0.15s ease;
+      }
+      .opcao-bloqueio.selecionada .opcao-radio::after {
+        transform: scale(1);
+      }
+      .opcao-info {
+        flex: 1;
+      }
+      .opcao-titulo {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text);
+      }
+      .opcao-descricao {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 3px;
+      }
+      .opcao-codigo {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--amber);
+        background: rgba(245, 158, 11, 0.12);
+        padding: 3px 10px;
+        border-radius: 6px;
+        flex-shrink: 0;
+      }
+
+      /* ── BOTÃO ── */
+      .btn-confirmar {
+        margin-top: 24px;
+        width: 100%;
+        padding: 14px;
+        background: var(--amber);
+        color: #090d14;
+        border: none;
+        border-radius: 10px;
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 14px;
+        cursor: pointer;
+        transition: filter 0.2s, transform 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        opacity: 0;
+        animation: fadeUp 0.3s 0.5s ease forwards;
+      }
+      .btn-confirmar:hover {
+        filter: brightness(1.1);
+        transform: translateY(-1px);
+      }
+      .btn-confirmar:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        transform: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="logo-wrap">
+        <img src="/static/img/ciamedia.png" alt="Ciamed" />
+      </div>
+
+      <div class="header">
+        <div class="tag">🔒 Reativação de Cliente</div>
+        <h1>Decisão de Bloqueio</h1>
+        <p class="subtitle">
+          Este cliente está sendo reativado. Selecione a ação de bloqueio
+          antes de aprovar a ficha cadastral.
+        </p>
+      </div>
+
+      {% if empresa %}
+      <div class="empresa-chip">
+        <i class="fa-solid fa-building"></i>
+        <div>
+          <div class="nome">{{ empresa }}</div>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="opcoes-wrap">
+        <label class="field-label">Selecione a ação de bloqueio</label>
+
+        <div class="opcao-bloqueio" onclick="selecionarBloqueio(this, 'alterar', '30')">
+          <input type="radio" name="bloqueio" />
+          <div class="opcao-radio"></div>
+          <div class="opcao-info">
+            <div class="opcao-titulo">Liberação Financeiro</div>
+            <div class="opcao-descricao">Cadastro bloqueado até liberação do setor financeiro</div>
+          </div>
+          <span class="opcao-codigo">Cód. 30</span>
+        </div>
+
+        <div class="opcao-bloqueio" onclick="selecionarBloqueio(this, 'alterar', '99')">
+          <input type="radio" name="bloqueio" />
+          <div class="opcao-radio"></div>
+          <div class="opcao-info">
+            <div class="opcao-titulo">Liberação Farmacêutica</div>
+            <div class="opcao-descricao">Cadastro bloqueado até liberação da farmacêutica responsável</div>
+          </div>
+          <span class="opcao-codigo">Cód. 99</span>
+        </div>
+
+        <div class="opcao-bloqueio" onclick="selecionarBloqueio(this, 'manter', '')">
+          <input type="radio" name="bloqueio" />
+          <div class="opcao-radio"></div>
+          <div class="opcao-info">
+            <div class="opcao-titulo">Manter Bloqueio Atual</div>
+            <div class="opcao-descricao">Preserva o motivo de bloqueio que já está cadastrado no ERP</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-confirmar" id="btnConfirmar" disabled onclick="confirmarBloqueio()">
+        <i class="fa-solid fa-check"></i> Aprovar e Continuar
+      </button>
+    </div>
+
+    <script>
+      // Valores vindos do Flask via Jinja2
+      const resumeUrl = "{{ resume_url }}";
+      const empresa   = "{{ empresa }}";
+      const uuidFicha = "{{ uuid }}";
+
+      // Estado da seleção
+      let acaoBloqueioSelecionada = null;
+      let valorBloqueioSelecionado = null;
+
+      function selecionarBloqueio(elemento, acao, valor) {
+        // Remove seleção anterior
+        document.querySelectorAll(".opcao-bloqueio").forEach((el) => {
+          el.classList.remove("selecionada");
+        });
+
+        // Marca a nova seleção
+        elemento.classList.add("selecionada");
+        acaoBloqueioSelecionada = acao;
+        valorBloqueioSelecionado = valor;
+
+        // Habilita o botão
+        document.getElementById("btnConfirmar").disabled = false;
+      }
+
+      function confirmarBloqueio() {
+        if (!acaoBloqueioSelecionada) {
+          alert("⚠️ Selecione uma opção de bloqueio antes de continuar.");
+          return;
+        }
+
+        const btn = document.getElementById("btnConfirmar");
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processando...';
+
+        // Redireciona pro /confirmar com todos os parâmetros necessários.
+        // O /confirmar vai propagar acao_bloqueio e valor_bloqueio pro n8n.
+        const url =
+          `/confirmar?acao=aprovar` +
+          `&empresa=${encodeURIComponent(empresa)}` +
+          `&resumeUrl=${encodeURIComponent(resumeUrl)}` +
+          `&uuid=${encodeURIComponent(uuidFicha)}` +
+          `&acao_bloqueio=${encodeURIComponent(acaoBloqueioSelecionada)}` +
+          `&valor_bloqueio=${encodeURIComponent(valorBloqueioSelecionado)}`;
+
+        window.location.href = url;
+      }
+    </script>
+  </body>
+</html>

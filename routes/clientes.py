@@ -28,6 +28,7 @@ from utils.auth import permissao_required
 from utils.rastreio import iniciar_execucao_robo, finalizar_execucao_robo
 from automacoes.clientes import cadastro_novo
 from automacoes.clientes import cadastro_reativacao
+from utils.cebas import consultar_cebas
 
 import logging
 logger = logging.getLogger(__name__)
@@ -244,26 +245,42 @@ def api_ficha(submission_uuid):
 
 @clientes_bp.route('/confirmar')
 def confirmar_acao():
-    acao       = request.args.get('acao',      '')
-    empresa    = request.args.get('empresa',   '')
-    resume_url = request.args.get('resumeUrl', '')
-    motivo     = request.args.get('motivo',    '')
-    uuid_ficha = request.args.get('uuid',      '')
+    acao           = request.args.get('acao',           '')
+    empresa        = request.args.get('empresa',        '')
+    resume_url     = request.args.get('resumeUrl',      '')
+    motivo         = request.args.get('motivo',         '')
+    uuid_ficha     = request.args.get('uuid',           '')
+    acao_bloqueio  = request.args.get('acao_bloqueio',  '')
+    valor_bloqueio = request.args.get('valor_bloqueio', '')
 
     if not resume_url:
         return "Parâmetro resumeUrl ausente.", 400
 
     try:
         if acao == 'aprovar':
-            req_ext.get(resume_url, params={'decisao': 'aprovar'}, timeout=10)
+            # Monta params pro n8n. Sempre manda decisao=aprovar.
+            # Se vier acao_bloqueio (de uma reativação que passou pela
+            # tela decidir_bloqueio), propaga junto. Cadastros novos
+            # não mandam esses params — eles chegam vazios e o n8n ignora.
+            params_n8n = {'decisao': 'aprovar'}
+            if acao_bloqueio:
+                params_n8n['acao_bloqueio']  = acao_bloqueio
+            if valor_bloqueio:
+                params_n8n['valor_bloqueio'] = valor_bloqueio
+
+            req_ext.get(resume_url, params=params_n8n, timeout=10)
+
             if uuid_ficha:
                 banco_cadastros.atualizar_status(uuid_ficha, 'aprovado')
+
         elif acao == 'reprovar':
             req_ext.get(resume_url, params={'decisao': 'reprovar', 'motivo': motivo}, timeout=10)
             if uuid_ficha and motivo:
                 banco_cadastros.registrar_reprovacao(uuid_ficha, motivo)
+
         elif acao == 'mascaras':
             req_ext.get(resume_url, params={'mascaras': 'confirmadas'}, timeout=10)
+
     except Exception as e:
         logger.warning(f"Aviso ao chamar N8N: {e}")
 
@@ -280,6 +297,32 @@ def motivo_reprovacao():
         'motivo_reprovacao.html',
         resume_url=resume_url, empresa=empresa,
         cnpj=cnpj, uuid=uuid_ficha
+    )
+
+@clientes_bp.route('/decidir_bloqueio')
+def decidir_bloqueio():
+    """
+    Tela intermediária para a farmacêutica decidir o bloqueio
+    ao aprovar uma REATIVAÇÃO. Só é chamada para reativações —
+    cadastros novos vão direto pro /confirmar.
+
+    Parâmetros recebidos via query string (vindos do link do email):
+      resumeUrl → pra propagar pro /confirmar depois
+      empresa   → nome da empresa (exibição)
+      uuid      → UUID da submissão
+    """
+    resume_url = request.args.get('resumeUrl', '')
+    empresa    = request.args.get('empresa',   '')
+    uuid_ficha = request.args.get('uuid',      '')
+
+    if not resume_url:
+        return "Parâmetro resumeUrl ausente.", 400
+
+    return render_template(
+        'decidir_bloqueio.html',
+        resume_url=resume_url,
+        empresa=empresa,
+        uuid=uuid_ficha
     )
 
 
@@ -629,8 +672,8 @@ def n8n_iniciar_reativacao():
         # Telefone
         "telefone_empresa":         d.get('telefone_empresa', ''),
 
-        # CEBAS — TODO: integrar consulta futura
-        "tem_cebas":                "NAO",
+        # CEBAS — consulta contra planilha local
+        "tem_cebas":                consultar_cebas(d.get('cnpj_limpo', '')),
     }
 
     # ── 5. Disparar o robô ──
