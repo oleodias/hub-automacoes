@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 _bases_cebas = None
 
 # ── Caminho da planilha (raiz do projeto) ──
-CAMINHO_PLANILHA = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'CEBAS_ATUALIZADO.xlsx')
+CAMINHO_PLANILHA = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'CEBAS_ATUALIZADO_(27042026).xlsx')
 
 
 def _carregar_planilha():
