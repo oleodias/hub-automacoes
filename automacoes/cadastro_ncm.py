@@ -38,7 +38,7 @@ def navegar_para_ncm_via_favoritos(driver):
             return False
 
         # 3. Aguarda carregamento da tela
-        time.sleep(3)
+        time.sleep(2)
         print("✅ Tela de NCM Carregada.")
         return True
 
@@ -68,7 +68,7 @@ def verificar_existencia_ncm(driver, ncm_alvo):
         
         # Clica na Lupa para pesquisar
         driver.execute_script("document.getElementById('search_cmdSearch').click();")
-        time.sleep(3)
+        time.sleep(2)
         
         # Verifica resultado na tela
         fonte = driver.page_source
@@ -133,32 +133,6 @@ def cadastrar_ncm(driver, ncm_alvo, descricao):
         preencher_campo(driver, "txtCodNbmEditado", ncm_alvo)
         preencher_campo(driver, "txtCodNcmNfe", ncm_alvo)
         preencher_campo(driver, "txtDesNbm", descricao)
-
-        # Aba Grupos Fiscais
-        driver.execute_script("arguments[0].click();", driver.find_element(By.ID, "tabGruposFiscais"))
-        time.sleep(1.5)
-
-        # Botão Adicionar Grupo
-        btn_add = wait.until(EC.presence_of_element_located((By.ID, "btnAdicionar_mdGrupos")))
-        driver.execute_script("arguments[0].click();", btn_add)
-        time.sleep(1.5)
-
-        # Preenche Grupo 05
-        campo_grupo = wait.until(EC.presence_of_element_located((By.ID, "subFrm_mdGrupos:lovCodGrFiscal_txtCod")))
-        campo_grupo.send_keys("05")
-        time.sleep(0.5)
-        campo_grupo.send_keys(Keys.TAB)
-        time.sleep(1)
-
-        # Botão Aplicar
-        driver.execute_script("arguments[0].click();", driver.find_element(By.ID, "subFrm_mdGrupos:btnAplicar_mdGrupos"))
-        time.sleep(1.5)
-        
-        # Botão Salvar
-        driver.execute_script("arguments[0].click();", driver.find_element(By.ID, "btnCrudGravar"))
-        time.sleep(3)
-        
-        print(f"✅ NCM {ncm_alvo} cadastrado com sucesso!")
         time.sleep(2)
         
     except Exception as e:
