@@ -158,7 +158,7 @@ def navegar_e_filtrar():
         time.sleep(1)
         
         print("🔍 Aplicando filtros iniciais...")
-        time.sleep(4)
+        time.sleep(2.5)
         
         preencher_campo_seguro("lovCodGrUnidades_txtCod", "0")
         # DENTRO DA FUNÇÃO navegar_e_filtrar()
@@ -213,9 +213,9 @@ def extrair_notas_da_linha(index):
                 driver.execute_script("arguments[0].click();", opt)
                 break
         
-        time.sleep(5)
-        WebDriverWait(driver, 15).until(EC.element_to_be_clickable((By.ID, "tabTransporte"))).click()
         time.sleep(3)
+        WebDriverWait(driver, 15).until(EC.element_to_be_clickable((By.ID, "tabTransporte"))).click()
+        time.sleep(2)
 
         # 2. Captura MDF
         try:
@@ -233,7 +233,7 @@ def extrair_notas_da_linha(index):
         
         # ⏳ A MÁGICA 1: Aumentamos o tempo de espera. Às vezes o sistema da NL/Oracle demora para renderizar a sub-tabela!
         print("   ⏳ Aguardando notas relacionadas carregarem...")
-        time.sleep(4) 
+        time.sleep(2) 
 
         # 4. Coleta Notas e DATAS REAIS (da tabela interna)
         # 🔍 A MÁGICA 2: Deixamos o XPath mais "flexível", removendo o [2] fixo que pode quebrar o código
@@ -273,7 +273,7 @@ def extrair_notas_da_linha(index):
         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn_v)
         time.sleep(1)
         btn_v.click()
-        time.sleep(6)
+        time.sleep(3)
         return True
 
     except Exception as e:
@@ -306,7 +306,7 @@ if fazer_login(driver):
             
             if expandiu:
                 print("   ✅ Opção 'Mostrar Tudo' ativada! Aguardando o sistema recarregar a lista gigante...")
-                time.sleep(4) # Tempo de paciência para o NL trazer todas as notas extras
+                time.sleep(3) # Tempo de paciência para o NL trazer todas as notas extras
             else:
                 print("   ℹ️ Dropdown não encontrado (Provavelmente 20 registros ou menos). Seguindo o fluxo normal...")
         except Exception as e:

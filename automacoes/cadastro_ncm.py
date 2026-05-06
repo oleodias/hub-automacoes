@@ -68,7 +68,7 @@ def verificar_existencia_ncm(driver, ncm_alvo):
         
         # Clica na Lupa para pesquisar
         driver.execute_script("document.getElementById('search_cmdSearch').click();")
-        time.sleep(2)
+        time.sleep(1.4)
         
         # Verifica resultado na tela
         fonte = driver.page_source
@@ -126,14 +126,20 @@ def cadastrar_ncm(driver, ncm_alvo, descricao):
             btn_novo = driver.find_element(By.ID, "btnCrudNovo")
             driver.execute_script("arguments[0].click();", btn_novo)
             
-        time.sleep(2)
+        time.sleep(1.5)
 
         # Preenche campos
         preencher_campo(driver, "txtCodNbm", ncm_alvo)
         preencher_campo(driver, "txtCodNbmEditado", ncm_alvo)
         preencher_campo(driver, "txtCodNcmNfe", ncm_alvo)
         preencher_campo(driver, "txtDesNbm", descricao)
-        time.sleep(2)
+        
+        # Botão Salvar
+        driver.execute_script("arguments[0].click();", driver.find_element(By.ID, "btnCrudGravar"))
+        time.sleep(1.5)
+        
+        print(f"✅ NCM {ncm_alvo} cadastrado com sucesso!")
+        time.sleep(1)
         
     except Exception as e:
         print(f"❌ Erro ao salvar NCM: {e}")

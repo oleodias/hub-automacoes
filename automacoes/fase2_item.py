@@ -10,6 +10,9 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # --- CONFIGURAÇÃO DE CAMINHOS E LOGS ---
 # Sobe um nível (sai da pasta automacoes e vai para a raiz)
@@ -102,11 +105,39 @@ def voltar_ao_inicio_seguro(driver):
         driver.execute_script("arguments[0].click();", logo_link)
         
         # 4. Dá tempo para a tela do NL Web processar o fechamento das janelas e carregar a Home
-        time.sleep(3)
+        time.sleep(2)
         registrar("✅ Tela inicial carregada e limpa!")
         
     except Exception as e:
         registrar(f"⚠️ Falha ao tentar clicar na logo para resetar a tela: {e}")
+
+
+# --- DETECTOR DE RESULTADO DA GRAVAÇÃO ---
+def aguardar_resultado_gravacao(driver, timeout=10):
+    """
+    Espera competitiva: monitora o painel de SUCESSO e a faixa de ERRO
+    ao mesmo tempo, retornando assim que UM dos dois aparecer.
+
+    Retorna:
+        'sucesso' → painel de protocolo apareceu (item gravou normal)
+        'erro'    → faixa NLForm_messages apareceu (NLWeb rejeitou a gravação)
+
+    Estoura TimeoutException se nenhum dos dois aparecer dentro do timeout.
+    """
+    XPATH_SUCESSO = "//div[contains(@class, 'protocolo_panel_numero')]"
+    XPATH_ERRO = "//ol[@id='NLForm_messages__LIST__']"
+
+    def _verificar(d):
+        # find_elements (plural) NÃO estoura erro se não achar:
+        # retorna lista vazia. Ideal para checagem condicional rápida.
+        if d.find_elements(By.XPATH, XPATH_SUCESSO):
+            return "sucesso"
+        if d.find_elements(By.XPATH, XPATH_ERRO):
+            return "erro"
+        return False  # nenhum dos dois ainda — WebDriverWait continua esperando
+
+    return WebDriverWait(driver, timeout).until(_verificar)
+
 
 # --- PLANO B ---
 def consolidar_cadastro_plano_b(driver, descricao_item, codigo_esperado):
@@ -126,17 +157,22 @@ def consolidar_cadastro_plano_b(driver, descricao_item, codigo_esperado):
         WebDriverWait(driver, 15).until(
             EC.presence_of_element_located((By.XPATH, "//td[@headers='tabIeItens:colCodItem']"))
         )
+        # Respiro extra: a tabela já apareceu, mas o NLWeb ainda pode estar
+        # montando a barra de filtros (txtDesItem, search_cmdSearch etc).
+        # Sem isso, os find_element seguintes podem falhar.
+        time.sleep(1.5)
+        registrar("✅ Lista geral carregada e estabilizada.")
 
         # 3. Garante que a barra de filtros está aberta
         campo_pesquisa = driver.find_element(By.ID, "txtDesItem")
         if not campo_pesquisa.is_displayed():
             driver.execute_script("document.getElementById('btn_nlPanelOcultarMostrar_').click();")
-            time.sleep(1.5)
+            time.sleep(2.5)
 
         # 4. Pesquisa pela descrição
         preencher_campo_seguro(driver, "txtDesItem", descricao_item)
         driver.execute_script("arguments[0].click();", driver.find_element(By.ID, "search_cmdSearch")) 
-        time.sleep(4) # Tempo para o sistema filtrar
+        time.sleep(2.5) # Tempo para o sistema filtrar
 
         # --- AQUI ENTRA A TRAVA DE SEGURANÇA QUE VOCÊ PEDIU ---
         registrar(f"🔍 Varrendo resultados para encontrar o código {codigo_esperado}...")
@@ -176,12 +212,11 @@ def consolidar_cadastro_plano_b(driver, descricao_item, codigo_esperado):
         registrar(f"❌ Erro no Plano B: {e}")
 
 # --- FLUXO PRINCIPAL ---
-# --- FLUXO PRINCIPAL ---
 def executar_cadastro(driver, item, is_ultimo=False):    
     try:
         # 1. Seleciona o item base
         preencher_campo_seguro(driver, "lovCodItem_txtCod", "13886")
-        time.sleep(4) # Aumentado levemente para garantir carga da grade
+        time.sleep(2.5) # Aumentado levemente para garantir carga da grade
         
         xpath_linha = "/html/body/form[1]/div[3]/div[1]/section/div[2]/div[2]/table/tbody/tr[2]/td[2]/div/div/table[2]/tbody/tr[2]/td[1]"
         
@@ -215,7 +250,7 @@ def executar_cadastro(driver, item, is_ultimo=False):
         driver.execute_script("arguments[0].click();", btn_duplicar)
         
         # Espera o sistema começar a processar a duplicação antes de tentar fechar os pop-ups
-        time.sleep(1.5)
+        time.sleep(1)
 
         
         # Limpezas iniciais
@@ -223,7 +258,7 @@ def executar_cadastro(driver, item, is_ultimo=False):
         limpar_popups_persistente(driver, "btn1")
         
         # Aguarda o novo código aparecer no campo
-        time.sleep(2) 
+        time.sleep(1.2) 
         try:
             cod_novo = driver.find_element(By.ID, "txtCodItem").get_attribute("value").replace(".", "")
             registrar(f"🔢 CÓDIGO ATRIBUÍDO: {cod_novo}")
@@ -231,7 +266,7 @@ def executar_cadastro(driver, item, is_ultimo=False):
 
         # --- MOMENTO CRÍTICO: Preenchimento dos dados ---
         # Adicionei um pequeno respiro aqui para evitar que o NL bloqueie a digitação
-        time.sleep(1.5) 
+        time.sleep(1.2) 
 
         preencher_campo_seguro(driver, "txtDesItem", item['desc'])
         preencher_campo_seguro(driver, "txtCodEan", item['ean'])
@@ -250,34 +285,40 @@ def executar_cadastro(driver, item, is_ultimo=False):
         
         limpar_popups_persistente(driver, "btn1")
         
-       # 4. Finalização e Protocolo
+       # 4. Finalização e Protocolo (Espera Competitiva — Plano B reativo)
         try:
-            wait_protocolo = WebDriverWait(driver, 15)
-            wait_protocolo.until(EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'protocolo_panel_numero')]")))
-            
-            elemento_numero = driver.find_element(By.XPATH, "//div[contains(@class, 'protocolo_panel_numero')]")
-            cod_final = elemento_numero.text.strip()
-            
-            registrar(f"✨ SUCESSO! Item cadastrado e vinculado ao código: {cod_final}")
-            
-            btn_ok = driver.find_element(By.ID, "btnProtocolo")
-            driver.execute_script("arguments[0].click();", btn_ok)
-            time.sleep(2)
-            
-            # --- VERIFICA SE É O ÚLTIMO ANTES DE RESETAR ---
+            resultado = aguardar_resultado_gravacao(driver, timeout=10)
+
+            if resultado == "sucesso":
+                # Caminho 1: protocolo apareceu, captura o código normalmente
+                elemento_numero = driver.find_element(By.XPATH, "//div[contains(@class, 'protocolo_panel_numero')]")
+                cod_final = elemento_numero.text.strip()
+                registrar(f"✨ SUCESSO! Item cadastrado e vinculado ao código: {cod_final}")
+
+                btn_ok = driver.find_element(By.ID, "btnProtocolo")
+                driver.execute_script("arguments[0].click();", btn_ok)
+                time.sleep(2)
+
+            elif resultado == "erro":
+                # Caminho 2: NLWeb rejeitou (EAN duplicado etc) — Plano B IMEDIATO
+                registrar("⚠️ NLWeb rejeitou a gravação (mensagem de erro detectada). Acionando Plano B reativo...")
+                driver.switch_to.default_content()
+                consolidar_cadastro_plano_b(driver, item['desc'], cod_novo)
+
+            # Reset para próximo item (vale tanto para sucesso quanto para Plano B reativo)
             if not is_ultimo:
                 voltar_ao_inicio_seguro(driver)
                 navegar_para_cadastro_inicial(driver, usar_mouse=True)
             else:
-                registrar("✅ Fim da fila! Último item cadastrado. Mantendo a tela atual.")
-            
+                registrar("✅ Fim da fila! Último item processado. Mantendo a tela atual.")
+
         except Exception as e:
-            registrar(f"⚠️ Falha ao capturar protocolo, acionando Plano B preventivo...")
+            # Caminho 3 (fallback): nada apareceu em 10s OU erro inesperado.
+            # O Plano B preventivo continua sendo a rede de segurança.
+            registrar(f"⚠️ Timeout/falha ao detectar resultado da gravação, acionando Plano B preventivo: {e}")
             driver.switch_to.default_content()
-            
-            # PASSANDO O cod_novo PARA O PLANO B:
             consolidar_cadastro_plano_b(driver, item['desc'], cod_novo)
-            
+
             if not is_ultimo:
                 voltar_ao_inicio_seguro(driver)
                 navegar_para_cadastro_inicial(driver, usar_mouse=True)
@@ -295,9 +336,12 @@ def executar_cadastro(driver, item, is_ultimo=False):
         
 # --- LOGIN ---
 def fazer_login(driver):
-    url = "http://192.168.200.252:8585/NLWeb/site/9000/emp/1"
-    usuario = "LEONARDO DIA"
-    senha = "123"
+    """Realiza o login automático e trata as sessões abertas."""
+    # Puxa os dados do .env
+    url = os.getenv('NLWEB_URL')
+    usuario = os.getenv('NLWEB_USER')
+    senha = os.getenv('NLWEB_PASS')
+
     wait = WebDriverWait(driver, 20)
 
     try:
@@ -349,7 +393,7 @@ if itens_processar:
     options.add_experimental_option("detach", True)
     
     # --- 👻 MODO INVISÍVEL (HEADLESS) ATIVADO ---
-    options.add_argument("--headless=new") 
+    # options.add_argument("--headless=new") 
     options.add_argument("--window-size=1920,1080") # Garante que o robô "enxergue" a tela inteira
     # --------------------------------------------
     

@@ -141,7 +141,7 @@ def main():
         driver.execute_script("arguments[0].click();", btn_pesquisar)
         
         # Aguardar a tela principal carregar
-        time.sleep(3) 
+        time.sleep(2) 
         
         # --- INÍCIO DOS 16 PASSOS DO CADASTRO ---
         print("> ✍️ Preenchendo a Ficha Cadastral (Fase 1/4)...")
@@ -211,7 +211,7 @@ def main():
                 cep_limpo = limpar_cnpj(fornecedor.get('cep', ''))
                 campo_cep.send_keys(cep_limpo)
                 campo_cep.send_keys(Keys.TAB) 
-                time.sleep(3) # Espera o ERP carregar os dados automáticos
+                time.sleep(2) # Espera o ERP carregar os dados automáticos
                 break
             except:
                 time.sleep(1)

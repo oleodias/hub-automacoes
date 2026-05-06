@@ -33,6 +33,7 @@ chrome_perfil/
 
 # ── XMLS DE ENTRADA: dados temporários do robô ──────────────
 XML_Entrada/*.xml
+XML_Entrada/*.json
 
 # ── DOCKER: volumes locais (se existirem) ────────────────────
 docker-data/

@@ -6,11 +6,11 @@ from selenium.webdriver.support import expected_conditions as EC
 
 def pausar_para_ver(mensagem):
     """Pausa dramática para o Leonardo ver o que está acontecendo."""
-    print(f"   👀 {mensagem} (Aguardando 3s...)")
-    time.sleep(3)
+    print(f"   👀 {mensagem} (Aguardando 0.8s...)")
+    time.sleep(0.4)
 
 def verificar_se_encontrou(driver):
-    time.sleep(2)
+    time.sleep(0.8)
     fonte = driver.page_source
     if "Nenhum registro encontrado" in fonte or "Nenhum resultado encontrado" in fonte:
         return False

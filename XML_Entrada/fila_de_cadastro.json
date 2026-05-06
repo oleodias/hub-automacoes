@@ -1,1 +1,44 @@
-[]
+[
+    {
+        "index": 1,
+        "desc": "AGUA MINERAL DA PEDRA 2 L C/G PET",
+        "ean": "7896436100611",
+        "ncm": "22011000",
+        "unid": "UN1"
+    },
+    {
+        "index": 2,
+        "desc": "BATATA MAIS BATATA BEM BRASIL 2 KG PALITO",
+        "ean": "7898921567121",
+        "ncm": "20041000",
+        "unid": "UN1"
+    },
+    {
+        "index": 3,
+        "desc": "OLEO SOJA COCAMAR 900 ML PET",
+        "ean": "7897001010014",
+        "ncm": "15079011",
+        "unid": "UN1"
+    },
+    {
+        "index": 4,
+        "desc": "OLEO SOJA COCAMAR 900 ML PET",
+        "ean": "7897001010014",
+        "ncm": "15079011",
+        "unid": "UN1"
+    },
+    {
+        "index": 5,
+        "desc": "SAL MOIDO SALSUL 1 KG",
+        "ean": "7898955940037",
+        "ncm": "25010020",
+        "unid": "UN1"
+    },
+    {
+        "index": 6,
+        "desc": "TOALHA PAP KITCHEN 240 FL",
+        "ean": "7896061920318",
+        "ncm": "48189090",
+        "unid": "UN1"
+    }
+]
