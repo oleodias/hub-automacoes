@@ -21,6 +21,7 @@ MODULOS_HUB = {
     'clientes':    'Cadastro de Clientes',
     'cnpj':        'Consulta CNPJ',
     'monitor':     'Monitor de Cadastros',
+    'notas':       'Controle de Notas Fiscais',
 }
 
 

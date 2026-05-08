@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Controle de Notas - Hub Ciamed{% endblock %}
+
+{% block navbar_title %}Controle de Notas Fiscais{% endblock %}
+
+{% block css %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/notas_kanban.css') }}">
+{% endblock %}
+
+{% block content %}
+  {# ============================================================
+     Container do React app — todo o Kanban renderiza aqui dentro.
+     O id="root" é onde o ReactDOM.createRoot() do app.jsx monta.
+     ============================================================ #}
+  <div id="root"></div>
+{% endblock %}
+
+{% block scripts %}
+  {# ============================================================
+     React + ReactDOM + Babel via CDN (mesmo setup do Claude Design)
+     Babel compila os JSX em runtime no navegador.
+     ============================================================ #}
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+
+  {# ============================================================
+     Arquivos da aplicação — ordem importa:
+       1. mock.js define window.CIAMED (dados iniciais)
+       2. icons.jsx define CategoryIcon, UnitBadge, helpers
+       3. components.jsx define NotaCard, RegisterModal, AvulsaModal, DetailDrawer
+       4. app.jsx é o componente principal, monta no #root
+     ============================================================ #}
+  <script src="{{ url_for('static', filename='js/notas/mock.js') }}"></script>
+  <script type="text/babel" src="{{ url_for('static', filename='js/notas/icons.jsx') }}"></script>
+  <script type="text/babel" src="{{ url_for('static', filename='js/notas/components.jsx') }}"></script>
+  <script type="text/babel" src="{{ url_for('static', filename='js/notas/app.jsx') }}"></script>
+{% endblock %}

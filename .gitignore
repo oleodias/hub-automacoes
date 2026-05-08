@@ -50,3 +50,6 @@ desktop.ini
 *.swo
 *~
 *.exe
+
+# ── ARQUIVOS DE BACKUPS ──────────────────────────────────────────
+*.rar

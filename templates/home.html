@@ -158,6 +158,29 @@ content %}
         <span class="dot"></span> Operacional
       </div>
     </div>
+
+    {% endif %} {% if tem_permissao('notas') %}
+    <div
+      class="auto-card clickable"
+      onclick="window.location.href='{{ url_for('notas.kanban_notas') }}'"
+    >
+      <div class="card-accent-line" style="background: #c2410c"></div>
+      <div
+        class="card-icon-wrap"
+        style="background: rgba(194, 65, 12, 0.1); color: #c2410c"
+      >
+        <i class="fa-solid fa-receipt"></i>
+      </div>
+      <div class="card-title">Controle de Notas Fiscais</div>
+      <div class="card-desc">
+        Esteira visual das notas mensais — chegou, tá atrasada, falta. Com
+        gestão de fornecedores recorrentes e quebra por unidade.
+      </div>
+      <div class="badge-status badge-operational">
+        <span class="dot"></span> Operacional
+      </div>
+    </div>
+
     {% endif %} {% if tem_permissao('monitor') %}
     <div
       class="auto-card clickable"
