@@ -1,195 +1,257 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login — Hub de Automações Ciamed</title>
-    <link rel="icon" href="/static/img/logosvg.svg">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" href="/static/img/logosvg.svg" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background:
-                radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
-                linear-gradient(135deg, #1a2332 0%, #0f3057 50%, #05776c 100%);
-            background-size: 20px 20px, 100% 100%;
-            overflow: hidden;
-        }
+      body {
+        font-family: "DM Sans", "Segoe UI", sans-serif;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: linear-gradient(
+          135deg,
+          #f1f5f9 0%,
+          #e0f2fe 50%,
+          #ccfbf1 100%
+        );
+        overflow: hidden;
+        position: relative;
+      }
 
-        .login-container {
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 20px;
-            padding: 50px 40px;
-            width: 100%;
-            max-width: 420px;
-            box-shadow: 0 25px 60px -15px rgba(0,0,0,0.5);
-            text-align: center;
-            color: white;
-            animation: fadeIn 0.6s ease;
-        }
+      /* Grid sutil tech/IA — coerente com o resto do Hub claro */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(13, 148, 136, 0.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(13, 148, 136, 0.05) 1px, transparent 1px);
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        background-size: 48px 48px;
+        pointer-events: none;
+        z-index: 0;
+      }
 
-        .login-logo {
-            width: 70px;
-            height: 70px;
-            background: linear-gradient(135deg, #05776c, #4db6ac);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 25px auto;
-            box-shadow: 0 10px 25px -8px rgba(5,119,108,0.5);
-        }
+      .login-container {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        padding: 50px 40px;
+        width: 100%;
+        max-width: 420px;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.04),
+          0 20px 40px -12px rgba(13, 148, 136, 0.15),
+          0 8px 16px -8px rgba(15, 23, 42, 0.08);
+        text-align: center;
+        color: #0f172a;
+        animation: fadeIn 0.6s ease;
+        position: relative;
+        z-index: 1;
+      }
 
-        .login-logo i {
-            font-size: 28px;
-            color: white;
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
         }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
 
-        h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 6px;
-        }
+      .login-logo {
+        width: 70px;
+        height: 70px;
+        background: linear-gradient(135deg, #0d9488, #0f766e);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 25px auto;
+        box-shadow: 0 10px 25px -8px rgba(13, 148, 136, 0.4);
+      }
 
-        .subtitulo {
-            color: rgba(255,255,255,0.5);
-            font-size: 0.85rem;
-            margin-bottom: 30px;
-        }
+      .login-logo i {
+        font-size: 28px;
+        color: white;
+      }
 
-        .form-group {
-            text-align: left;
-            margin-bottom: 18px;
-        }
+      h1 {
+        font-family: "Syne", "DM Sans", sans-serif;
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 6px;
+        color: #0f172a;
+        letter-spacing: -0.01em;
+      }
 
-        .form-group label {
-            display: block;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: rgba(255,255,255,0.5);
-            margin-bottom: 6px;
-            padding-left: 2px;
-        }
+      .subtitulo {
+        color: #94a3b8;
+        font-size: 0.85rem;
+        margin-bottom: 30px;
+      }
 
-        .form-group input {
-            width: 100%;
-            padding: 14px 16px;
-            background: rgba(255,255,255,0.07);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 10px;
-            color: white;
-            font-size: 0.95rem;
-            outline: none;
-            transition: 0.3s;
-        }
+      .form-group {
+        text-align: left;
+        margin-bottom: 18px;
+      }
 
-        .form-group input::placeholder {
-            color: rgba(255,255,255,0.3);
-        }
+      .form-group label {
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #94a3b8;
+        margin-bottom: 6px;
+        padding-left: 2px;
+      }
 
-        .form-group input:focus {
-            border-color: #4db6ac;
-            background: rgba(255,255,255,0.12);
-            box-shadow: 0 0 0 3px rgba(77,182,172,0.15);
-        }
+      .form-group input {
+        width: 100%;
+        padding: 14px 16px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        color: #0f172a;
+        font-size: 0.95rem;
+        font-family: inherit;
+        outline: none;
+        transition: 0.2s;
+      }
 
-        .btn-login {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #05776c, #00796b);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.3s;
-            margin-top: 8px;
-            box-shadow: 0 8px 20px -8px rgba(5,119,108,0.5);
-        }
+      .form-group input::placeholder {
+        color: #cbd5e1;
+      }
 
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 28px -8px rgba(5,119,108,0.6);
-        }
+      .form-group input:focus {
+        border-color: #0d9488;
+        background: #ffffff;
+        box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
+      }
 
-        .btn-login:active {
-            transform: translateY(1px);
-        }
+      .btn-login {
+        width: 100%;
+        padding: 14px;
+        background: linear-gradient(135deg, #0d9488, #0f766e);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+        transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        margin-top: 8px;
+        box-shadow: 0 6px 16px -4px rgba(13, 148, 136, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
 
-        .erro-msg {
-            background: rgba(239,68,68,0.15);
-            border: 1px solid rgba(239,68,68,0.3);
-            color: #fca5a5;
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            margin-bottom: 18px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+      .btn-login:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px -8px rgba(13, 148, 136, 0.45);
+      }
 
-        .erro-msg i {
-            font-size: 0.9rem;
-        }
+      .btn-login:active {
+        transform: translateY(1px);
+      }
 
-        .rodape {
-            margin-top: 30px;
-            font-size: 0.75rem;
-            color: rgba(255,255,255,0.25);
-        }
+      .erro-msg {
+        background: #fee2e2;
+        border: 1px solid rgba(220, 38, 38, 0.18);
+        color: #991b1b;
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        margin-bottom: 18px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .erro-msg i {
+        font-size: 0.9rem;
+      }
+
+      .rodape {
+        margin-top: 30px;
+        font-size: 0.75rem;
+        color: #cbd5e1;
+        letter-spacing: 0.02em;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="login-container">
-        <div class="login-logo">
-            <i class="fa-solid fa-robot"></i>
+      <div class="login-logo">
+        <i class="fa-solid fa-robot"></i>
+      </div>
+
+      <h1>Hub de Automações</h1>
+      <p class="subtitulo">Identifique-se para acessar o sistema</p>
+
+      {% if erro %}
+      <div class="erro-msg">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        {{ erro }}
+      </div>
+      {% endif %}
+
+      <form method="POST">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="seu.email@ciamed.com.br"
+            required
+            autofocus
+          />
         </div>
 
-        <h1>Hub de Automações</h1>
-        <p class="subtitulo">Identifique-se para acessar o sistema</p>
-
-        {% if erro %}
-        <div class="erro-msg">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-            {{ erro }}
+        <div class="form-group">
+          <label for="senha">Senha</label>
+          <input
+            type="password"
+            id="senha"
+            name="senha"
+            placeholder="••••••••"
+            required
+          />
         </div>
-        {% endif %}
 
-        <form method="POST">
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" placeholder="seu.email@ciamed.com.br" required autofocus>
-            </div>
+        <button type="submit" class="btn-login">
+          Entrar <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </form>
 
-            <div class="form-group">
-                <label for="senha">Senha</label>
-                <input type="password" id="senha" name="senha" placeholder="••••••••" required>
-            </div>
-
-            <button type="submit" class="btn-login">
-                Entrar <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i>
-            </button>
-        </form>
-
-        <p class="rodape">Ciamed — Controladoria • Acesso Restrito</p>
+      <p class="rodape">Ciamed — Controladoria • Acesso Restrito</p>
     </div>
-</body>
+  </body>
 </html>

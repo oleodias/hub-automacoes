@@ -28,7 +28,7 @@
         padding: 0 !important;
         height: 100vh !important; /* Trava a altura na tela do monitor */
         overflow: hidden !important; /* Corta o scroll do corpo inteiro */
-        background: #090d14 !important; /* Garante o fundo escuro do painel */
+        background: #f1f5f9 !important; /* Fundo CLARO do painel (tema light) */
       }
 
       /* 2. A MÁGICA: DELEGA O SCROLL APENAS PARA O CONTEÚDO CENTRAL */
@@ -40,7 +40,7 @@
         /* Como o conteúdo rola, ele passa por baixo da navbar */
       }
 
-      /* 3. BLINDA A SIDEBAR (Fundo, borda e posição) */
+      /* 3. BLINDA A SIDEBAR (permanece ESCURA para contraste) */
       .sidebar {
         position: fixed !important;
         top: 0 !important;
@@ -48,13 +48,13 @@
         bottom: 0 !important;
         width: 64px !important;
         z-index: 9999 !important;
-        background: #0f1623 !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
+        background: #0f172a !important; /* slate-900 — sidebar escura */
+        border-right: 1px solid rgba(14, 230, 184, 0.15) !important;
         display: flex !important;
         flex-direction: column !important;
       }
 
-      /* 4. BLINDA A NAVBAR (Efeito vidro, borda e posição) */
+      /* 4. BLINDA A NAVBAR (teal sólido, inspirado no Ciamed 2.0) */
       .navbar-ciamed {
         position: fixed !important;
         top: 0 !important;
@@ -62,9 +62,8 @@
         right: 0 !important;
         height: 64px !important;
         z-index: 9998 !important;
-        background: rgba(9, 13, 20, 0.95) !important;
-        backdrop-filter: blur(20px) !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+        background: linear-gradient(135deg, #0d9488, #0f766e) !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
       }
     </style>
 
@@ -133,8 +132,13 @@
     </div>
 
     <nav class="navbar-ciamed">
-      <img src="/static/img/ciamedia.png" alt="Ciamed" class="brand-logo" />
-      <span class="divider-text" style="color: #0ed6ab"
+      <img
+        src="/static/img/ciamedia.png"
+        alt="Ciamed"
+        class="brand-logo"
+        style="filter: brightness(0) invert(1)"
+      />
+      <span class="divider-text" style="color: #ffffff"
         >{% block navbar_title %}Hub de Automações{% endblock %}</span
       >
     </nav>

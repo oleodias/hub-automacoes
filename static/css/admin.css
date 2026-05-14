@@ -5,26 +5,26 @@
 
 /* ── TOKENS (idênticos à referência) ───────────────────────── */
 :root {
-  --bg-base: #090d14;
-  --bg-surface: #0f1623;
-  --bg-card: #131c2e;
-  --border: rgba(255, 255, 255, 0.06);
-  --border-hover: rgba(255, 255, 255, 0.13);
-  --teal: #0ee6b8;
-  --teal-dim: rgba(14, 230, 184, 0.1);
-  --amber: #f59e0b;
-  --amber-dim: rgba(245, 158, 11, 0.1);
-  --green: #34d399;
-  --green-dim: rgba(52, 211, 153, 0.1);
-  --red: #f87171;
-  --red-dim: rgba(248, 113, 113, 0.1);
-  --blue: #60a5fa;
-  --blue-dim: rgba(96, 165, 250, 0.1);
-  --purple: #a78bfa;
-  --purple-dim: rgba(139, 92, 246, 0.15);
-  --text-primary: #e8edf5;
-  --text-secondary: #7a8ba3;
-  --text-muted: #4a5a72;
+  --bg-base: #f1f5f9;
+  --bg-surface: #ffffff;
+  --bg-card: #ffffff;
+  --border: #e2e8f0;
+  --border-hover: #cbd5e1;
+  --teal: #0d9488;
+  --teal-dim: rgba(13, 148, 136, 0.08);
+  --amber: #d97706;
+  --amber-dim: rgba(217, 119, 6, 0.10);
+  --green: #16a34a;
+  --green-dim: rgba(22, 163, 74, 0.10);
+  --red: #dc2626;
+  --red-dim: rgba(220, 38, 38, 0.10);
+  --blue: #2563eb;
+  --blue-dim: rgba(37, 99, 235, 0.10);
+  --purple: #7c3aed;
+  --purple-dim: rgba(124, 58, 237, 0.15);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
   --sidebar-w: 64px;
   --nav-h: 64px;
   --font-head: "Syne", sans-serif;
@@ -60,8 +60,8 @@ body::before {
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(rgba(14, 230, 184, 0.015) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(14, 230, 184, 0.015) 1px, transparent 1px);
+    linear-gradient(rgba(13, 148, 136, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(13, 148, 136, 0.03) 1px, transparent 1px);
   background-size: 48px 48px;
   pointer-events: none;
   z-index: 0;
@@ -74,8 +74,8 @@ body::before {
   top: 0;
   bottom: 0;
   width: var(--sidebar-w);
-  background: var(--bg-surface);
-  border-right: 1px solid var(--border);
+  background: #0f172a;
+  border-right: 1px solid rgba(14, 230, 184, 0.15);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -91,7 +91,7 @@ body::before {
   right: -1px;
   bottom: 0;
   width: 1px;
-  background: linear-gradient(180deg, transparent, var(--teal), transparent);
+  background: linear-gradient(180deg, transparent, #0ee6b8, transparent);
   opacity: 0.35;
 }
 
@@ -101,7 +101,7 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-muted);
+  color: #64748b;
   border-radius: var(--radius-sm);
   text-decoration: none;
   font-size: 16px;
@@ -109,8 +109,8 @@ body::before {
 }
 
 .sidebar a:hover {
-  color: var(--teal);
-  background: var(--teal-dim);
+  color: #0ee6b8;
+  background: rgba(14, 230, 184, 0.12);
 }
 
 /* ── NAVBAR (reforço) ──────────────────────────────────────── */
@@ -120,9 +120,8 @@ body::before {
   left: var(--sidebar-w);
   right: 0;
   height: var(--nav-h);
-  background: rgba(9, 13, 20, 0.85);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, #0d9488, #0f766e);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
   padding: 0 20px;
@@ -133,6 +132,7 @@ body::before {
 .brand-logo {
   height: 28px;
   flex-shrink: 0;
+  filter: brightness(0) invert(1);
 }
 
 .divider-text {
@@ -140,8 +140,8 @@ body::before {
   font-weight: 300;
   font-size: 13px;
   letter-spacing: 0.08em;
-  color: var(--text-muted);
-  border-left: 1px solid var(--border-hover);
+  color: rgba(255, 255, 255, 0.75);
+  border-left: 1px solid rgba(255, 255, 255, 0.25);
   padding-left: 14px;
   margin-left: 14px;
   text-transform: uppercase;
@@ -259,24 +259,24 @@ body::before {
 
 .tab-btn:hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.04);
+  background: #f8fafc;
 }
 
 .tab-btn.ativo {
   background: var(--teal-dim);
   color: var(--teal);
-  border: 1px solid rgba(14, 230, 184, 0.15);
+  border: 1px solid rgba(13, 148, 136, 0.15);
 }
 
 .tab-btn .contador {
-  background: rgba(255, 255, 255, 0.12);
+  background: #cbd5e1;
   padding: 1px 8px;
   border-radius: 10px;
   font-size: 11px;
 }
 
 .tab-btn.ativo .contador {
-  background: rgba(14, 230, 184, 0.2);
+  background: rgba(13, 148, 136, 0.2);
 }
 
 .tab-conteudo {
@@ -403,7 +403,7 @@ tbody tr {
 }
 
 tbody tr:hover {
-  background: rgba(14, 230, 184, 0.02);
+  background: rgba(13, 148, 136, 0.04);
 }
 
 tbody tr:last-child td {
@@ -494,13 +494,13 @@ tbody tr:last-child td {
 .btn-acao:hover {
   background: var(--teal-dim);
   color: var(--teal);
-  border-color: rgba(14, 230, 184, 0.2);
+  border-color: rgba(13, 148, 136, 0.2);
 }
 
 .btn-acao.danger:hover {
   background: var(--red-dim);
   color: var(--red);
-  border-color: rgba(248, 113, 113, 0.25);
+  border-color: rgba(220, 38, 38, 0.25);
 }
 
 /* ── FILTROS (CHAMADOS) ────────────────────────────────────── */
@@ -532,7 +532,7 @@ tbody tr:last-child td {
 .filtro-btn.ativo {
   background: var(--teal-dim);
   color: var(--teal);
-  border-color: rgba(14, 230, 184, 0.25);
+  border-color: rgba(13, 148, 136, 0.22);
 }
 
 /* ── CHAMADO CARDS ─────────────────────────────────────────── */
@@ -636,7 +636,7 @@ tbody tr:last-child td {
   font-size: 12px;
   outline: none;
   transition: var(--transition);
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 .filtros-hist select:focus,
@@ -780,7 +780,7 @@ tbody tr:last-child td {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.08);
+  background: #e2e8f0;
   border-radius: 11px;
   transition: 0.3s;
 }
@@ -859,7 +859,7 @@ tbody tr:last-child td {
 
 .msg-erro {
   background: var(--red-dim);
-  border: 1px solid rgba(248, 113, 113, 0.2);
+  border: 1px solid rgba(220, 38, 38, 0.20);
   color: var(--red);
 }
 
@@ -908,7 +908,7 @@ tbody tr:last-child td {
   font-size: 12px;
   outline: none;
   transition: var(--transition);
-  color-scheme: dark;
+  color-scheme: light;
 }
 .filtros select:focus,
 .filtros input[type="date"]:focus {

@@ -1,16 +1,16 @@
 :root {
-  --bg-base: #090d14;
-  --bg-surface: #0f1623;
-  --bg-card: #131c2e;
-  --border: rgba(255, 255, 255, 0.06);
-  --border-hover: rgba(255, 255, 255, 0.13);
-  --teal: #0ee6b8;
-  --teal-dim: rgba(14, 230, 184, 0.1);
-  --blue: #3b82f6;
-  --blue-dim: rgba(59, 130, 246, 0.1);
-  --text-primary: #e8edf5;
-  --text-secondary: #7a8ba3;
-  --text-muted: #4a5a72;
+  --bg-base: #f1f5f9;
+  --bg-surface: #ffffff;
+  --bg-card: #ffffff;
+  --border: #e2e8f0;
+  --border-hover: #cbd5e1;
+  --teal: #0d9488;
+  --teal-dim: rgba(13, 148, 136, 0.08);
+  --blue: #2563eb;
+  --blue-dim: rgba(37, 99, 235, 0.10);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
   --sidebar-w: 64px;
   --nav-h: 64px;
   --font-head: "Syne", sans-serif;
@@ -51,8 +51,8 @@ body::before {
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(rgba(14, 230, 184, 0.015) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(14, 230, 184, 0.015) 1px, transparent 1px);
+    linear-gradient(rgba(13, 148, 136, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(13, 148, 136, 0.03) 1px, transparent 1px);
   background-size: 48px 48px;
   pointer-events: none;
   z-index: 0;
@@ -63,8 +63,8 @@ body::before {
   top: 0;
   bottom: 0;
   width: var(--sidebar-w);
-  background: var(--bg-surface);
-  border-right: 1px solid var(--border);
+  background: #0f172a;
+  border-right: 1px solid rgba(14, 230, 184, 0.15);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -79,7 +79,7 @@ body::before {
   right: -1px;
   bottom: 0;
   width: 1px;
-  background: linear-gradient(180deg, transparent, var(--teal), transparent);
+  background: linear-gradient(180deg, transparent, #0ee6b8, transparent);
   opacity: 0.35;
 }
 .sidebar a {
@@ -88,19 +88,19 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-muted);
+  color: #64748b;
   border-radius: var(--radius-sm);
   text-decoration: none;
   font-size: 16px;
   transition: var(--transition);
 }
 .sidebar a:hover {
-  color: var(--teal);
-  background: var(--teal-dim);
+  color: #0ee6b8;
+  background: rgba(14, 230, 184, 0.12);
 }
 .sidebar a.active {
-  color: var(--teal);
-  background: var(--teal-dim);
+  color: #0ee6b8;
+  background: rgba(14, 230, 184, 0.12);
 }
 .sidebar a.mt-md-auto {
   margin-top: auto;
@@ -111,9 +111,8 @@ body::before {
   left: var(--sidebar-w);
   right: 0;
   height: var(--nav-h);
-  background: rgba(9, 13, 20, 0.85);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, #0d9488, #0f766e);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
   padding: 0 20px;
@@ -124,6 +123,7 @@ body::before {
 .brand-logo {
   height: 28px;
   flex-shrink: 0; /* ← logo não encolhe */
+  filter: brightness(0) invert(1);
 }
 
 .divider-text {
@@ -131,8 +131,8 @@ body::before {
   font-weight: 300;
   font-size: 13px;
   letter-spacing: 0.08em;
-  color: var(--text-muted);
-  border-left: 1px solid var(--border-hover);
+  color: rgba(255, 255, 255, 0.75);
+  border-left: 1px solid rgba(255, 255, 255, 0.25);
   padding-left: 14px;
   margin-left: 14px;
   text-transform: uppercase;
@@ -331,7 +331,7 @@ body::before {
 .btn-enviar {
   padding: 12px 24px;
   background: var(--teal);
-  color: #090d14;
+  color: #f1f5f9;
   border: none;
   border-radius: var(--radius-sm);
   font-family: var(--font-head);
@@ -376,7 +376,7 @@ body::before {
   background: var(--bg-surface) !important;
   border: 1px solid var(--border-hover) !important;
   border-radius: 16px !important;
-  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.6) !important;
+  box-shadow: 0 32px 64px rgba(15, 23, 42, 0.4) !important;
   color: var(--text-primary) !important;
 }
 .modal-header {
@@ -407,8 +407,8 @@ body::before {
   font-size: 13px !important;
 }
 .author-block {
-  background: rgba(14, 230, 184, 0.06);
-  border: 1px solid rgba(14, 230, 184, 0.15);
+  background: rgba(13, 148, 136, 0.07);
+  border: 1px solid rgba(13, 148, 136, 0.15);
   border-radius: var(--radius-sm);
   padding: 14px 16px;
 }
@@ -424,7 +424,7 @@ body::before {
   margin-top: 2px;
 }
 .btn-close {
-  filter: invert(1) !important;
+  filter: none !important;
   opacity: 0.5 !important;
 }
 
