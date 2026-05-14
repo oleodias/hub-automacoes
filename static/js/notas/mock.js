@@ -2,9 +2,10 @@
 // Today fixed at 2026-05-08 (sexta-feira)
 
 (() => {
-  const TODAY = new Date(2026, 4, 8); // 8 de maio de 2026
-  const MONTH = 4; // 0-indexed
-  const YEAR = 2026;
+  // PRODUÇÃO: usa a data real do navegador (não mais data fixa de mock).
+  const TODAY = new Date();
+  const MONTH = TODAY.getMonth(); // 0-indexed
+  const YEAR = TODAY.getFullYear();
 
   const UNIDADES = [
     { id: "matriz", nome: "Matriz (1)",     short: "MTZ" },
@@ -112,4 +113,78 @@
     CATEGORIAS,
     NOTAS_INICIAIS: NOTAS,
   };
+
+  // ============================================================
+  // EXPECTATIVAS — derived recurring registrations
+  // (one row per fornecedor + unidade + dia)
+  // ============================================================
+  const seen = new Map();
+  for (const n of NOTAS) {
+    if (n.avulsa) continue;
+    const key = `${n.fornecedor}|${n.unidade}|${n.diaEsperado}`;
+    if (!seen.has(key)) {
+      seen.set(key, {
+        id: "exp-" + key.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+        fornecedor: n.fornecedor,
+        cnpj: n.cnpj,
+        categoria: n.categoria,
+        unidade: n.unidade,
+        diaEsperado: n.diaEsperado,
+        retencaoPadrao: !!n.retencao,
+        valorMedio: null, // computed below
+        valorAcumulado: 0,
+        valorCount: 0,
+        ativo: true,
+        iniciadoEm: "2024-01",
+        observacoes: "",
+      });
+    }
+    const e = seen.get(key);
+    if (n.valor) { e.valorAcumulado += n.valor; e.valorCount += 1; }
+  }
+  const EXPECTATIVAS = [...seen.values()].map(e => ({
+    ...e,
+    valorMedio: e.valorCount > 0 ? e.valorAcumulado / e.valorCount : null,
+  })).sort((a, b) => a.fornecedor.localeCompare(b.fornecedor) || a.diaEsperado - b.diaEsperado);
+
+  // ============================================================
+  // Deterministic historical status synthesis for Panorama
+  // Returns one of: 'ok' | 'late' | 'miss' | 'na'
+  // For current month, the caller should override with real data.
+  // ============================================================
+  const hash32 = (str) => {
+    let h = 2166136261 >>> 0;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619) >>> 0;
+    }
+    return h;
+  };
+  const rand01 = (seed) => (hash32(seed) % 10000) / 10000;
+
+  const historicalStatus = (expId, year, month /* 0-indexed */) => {
+    const ymKey = `${year}-${String(month).padStart(2,"0")}`;
+    const r = rand01(`${expId}::${ymKey}`);
+    // Most recurring suppliers: ~85% on-time, ~10% late, ~5% miss
+    if (r < 0.86) return "ok";
+    if (r < 0.96) return "late";
+    return "miss";
+  };
+
+  // pontualidade over last N months (excluding current month)
+  const pontualidade = (expId, today, monthsBack = 12) => {
+    let ok = 0, total = 0;
+    for (let i = 1; i <= monthsBack; i++) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const s = historicalStatus(expId, d.getFullYear(), d.getMonth());
+      if (s === "na") continue;
+      total++;
+      if (s === "ok") ok++;
+    }
+    return total > 0 ? ok / total : 1;
+  };
+
+  window.CIAMED.EXPECTATIVAS_INICIAIS = EXPECTATIVAS;
+  window.CIAMED.historicalStatus = historicalStatus;
+  window.CIAMED.pontualidade = pontualidade;
 })();

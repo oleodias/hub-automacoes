@@ -1,0 +1,331 @@
+{% extends "base.html" %} {% block title %}Lançar Nota{% endblock %} {% block
+css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/lancar_nota.css') }}"
+/>
+{% endblock %} {% block content %}
+<div class="ln-container">
+  <!-- ── Cabeçalho ─────────────────────────────────────── -->
+  <div class="ln-header">
+    <div>
+      <h1><i class="fas fa-file-invoice"></i> Lançamento de Nota</h1>
+      <p class="ln-subtitle">
+        Upload do XML, revisão e envio para a fila de lançamento
+      </p>
+    </div>
+    <div class="ln-header-actions">
+      <a href="/notas_a_rever" class="btn-secondary">
+        <i class="fas fa-exclamation-triangle"></i> Notas a Rever
+      </a>
+      <a href="/monitor_notas" class="btn-secondary">
+        <i class="fas fa-chart-line"></i> Monitor
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Indicador de etapas (stepper) ─────────────────── -->
+  <div class="ln-stepper">
+    <div class="step active" data-step="1">
+      <div class="step-bullet">1</div>
+      <div class="step-label">XML</div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step" data-step="2">
+      <div class="step-bullet">2</div>
+      <div class="step-label">Centros de Custo</div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step" data-step="3">
+      <div class="step-bullet">3</div>
+      <div class="step-label">Parcelamento</div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step" data-step="4">
+      <div class="step-bullet">4</div>
+      <div class="step-label">Datas e Operação</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- ABA 1 — UPLOAD DO XML                                -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <section class="ln-aba ativa" id="aba-1">
+    <div class="ln-card">
+      <h2><i class="fas fa-upload"></i> Anexar XML da nota</h2>
+      <p class="ln-instrucao">
+        Arraste o arquivo XML aqui ou clique na área abaixo para selecionar. O
+        sistema vai ler automaticamente os dados da nota.
+      </p>
+
+      <div class="upload-zona" id="upload-zona">
+        <input type="file" id="input-xml" accept=".xml" hidden />
+        <div class="upload-icon"><i class="fas fa-file-code"></i></div>
+        <div class="upload-titulo">Solte o XML aqui</div>
+        <div class="upload-subtitulo">
+          ou clique para selecionar do computador
+        </div>
+      </div>
+
+      <div id="upload-status" class="upload-status oculto"></div>
+
+      <!-- Resumo aparece quando upload OK -->
+      <div id="resumo-nota" class="resumo-nota oculto">
+        <h3>Dados extraídos do XML</h3>
+        <div class="resumo-grid">
+          <div class="resumo-item">
+            <span class="resumo-label">Número/Série</span>
+            <span class="resumo-valor" id="r-numero">—</span>
+          </div>
+          <div class="resumo-item">
+            <span class="resumo-label">Data de Emissão</span>
+            <span class="resumo-valor" id="r-emissao">—</span>
+          </div>
+          <div class="resumo-item resumo-largo">
+            <span class="resumo-label">Fornecedor</span>
+            <span class="resumo-valor" id="r-fornecedor">—</span>
+          </div>
+          <div class="resumo-item">
+            <span class="resumo-label">CNPJ</span>
+            <span class="resumo-valor" id="r-cnpj">—</span>
+          </div>
+          <div class="resumo-item">
+            <span class="resumo-label">Itens</span>
+            <span class="resumo-valor" id="r-itens">—</span>
+          </div>
+          <div class="resumo-item">
+            <span class="resumo-label">Parcelas</span>
+            <span class="resumo-valor" id="r-parcelas">—</span>
+          </div>
+          <div class="resumo-item destaque">
+            <span class="resumo-label">Valor Total</span>
+            <span class="resumo-valor" id="r-total">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- ABA 2 — ITENS E CENTROS DE CUSTO                    -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <section class="ln-aba" id="aba-2">
+    <div class="ln-card">
+      <h2><i class="fas fa-boxes"></i> Centro de custo por item</h2>
+      <p class="ln-instrucao">
+        Selecione o centro de custo apropriado para cada item da nota.
+        <span id="contador-cc" class="ln-contador"
+          >0 de 0 itens preenchidos</span
+        >
+      </p>
+
+      <div class="ln-aplicar-todos">
+        <label>Aplicar o mesmo CC a todos:</label>
+        <select id="cc-aplicar-todos" class="select-cc">
+          <option value="">— selecione —</option>
+        </select>
+        <button id="btn-aplicar-todos" class="btn-secondary">
+          <i class="fas fa-paste"></i> Aplicar
+        </button>
+      </div>
+
+      <div class="tabela-wrapper">
+        <table class="tabela-itens">
+          <thead>
+            <tr>
+              <th style="width: 50px">#</th>
+              <th>Código</th>
+              <th>Descrição</th>
+              <th style="width: 90px">Qtd</th>
+              <th style="width: 110px">Vlr Unit.</th>
+              <th style="width: 120px">Vlr Total</th>
+              <th style="width: 280px">Centro de Custo</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-itens"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- ABA 3 — PARCELAMENTO                                -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <section class="ln-aba" id="aba-3">
+    <div class="ln-card">
+      <h2><i class="fas fa-money-check-alt"></i> Parcelamento</h2>
+
+      <div id="parcelas-info" class="parcelas-info">
+        <div class="info-banner" id="info-auto">
+          <i class="fas fa-info-circle"></i>
+          Parcelas foram pré-preenchidas a partir do XML.
+        </div>
+        <div class="info-banner amarelo oculto" id="info-manual">
+          <i class="fas fa-edit"></i>
+          Modo manual ativo. A soma das parcelas precisa bater exatamente com o
+          valor total da nota.
+        </div>
+      </div>
+
+      <div class="parcelas-acoes">
+        <button id="btn-editar-parcelas" class="btn-secondary">
+          <i class="fas fa-edit"></i> Editar parcelas manualmente
+        </button>
+        <div class="parcelas-distribuir oculto" id="distribuir-area">
+          <label>Distribuir em:</label>
+          <select id="qtd-parcelas">
+            <option value="1">1x</option>
+            <option value="2">2x</option>
+            <option value="3">3x</option>
+            <option value="4">4x</option>
+            <option value="5">5x</option>
+            <option value="6">6x</option>
+            <option value="7">7x</option>
+            <option value="8">8x</option>
+            <option value="9">9x</option>
+            <option value="10">10x</option>
+            <option value="11">11x</option>
+            <option value="12">12x</option>
+          </select>
+          <label>Primeiro venc:</label>
+          <input type="date" id="primeiro-vencimento" />
+          <label>Intervalo (dias):</label>
+          <input
+            type="number"
+            id="intervalo-dias"
+            value="30"
+            min="1"
+            max="365"
+            style="width: 80px"
+          />
+          <button id="btn-distribuir" class="btn-secondary">
+            <i class="fas fa-calculator"></i> Distribuir
+          </button>
+        </div>
+      </div>
+
+      <div class="tabela-wrapper">
+        <table class="tabela-parcelas">
+          <thead>
+            <tr>
+              <th style="width: 80px">Nº</th>
+              <th style="width: 200px">Vencimento</th>
+              <th>Valor</th>
+              <th style="width: 50px"></th>
+            </tr>
+          </thead>
+          <tbody id="tbody-parcelas"></tbody>
+        </table>
+      </div>
+
+      <div class="parcelas-totalizador">
+        <div class="totalizador-bloco">
+          <span class="tot-label">Soma das parcelas</span>
+          <span class="tot-valor" id="tot-soma">R$ 0,00</span>
+        </div>
+        <div class="totalizador-bloco">
+          <span class="tot-label">Total da nota</span>
+          <span class="tot-valor" id="tot-nota">R$ 0,00</span>
+        </div>
+        <div class="totalizador-bloco destaque" id="tot-validacao">
+          <span class="tot-label">Diferença</span>
+          <span class="tot-valor" id="tot-diferenca">R$ 0,00</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- ABA 4 — DATAS E OPERAÇÃO                            -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <section class="ln-aba" id="aba-4">
+    <div class="ln-card">
+      <h2><i class="fas fa-calendar-check"></i> Datas e operação</h2>
+      <p class="ln-instrucao">
+        Última etapa: informe as datas e selecione a operação que vai ser usada
+        no lançamento.
+      </p>
+
+      <div class="form-grid">
+        <div class="form-campo">
+          <label for="data-recebimento">
+            Data de recebimento <span class="obrigatorio">*</span>
+          </label>
+          <input type="date" id="data-recebimento" required />
+        </div>
+
+        <div class="form-campo">
+          <label for="data-base">
+            Data base <span class="obrigatorio">*</span>
+          </label>
+          <input type="date" id="data-base" required />
+        </div>
+
+        <div class="form-campo form-campo-largo">
+          <label for="busca-operacao">
+            Operação <span class="obrigatorio">*</span>
+          </label>
+          <div class="autocomplete-wrapper">
+            <input
+              type="text"
+              id="busca-operacao"
+              placeholder="Digite o código ou parte da descrição..."
+              autocomplete="off"
+            />
+            <div
+              class="autocomplete-resultados oculto"
+              id="op-resultados"
+            ></div>
+            <input type="hidden" id="operacao-codigo" />
+          </div>
+          <div class="operacao-selecionada oculto" id="op-selecionada">
+            <span id="op-selecionada-texto"></span>
+            <button type="button" class="btn-limpar-op">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resumo final antes de enviar -->
+      <div class="resumo-final">
+        <h3>Confira antes de enviar</h3>
+        <div class="resumo-final-grid">
+          <div>
+            <strong>Fornecedor:</strong> <span id="rf-fornecedor">—</span>
+          </div>
+          <div><strong>Nota:</strong> <span id="rf-nota">—</span></div>
+          <div><strong>Valor:</strong> <span id="rf-valor">—</span></div>
+          <div><strong>Itens:</strong> <span id="rf-itens">—</span></div>
+          <div><strong>Parcelas:</strong> <span id="rf-parcelas">—</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- BARRA DE NAVEGAÇÃO ENTRE ABAS                       -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div class="ln-nav">
+    <button id="btn-anterior" class="btn-secondary" disabled>
+      <i class="fas fa-arrow-left"></i> Anterior
+    </button>
+    <button id="btn-proximo" class="btn-primario" disabled>
+      Próximo <i class="fas fa-arrow-right"></i>
+    </button>
+    <button id="btn-lancar" class="btn-primario oculto">
+      <i class="fas fa-paper-plane"></i> Lançar Nota
+    </button>
+  </div>
+</div>
+
+<!-- Overlay de loading -->
+<div id="ln-loading" class="ln-loading oculto">
+  <div class="ln-loading-box">
+    <div class="spinner"></div>
+    <div id="ln-loading-msg">Processando...</div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script src="{{ url_for('static', filename='js/lancar_nota.js') }}"></script>
+{% endblock %}

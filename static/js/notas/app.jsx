@@ -7,7 +7,35 @@ const { useState, useEffect, useMemo, useRef, useCallback } = React;
 const MES_NOMES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
 
 const App = () => {
-  const { TODAY: TODAY_BASE, MONTH: BASE_MONTH, YEAR: BASE_YEAR, UNIDADES, CATEGORIAS, NOTAS_INICIAIS } = window.CIAMED;
+  const { TODAY: TODAY_BASE, MONTH: BASE_MONTH, YEAR: BASE_YEAR, UNIDADES, CATEGORIAS, NOTAS_INICIAIS, EXPECTATIVAS_INICIAIS } = window.CIAMED;
+
+  // ---- view state
+  const [view, setView] = useState("kanban"); // 'kanban' | 'fornecedores' | 'panorama'
+
+  // ---- expectativas (recurring supplier registry) — vem do backend Flask
+  const [expectativas, setExpectativas] = useState([]);
+  const [loadingExpectativas, setLoadingExpectativas] = useState(true);
+
+  // Recarrega a lista de fornecedores recorrentes do backend.
+  // Exposto pra FornecedoresView chamar depois de criar/editar/remover.
+  const reloadExpectativas = useCallback(() => {
+    setLoadingExpectativas(true);
+    return fetch("/notas/api/fornecedores?ativo=todos")
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then(data => {
+        setExpectativas(data);
+        setLoadingExpectativas(false);
+      })
+      .catch(err => {
+        console.error("Erro ao carregar fornecedores:", err);
+        setLoadingExpectativas(false);
+      });
+  }, []);
+
+  useEffect(() => { reloadExpectativas(); }, [reloadExpectativas]);
 
   // ---- view month state (drives header + data slicing)
   const [viewMonth, setViewMonth] = useState({ year: BASE_YEAR, month: BASE_MONTH });
@@ -24,17 +52,17 @@ const App = () => {
   const goNextMonth = () => setViewMonth(v => ({ year: v.month === 11 ? v.year + 1 : v.year, month: v.month === 11 ? 0 : v.month + 1 }));
   const goCurrentMonth = () => setViewMonth({ year: BASE_YEAR, month: BASE_MONTH });
 
+  // ---- jump from Panorama / Fornecedores to Kanban at a specific month
+  const jumpToMonth = ({ year, month }) => {
+    setViewMonth({ year, month });
+    setView("kanban");
+  };
+
   // ---- state
-  const [notas, setNotas] = useState(() => {
-    try {
-      const raw = localStorage.getItem("ciamed-notas-v1");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        return parsed.map(n => ({ ...n, recebidaEm: n.recebidaEm ? new Date(n.recebidaEm) : null }));
-      }
-    } catch(e) {}
-    return NOTAS_INICIAIS;
-  });
+  // Notas vêm do backend (Flask + PostgreSQL). localStorage NÃO é mais usado pra dados.
+  const [notas, setNotas] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [filtroUnidade, setFiltroUnidade] = useState("todas");
   const [filtroCategoria, setFiltroCategoria] = useState("todas");
   const [filtroEspecial, setFiltroEspecial] = useState(null); // 'atrasadas-2plus' | 'hoje' | 'retencao'
@@ -51,12 +79,38 @@ const App = () => {
 
   const buscaRef = useRef(null);
 
-  // persist
+  // ---- carrega notas do backend sempre que o mês mudar
   useEffect(() => {
-    try {
-      localStorage.setItem("ciamed-notas-v1", JSON.stringify(notas));
-    } catch(e) {}
-  }, [notas]);
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(null);
+
+    const mes = viewMonth.month + 1; // JS: 0-11 → API: 1-12
+    const ano = viewMonth.year;
+
+    fetch(`/notas/api/notas?mes=${mes}&ano=${ano}`)
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then(data => {
+        if (cancelled) return;
+        const parsed = data.map(n => ({
+          ...n,
+          recebidaEm: n.recebidaEm ? new Date(n.recebidaEm + "T12:00:00") : null,
+        }));
+        setNotas(parsed);
+        setLoading(false);
+      })
+      .catch(err => {
+        if (cancelled) return;
+        console.error("Erro ao carregar notas:", err);
+        setLoadError(err.message);
+        setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [viewMonth]);
 
   // toast
   const showToast = useCallback((msg) => {
@@ -64,17 +118,8 @@ const App = () => {
     setTimeout(() => setToast(null), 2400);
   }, []);
 
-  // ---- displayed notas: real for current month, synthesized (read-only) for others
-  const displayedNotas = useMemo(() => {
-    if (isCurrentMonth) return notas;
-    return recurringTemplates.map((t, i) => ({
-      ...t,
-      id: `syn-${viewMonth.year}-${viewMonth.month}-${i}`,
-      recebidaEm: isPastMonth ? new Date(viewMonth.year, viewMonth.month, t.diaEsperado) : null,
-      nfNumero: isPastMonth ? "—" : "",
-      valor: null,
-    }));
-  }, [notas, isCurrentMonth, isPastMonth, viewMonth, recurringTemplates]);
+  // ---- displayed notas: tudo vem do backend (API auto-gera meses sem registro)
+  const displayedNotas = notas;
 
   // ---- filtering
   const filteredNotas = useMemo(() => {
@@ -149,34 +194,82 @@ const App = () => {
   const handleOpenRegister = (nota) => { if (!guardEdit()) return; setRegisterNota(nota); };
   const handleOpenAvulsa = () => { if (!guardEdit()) return; setShowAvulsa(true); };
 
-  // ---- mark received
-  const markReceived = (nota, payload) => {
-    const updated = { ...nota, ...payload, recebidaEm: payload.recebidaEm };
-    setNotas(prev => prev.map(n => n.id === nota.id ? updated : n));
-    setRegisterNota(null);
-    setRecentlyChanged(nota.id);
-    setTimeout(() => setRecentlyChanged(curr => curr === nota.id ? null : curr), 1800);
-    showToast(`✓ ${nota.fornecedor} registrada`);
+  // ---- mark received (API: PATCH /notas/api/notas/<id>/receber)
+  const markReceived = async (nota, payload) => {
+    try {
+      const recebidaIso = payload.recebidaEm instanceof Date
+        ? payload.recebidaEm.toISOString().slice(0, 10)
+        : payload.recebidaEm;
+
+      const r = await fetch(`/notas/api/notas/${nota.id}/receber`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...payload, recebidaEm: recebidaIso }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const updated = await r.json();
+      const parsed = {
+        ...updated,
+        recebidaEm: updated.recebidaEm ? new Date(updated.recebidaEm + "T12:00:00") : null,
+      };
+      setNotas(prev => prev.map(n => n.id === nota.id ? parsed : n));
+      setRegisterNota(null);
+      setRecentlyChanged(nota.id);
+      setTimeout(() => setRecentlyChanged(curr => curr === nota.id ? null : curr), 1800);
+      showToast(`✓ ${nota.fornecedor} registrada`);
+    } catch(err) {
+      console.error(err);
+      showToast(`Erro ao registrar: ${err.message}`);
+    }
   };
 
-  const unreceive = (nota) => {
-    setNotas(prev => prev.map(n => n.id === nota.id ? { ...n, recebidaEm: null, nfNumero: "", valor: null } : n));
-    setDetail(null);
-    showToast(`Recebimento desfeito · ${nota.fornecedor}`);
+  const unreceive = async (nota) => {
+    try {
+      const r = await fetch(`/notas/api/notas/${nota.id}/desfazer`, { method: "PATCH" });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const updated = await r.json();
+      const parsed = { ...updated, recebidaEm: null };
+      setNotas(prev => prev.map(n => n.id === nota.id ? parsed : n));
+      setDetail(null);
+      showToast(`Recebimento desfeito · ${nota.fornecedor}`);
+    } catch(err) {
+      console.error(err);
+      showToast(`Erro: ${err.message}`);
+    }
   };
 
-  const addAvulsa = (data) => {
-    const newNota = {
-      id: `n${Date.now()}`,
-      cnpj: "",
-      historico: [],
-      ...data,
-    };
-    setNotas(prev => [...prev, newNota]);
-    setShowAvulsa(false);
-    setRecentlyChanged(newNota.id);
-    setTimeout(() => setRecentlyChanged(null), 1800);
-    showToast(`+ ${newNota.fornecedor} adicionada`);
+  const addAvulsa = async (data) => {
+    try {
+      const recebidaIso = data.recebidaEm instanceof Date
+        ? data.recebidaEm.toISOString().slice(0, 10)
+        : data.recebidaEm;
+
+      const body = {
+        ...data,
+        mes: viewMonth.month + 1,
+        ano: viewMonth.year,
+        recebidaEm: recebidaIso,
+      };
+      const r = await fetch(`/notas/api/notas`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const created = await r.json();
+      const parsed = {
+        ...created,
+        recebidaEm: created.recebidaEm ? new Date(created.recebidaEm + "T12:00:00") : null,
+      };
+      setNotas(prev => [...prev, parsed]);
+      setShowAvulsa(false);
+      setRecentlyChanged(parsed.id);
+      setTimeout(() => setRecentlyChanged(null), 1800);
+      showToast(`+ ${parsed.fornecedor} adicionada`);
+    } catch(err) {
+      console.error(err);
+      showToast(`Erro: ${err.message}`);
+    }
   };
 
   // ---- drag-drop
@@ -214,6 +307,12 @@ const App = () => {
       // ignore in input
       const tag = (e.target.tagName || "").toLowerCase();
       const isInput = tag === "input" || tag === "textarea" || tag === "select" || e.target.isContentEditable;
+      // view switches (work everywhere)
+      if (!isInput && (e.key === "k" || e.key === "K")) { setView("kanban"); return; }
+      if (!isInput && (e.key === "f" || e.key === "F")) { setView("fornecedores"); return; }
+      if (!isInput && (e.key === "p" || e.key === "P")) { setView("panorama"); return; }
+      // kanban-only shortcuts below
+      if (view !== "kanban") return;
       if (e.key === "/" && !isInput) {
         e.preventDefault();
         buscaRef.current && buscaRef.current.focus();
@@ -244,7 +343,7 @@ const App = () => {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [hoveredCardId, notas, filtroEspecial, busca]);
+  }, [hoveredCardId, notas, filtroEspecial, busca, view]);
 
   // ---- stats
   const stats = useMemo(() => {
@@ -274,8 +373,29 @@ const App = () => {
 
   return (
     <div className="app">
+      <TopBar view={view} setView={setView} stats={stats} />
       <div className="app-inner">
 
+        {view === "fornecedores" && (
+          <FornecedoresView
+            expectativas={expectativas}
+            reloadExpectativas={reloadExpectativas}
+            today={TODAY_BASE}
+            onJumpToKanban={() => setView("kanban")}
+          />
+        )}
+
+        {view === "panorama" && (
+          <PanoramaView
+            expectativas={expectativas}
+            notas={notas}
+            today={TODAY_BASE}
+            viewMonth={viewMonth}
+            onJumpToMonth={jumpToMonth}
+          />
+        )}
+
+        {view === "kanban" && (<>
         {/* ============= HEADER ============= */}
         <header className="hdr">
           <div className="hdr-row hdr-top">
@@ -291,9 +411,6 @@ const App = () => {
               <button className="nav-btn" title="Mês anterior (←)" onClick={goPrevMonth}>‹</button>
               <button className={`nav-btn nav-now ${isCurrentMonth ? "is-current" : ""}`} onClick={goCurrentMonth} title="Voltar pra mês atual">HOJE</button>
               <button className="nav-btn" title="Próximo mês (→)" onClick={goNextMonth}>›</button>
-              <span className="hdr-divider"></span>
-              <button className="nav-btn ghost" title="Cadastro de fornecedores (em breve)" disabled>Fornecedores</button>
-              <button className="nav-btn ghost" title="Panorama anual (em breve)" disabled>Panorama</button>
             </nav>
           </div>
 
@@ -599,10 +716,12 @@ const App = () => {
             <kbd>1</kbd>–<kbd>4</kbd> filtrar unidade
             <kbd>0</kbd> limpar
             <kbd>R</kbd> registrar nota sob o cursor
+            <kbd>K</kbd> kanban · <kbd>F</kbd> fornecedores · <kbd>P</kbd> panorama
             <kbd>Esc</kbd> sair / cancelar
           </span>
           <span className="brand mono">Ciamed · Controle de Notas Fiscais</span>
         </footer>
+        </>)}
       </div>
 
       {/* ============= MODALS ============= */}
@@ -632,6 +751,94 @@ const App = () => {
       )}
       {toast && <div className="toast">{toast}</div>}
     </div>
+  );
+};
+
+// ============================================================
+// TopBar — global tab bar (always visible)
+// ============================================================
+const TopBar = ({ view, setView, stats }) => {
+  return (
+    <header className="topbar">
+      <div className="topbar-inner">
+        <div className="topbar-brand">
+          <div className="topbar-logo" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 22 22">
+              <rect x="1.5" y="3" width="14" height="17" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
+              <rect x="5" y="1" width="14" height="17" rx="1.5" fill="var(--paper)" stroke="currentColor" strokeWidth="1.4" />
+              <line x1="8" y1="6" x2="16" y2="6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              <line x1="8" y1="9" x2="16" y2="9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              <line x1="8" y1="12" x2="13" y2="12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+            </svg>
+          </div>
+          <div className="topbar-brand-text">
+            <div className="topbar-brand-name">Ciamed</div>
+            <div className="topbar-brand-sub">Controle de notas fiscais</div>
+          </div>
+        </div>
+
+        <nav className="topbar-tabs" role="tablist">
+          <button
+            role="tab"
+            className={`topbar-tab ${view === "kanban" ? "on" : ""}`}
+            onClick={() => setView("kanban")}
+            aria-selected={view === "kanban"}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+              <rect x="1" y="2" width="3.5" height="10" rx="0.5" fill="none" stroke="currentColor" strokeWidth="1.2" />
+              <rect x="5.25" y="2" width="3.5" height="6" rx="0.5" fill="none" stroke="currentColor" strokeWidth="1.2" />
+              <rect x="9.5" y="2" width="3.5" height="8" rx="0.5" fill="none" stroke="currentColor" strokeWidth="1.2" />
+            </svg>
+            <span>Kanban do mês</span>
+            {stats && stats.atrasadas > 0 && (
+              <span className="topbar-tab-badge">{stats.atrasadas}</span>
+            )}
+            <span className="topbar-tab-kbd"><kbd>K</kbd></span>
+          </button>
+
+          <button
+            role="tab"
+            className={`topbar-tab ${view === "fornecedores" ? "on" : ""}`}
+            onClick={() => setView("fornecedores")}
+            aria-selected={view === "fornecedores"}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+              <rect x="1.5" y="2" width="11" height="10" rx="1" fill="none" stroke="currentColor" strokeWidth="1.2" />
+              <line x1="4" y1="5" x2="10" y2="5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              <line x1="4" y1="7.5" x2="10" y2="7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              <line x1="4" y1="10" x2="7.5" y2="10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+            </svg>
+            <span>Fornecedores</span>
+            <span className="topbar-tab-kbd"><kbd>F</kbd></span>
+          </button>
+
+          <button
+            role="tab"
+            className={`topbar-tab ${view === "panorama" ? "on" : ""}`}
+            onClick={() => setView("panorama")}
+            aria-selected={view === "panorama"}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+              <rect x="1.5" y="1.5" width="3" height="3" fill="currentColor" />
+              <rect x="5.5" y="1.5" width="3" height="3" fill="none" stroke="currentColor" strokeWidth="1.1" />
+              <rect x="9.5" y="1.5" width="3" height="3" fill="currentColor" />
+              <rect x="1.5" y="5.5" width="3" height="3" fill="none" stroke="currentColor" strokeWidth="1.1" />
+              <rect x="5.5" y="5.5" width="3" height="3" fill="currentColor" />
+              <rect x="9.5" y="5.5" width="3" height="3" fill="none" stroke="currentColor" strokeWidth="1.1" />
+              <rect x="1.5" y="9.5" width="3" height="3" fill="currentColor" />
+              <rect x="5.5" y="9.5" width="3" height="3" fill="none" stroke="currentColor" strokeWidth="1.1" />
+              <rect x="9.5" y="9.5" width="3" height="3" fill="none" stroke="currentColor" strokeWidth="1.1" />
+            </svg>
+            <span>Panorama</span>
+            <span className="topbar-tab-kbd"><kbd>P</kbd></span>
+          </button>
+        </nav>
+
+        <div className="topbar-meta mono">
+          {new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
+        </div>
+      </div>
+    </header>
   );
 };
 
