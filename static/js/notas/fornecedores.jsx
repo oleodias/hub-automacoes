@@ -1,7 +1,14 @@
-/* global React, CategoryIcon, UnitBadge, RetentionMark, formatBRL, dayLabel */
+/* global React, ReactDOM, CategoryIcon, UnitBadge, RetentionMark, formatBRL, dayLabel, NkOverlay */
 // Fornecedores view — Controle de Notas Ciamed
 
 const { useState: fuseState, useMemo: fuseMemo, useRef: fuseRef, useEffect: fuseEffect } = React;
+
+// Fallback caso components.jsx ainda não tenha carregado.
+const FOverlay = (typeof window !== "undefined" && window.NkOverlay)
+  ? window.NkOverlay
+  : ({ children }) => (ReactDOM && ReactDOM.createPortal)
+      ? ReactDOM.createPortal(children, document.body)
+      : children;
 
 // ============================================================
 // FornecedoresView
@@ -68,7 +75,7 @@ const FornecedoresView = ({ expectativas, reloadExpectativas, today, onJumpToKan
     }
   };
 
-  // mapToApi: converte o shape do modal (camelCase) pro shape que o backend espera
+  // mapToApi: converte o shape do nk-modal (camelCase) pro shape que o backend espera
   const mapToApi = (data) => ({
     fornecedor: data.fornecedor,
     cnpj: data.cnpj,
@@ -388,16 +395,17 @@ const ExpectativaModal = ({ initial, onConfirm, onCancel }) => {
   };
 
   return (
-    <div className="modal-backdrop" onClick={onCancel}>
-      <form className="modal modal-avulsa" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
-        <header className="modal-header">
-          <div className="modal-eyebrow">{isNew ? "Novo fornecedor recorrente" : "Editar fornecedor"}</div>
-          <div className="modal-title-plain">
+    <FOverlay>
+    <div className="nk-modal-backdrop" onClick={onCancel}>
+      <form className="nk-modal nk-modal-avulsa" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
+        <header className="nk-modal-header">
+          <div className="nk-modal-eyebrow">{isNew ? "Novo fornecedor recorrente" : "Editar fornecedor"}</div>
+          <div className="nk-modal-title-plain">
             {isNew ? "Nova expectativa de nota mensal" : initial.fornecedor}
           </div>
         </header>
 
-        <div className="modal-grid grid-2">
+        <div className="nk-modal-grid grid-2">
           <label className="field span-2">
             <span className="lbl">Fornecedor</span>
             <input ref={fornRef} type="text" placeholder="Nome do fornecedor" value={fornecedor} onChange={(e) => setFornecedor(e.target.value)} />
@@ -442,7 +450,7 @@ const ExpectativaModal = ({ initial, onConfirm, onCancel }) => {
           </label>
         </div>
 
-        <footer className="modal-footer">
+        <footer className="nk-modal-footer">
           <span className="kbd-hint"><kbd>Esc</kbd> cancelar</span>
           <div className="actions">
             <button type="button" className="btn btn-ghost" onClick={onCancel}>Cancelar</button>
@@ -453,6 +461,7 @@ const ExpectativaModal = ({ initial, onConfirm, onCancel }) => {
         </footer>
       </form>
     </div>
+    </FOverlay>
   );
 };
 
@@ -466,13 +475,14 @@ const ConfirmModal = ({ title, body, confirmLabel = "Confirmar", danger, onConfi
     return () => window.removeEventListener("keydown", onKey);
   }, []);
   return (
-    <div className="modal-backdrop" onClick={onCancel}>
-      <div className="modal modal-confirm" onClick={(e) => e.stopPropagation()}>
-        <header className="modal-header">
-          <div className="modal-title-plain">{title}</div>
+    <FOverlay>
+    <div className="nk-modal-backdrop" onClick={onCancel}>
+      <div className="nk-modal nk-modal-confirm" onClick={(e) => e.stopPropagation()}>
+        <header className="nk-modal-header">
+          <div className="nk-modal-title-plain">{title}</div>
         </header>
-        <div className="modal-body">{body}</div>
-        <footer className="modal-footer">
+        <div className="nk-modal-body">{body}</div>
+        <footer className="nk-modal-footer">
           <span></span>
           <div className="actions">
             <button type="button" className="btn btn-ghost" onClick={onCancel}>Cancelar</button>
@@ -481,6 +491,7 @@ const ConfirmModal = ({ title, body, confirmLabel = "Confirmar", danger, onConfi
         </footer>
       </div>
     </div>
+    </FOverlay>
   );
 };
 

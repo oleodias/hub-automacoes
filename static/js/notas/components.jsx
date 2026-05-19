@@ -1,7 +1,15 @@
-/* global React, CategoryIcon, UnitBadge, RetentionMark, formatBRL, dayLabel, statusOf, daysLate, urgencyTier */
+/* global React, ReactDOM, CategoryIcon, UnitBadge, RetentionMark, formatBRL, dayLabel, statusOf, daysLate, urgencyTier */
 // Card + Modals — Controle de Notas Ciamed
 
 const { useState: cuseState, useRef: cuseRef, useEffect: cuseEffect } = React;
+
+// Portaliza qualquer overlay (modal/drawer) direto pro <body>, escapando de
+// ancestrais com transform/filter/contain do shell do hub que quebrariam o
+// position:fixed do backdrop e fariam o conteúdo "vazar" pro fim da página.
+const NkOverlay = ({ children }) => {
+  if (typeof document === "undefined" || !ReactDOM || !ReactDOM.createPortal) return children;
+  return ReactDOM.createPortal(children, document.body);
+};
 
 // ============================================================
 // CARD — fornecedor card on the kanban
@@ -117,19 +125,20 @@ const RegisterModal = ({ nota, today, onConfirm, onCancel }) => {
   };
 
   return (
-    <div className="modal-backdrop" onClick={onCancel}>
-      <form className="modal modal-register" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
-        <header className="modal-header">
-          <div className="modal-eyebrow">Registrar nota recebida</div>
-          <div className="modal-title">
+    <NkOverlay>
+    <div className="nk-modal-backdrop" onClick={onCancel}>
+      <form className="nk-modal nk-modal-register" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
+        <header className="nk-modal-header">
+          <div className="nk-modal-eyebrow">Registrar nota recebida</div>
+          <div className="nk-modal-title">
             <CategoryIcon id={nota.categoria} size={16} />
             <span>{nota.fornecedor}</span>
             <UnitBadge unidade={nota.unidade} />
-            <span className="modal-cat">· {nota.categoria === "outros" ? "Outros" : window.CIAMED.CATEGORIAS.find(c => c.id === nota.categoria)?.nome}</span>
+            <span className="nk-modal-cat">· {nota.categoria === "outros" ? "Outros" : window.CIAMED.CATEGORIAS.find(c => c.id === nota.categoria)?.nome}</span>
           </div>
         </header>
 
-        <div className="modal-grid">
+        <div className="nk-modal-grid">
           <label className="field">
             <span className="lbl">Data recebida</span>
             <input type="date" value={dataRecebida} onChange={(e) => setDataRecebida(e.target.value)} />
@@ -154,7 +163,7 @@ const RegisterModal = ({ nota, today, onConfirm, onCancel }) => {
           </label>
         </div>
 
-        <footer className="modal-footer">
+        <footer className="nk-modal-footer">
           <span className="kbd-hint"><kbd>Tab</kbd> navegar · <kbd>Enter</kbd> salvar · <kbd>Esc</kbd> cancelar</span>
           <div className="actions">
             <button type="button" className="btn btn-ghost" onClick={onCancel}>Cancelar</button>
@@ -163,6 +172,7 @@ const RegisterModal = ({ nota, today, onConfirm, onCancel }) => {
         </footer>
       </form>
     </div>
+    </NkOverlay>
   );
 };
 
@@ -205,14 +215,15 @@ const AvulsaModal = ({ today, onConfirm, onCancel }) => {
   };
 
   return (
-    <div className="modal-backdrop" onClick={onCancel}>
-      <form className="modal modal-avulsa" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
-        <header className="modal-header">
-          <div className="modal-eyebrow">Adicionar nota avulsa</div>
-          <div className="modal-title-plain">Nota não prevista no recorrente</div>
+    <NkOverlay>
+    <div className="nk-modal-backdrop" onClick={onCancel}>
+      <form className="nk-modal nk-modal-avulsa" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
+        <header className="nk-modal-header">
+          <div className="nk-modal-eyebrow">Adicionar nota avulsa</div>
+          <div className="nk-modal-title-plain">Nota não prevista no recorrente</div>
         </header>
 
-        <div className="modal-grid grid-2">
+        <div className="nk-modal-grid grid-2">
           <label className="field span-2">
             <span className="lbl">Fornecedor</span>
             <input ref={fornRef} type="text" placeholder="Nome do fornecedor" value={fornecedor} onChange={(e) => setFornecedor(e.target.value)} />
@@ -257,7 +268,7 @@ const AvulsaModal = ({ today, onConfirm, onCancel }) => {
           </label>
         </div>
 
-        <footer className="modal-footer">
+        <footer className="nk-modal-footer">
           <span className="kbd-hint"><kbd>Esc</kbd> cancelar</span>
           <div className="actions">
             <button type="button" className="btn btn-ghost" onClick={onCancel}>Cancelar</button>
@@ -266,6 +277,7 @@ const AvulsaModal = ({ today, onConfirm, onCancel }) => {
         </footer>
       </form>
     </div>
+    </NkOverlay>
   );
 };
 
@@ -279,11 +291,12 @@ const DetailDrawer = ({ nota, today, onClose, onUpdate, onUnreceive }) => {
   const unit = window.CIAMED.UNIDADES.find(u => u.id === nota.unidade);
 
   return (
+    <NkOverlay>
     <div className="drawer-backdrop" onClick={onClose}>
       <aside className="drawer" onClick={(e) => e.stopPropagation()}>
         <header className="drawer-header">
           <div>
-            <div className="modal-eyebrow">Detalhes da nota</div>
+            <div className="nk-modal-eyebrow">Detalhes da nota</div>
             <h3 className="drawer-title">
               <CategoryIcon id={nota.categoria} size={16} />
               {nota.fornecedor}
@@ -315,7 +328,8 @@ const DetailDrawer = ({ nota, today, onClose, onUpdate, onUnreceive }) => {
         )}
       </aside>
     </div>
+    </NkOverlay>
   );
 };
 
-Object.assign(window, { NotaCard, RegisterModal, AvulsaModal, DetailDrawer });
+Object.assign(window, { NotaCard, RegisterModal, AvulsaModal, DetailDrawer, NkOverlay });

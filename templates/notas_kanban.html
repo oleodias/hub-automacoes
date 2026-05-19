@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Controle de Notas - Hub Ciamed{% endblock %}
+{% block title %}Controle de Notas — Hub Ciamed{% endblock %}
 
 {% block navbar_title %}Controle de Notas Fiscais{% endblock %}
 
@@ -10,9 +10,33 @@
 
 {% block content %}
   {# ============================================================
+     Cabeçalho de página padrão do Hub (botão voltar + título +
+     badge de módulo). Vive FORA do #root para manter consistência
+     visual com cadastro_fornecedor.html e demais páginas.
+     ============================================================ #}
+  <div class="page-header">
+    <div class="left">
+      <button
+        class="btn-back"
+        onclick="window.location.href = '/'"
+        title="Voltar ao Painel"
+      >
+        <i class="fa-solid fa-arrow-left" style="font-size: 13px"></i>
+      </button>
+      <div class="page-title">
+        Controle de Notas Fiscais
+        <span>Módulo Fiscal · Kanban · Fornecedores · Panorama</span>
+      </div>
+    </div>
+    <span class="badge-api">
+      <i class="fa-solid fa-layer-group me-1"></i>SPA Interna
+    </span>
+  </div>
+
+  {# ============================================================
      Container do React app — SPA com 3 abas internas:
-     Kanban · Fornecedores · Panorama (a navegação é interna,
-     via estado React, sem trocar de URL).
+     Kanban · Fornecedores · Panorama (navegação interna via
+     estado React, sem trocar de URL).
      ============================================================ #}
   <div id="root"></div>
 {% endblock %}
