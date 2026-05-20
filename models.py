@@ -128,6 +128,7 @@ class Submissao(db.Model):
         'aprovado'   → farmacêutica aprovou
         'reprovado'  → farmacêutica reprovou (vendedor pode corrigir)
         'cadastrado' → robô RPA finalizou o cadastro no ERP
+        'erro_robo'  → robô falhou, aguardando reprocessamento manual
     """
 
     __tablename__ = 'submissoes'
@@ -140,6 +141,7 @@ class Submissao(db.Model):
     dados_json = db.Column(db.JSON, default=dict)
     docs_enviados = db.Column(db.JSON, default=list)
     motivos_reprovacao = db.Column(db.JSON, default=list)
+    erro_robo = db.Column(db.JSON, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 

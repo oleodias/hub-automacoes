@@ -4,127 +4,183 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Motivo de Reprovação — Ciamed</title>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
     <link rel="icon" href="/static/img/logosvg.svg" />
     <style>
       :root {
-        --bg: #090d14;
-        --surface: #0f1623;
-        --card: #131c2e;
-        --border: rgba(255, 255, 255, 0.07);
-        --border-hover: rgba(255, 255, 255, 0.13);
-        --red: #f87171;
-        --red-dim: rgba(248, 113, 113, 0.1);
-        --red-border: rgba(248, 113, 113, 0.25);
-        --teal: #0ee6b8;
-        --text: #e8edf5;
-        --muted: #7a8ba3;
-        --faint: #4a5a72;
+        --bg-base:        #f1f5f9;
+        --bg-surface:     #ffffff;
+        --bg-card:        #ffffff;
+        --border:         #e2e8f0;
+        --border-hover:   #cbd5e1;
+        --teal:           #0d9488;
+        --teal-dim:       rgba(13, 148, 136, 0.08);
+        --red:            #dc2626;
+        --red-soft:       #ef4444;
+        --red-dim:        rgba(220, 38, 38, 0.08);
+        --red-border:     rgba(220, 38, 38, 0.22);
+        --text:           #0f172a;
+        --text-secondary: #475569;
+        --faint:          #94a3b8;
+        --font-head:      "Syne", sans-serif;
+        --font-body:      "DM Sans", sans-serif;
+        --radius:         16px;
+        --radius-sm:      10px;
+        --transition:     0.22s cubic-bezier(0.4, 0, 0.2, 1);
       }
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
+
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
       body {
-        background: var(--bg);
+        background: var(--bg-base);
         color: var(--text);
-        font-family: "DM Sans", sans-serif;
+        font-family: var(--font-body);
         min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
         padding: 24px;
         overflow: hidden;
+        position: relative;
       }
+
+      /* Grid pattern */
       body::before {
         content: "";
         position: fixed;
         inset: 0;
         background-image:
-          linear-gradient(rgba(14, 230, 184, 0.02) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(14, 230, 184, 0.02) 1px, transparent 1px);
+          linear-gradient(rgba(13, 148, 136, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(13, 148, 136, 0.03) 1px, transparent 1px);
         background-size: 48px 48px;
         pointer-events: none;
       }
+
+      /* Floating orbs */
+      .orb {
+        position: fixed;
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.5;
+        pointer-events: none;
+        z-index: 0;
+        animation: orbFloat 14s ease-in-out infinite;
+      }
+      .orb-1 {
+        width: 380px; height: 380px;
+        background: radial-gradient(circle, rgba(220, 38, 38, 0.18), transparent 70%);
+        top: -120px; left: -120px;
+      }
+      .orb-2 {
+        width: 340px; height: 340px;
+        background: radial-gradient(circle, rgba(13, 148, 136, 0.14), transparent 70%);
+        bottom: -100px; right: -100px;
+        animation-delay: -7s;
+      }
+      @keyframes orbFloat {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50%      { transform: translate(30px, -20px) scale(1.06); }
+      }
+
+      /* ── CARD ── */
       .card {
-        background: var(--card);
+        background: var(--bg-card);
         border: 1px solid var(--border);
-        border-radius: 20px;
+        border-radius: var(--radius);
         padding: 48px 44px;
         max-width: 480px;
         width: 100%;
         position: relative;
         z-index: 1;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.04),
+          0 16px 40px -8px rgba(15, 23, 42, 0.08),
+          0 32px 64px -12px rgba(220, 38, 38, 0.05);
         opacity: 0;
         transform: translateY(20px);
-        animation: cardIn 0.45s 0.05s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+        animation: cardIn 0.55s 0.05s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+        overflow: hidden;
       }
+      /* Animated accent stripe */
       .card::before {
         content: "";
         position: absolute;
-        top: 0;
-        left: 10%;
-        right: 10%;
-        height: 2px;
-        background: var(--red);
-        border-radius: 0 0 4px 4px;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          var(--red-soft) 30%,
+          var(--red) 50%,
+          var(--red-soft) 70%,
+          transparent 100%
+        );
+        background-size: 200% 100%;
         opacity: 0;
-        animation: lineIn 0.4s 0.4s ease forwards;
+        animation:
+          lineIn 0.45s 0.4s ease forwards,
+          lineShimmer 4s 0.85s linear infinite;
       }
-      @keyframes cardIn {
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      @keyframes lineIn {
-        to {
-          opacity: 1;
-        }
-      }
+      @keyframes cardIn   { to { opacity: 1; transform: translateY(0); } }
+      @keyframes lineIn   { to { opacity: 1; } }
+      @keyframes lineShimmer { to { background-position: -200% 0; } }
       @keyframes fadeUp {
-        from {
-          opacity: 0;
-          transform: translateY(6px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(8px); }
+        to   { opacity: 1; transform: translateY(0); }
       }
 
+      /* ── LOGO ── */
       .logo-wrap {
         text-align: center;
-        margin-bottom: 28px;
+        margin-bottom: 24px;
         opacity: 0;
-        animation: fadeUp 0.3s 0.1s ease forwards;
+        animation: fadeUp 0.35s 0.18s ease forwards;
       }
-      .logo-wrap img {
-        height: 32px;
-      }
+      .logo-wrap img { height: 32px; }
 
+      /* ── HEADER ── */
       .header {
         text-align: center;
-        margin-bottom: 28px;
-        opacity: 0;
-        animation: fadeUp 0.3s 0.2s ease forwards;
+        margin-bottom: 26px;
       }
+      .tag-icon-wrap {
+        opacity: 0;
+        transform: scale(0.5);
+        animation: tagPop 0.5s 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 56px; height: 56px;
+        border-radius: 50%;
+        background: var(--red-dim);
+        border: 1px solid var(--red-border);
+        color: var(--red);
+        font-size: 20px;
+        margin-bottom: 16px;
+        position: relative;
+      }
+      .tag-icon-wrap::after {
+        content: "";
+        position: absolute;
+        inset: -1px;
+        border-radius: 50%;
+        border: 1px solid var(--red);
+        opacity: 0;
+        animation: ripple 2.2s 1.1s ease-out infinite;
+      }
+      @keyframes tagPop { to { opacity: 1; transform: scale(1); } }
+      @keyframes ripple {
+        0%   { transform: scale(1); opacity: 0.45; }
+        100% { transform: scale(1.7); opacity: 0; }
+      }
+
       .tag {
         display: inline-block;
         font-size: 10px;
         font-weight: 700;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
         color: var(--red);
         background: var(--red-dim);
@@ -132,31 +188,45 @@
         padding: 4px 14px;
         border-radius: 100px;
         margin-bottom: 14px;
+        opacity: 0;
+        animation: fadeUp 0.35s 0.32s ease forwards;
       }
       h1 {
-        font-family: "Syne", sans-serif;
+        font-family: var(--font-head);
         font-size: 22px;
         font-weight: 700;
         color: var(--text);
         margin-bottom: 8px;
+        letter-spacing: -0.015em;
+        opacity: 0;
+        animation: fadeUp 0.35s 0.36s ease forwards;
       }
       .subtitle {
         font-size: 13px;
-        color: var(--muted);
+        color: var(--text-secondary);
         line-height: 1.6;
+        opacity: 0;
+        animation: fadeUp 0.35s 0.4s ease forwards;
       }
 
+      /* ── EMPRESA CHIP ── */
       .empresa-chip {
-        background: var(--surface);
+        background: var(--bg-base);
         border: 1px solid var(--border);
         border-radius: 10px;
         padding: 14px 16px;
         display: flex;
         align-items: center;
         gap: 12px;
-        margin-bottom: 24px;
+        margin-bottom: 22px;
         opacity: 0;
-        animation: fadeUp 0.3s 0.3s ease forwards;
+        animation: fadeUp 0.35s 0.46s ease forwards;
+        transition: var(--transition);
+      }
+      .empresa-chip:hover {
+        border-color: var(--border-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
       }
       .empresa-chip i {
         color: var(--red);
@@ -171,16 +241,18 @@
         font-size: 12px;
         color: var(--faint);
         margin-top: 2px;
+        font-family: monospace;
       }
 
+      /* ── FIELD ── */
       .field-wrap {
         opacity: 0;
-        animation: fadeUp 0.3s 0.35s ease forwards;
+        animation: fadeUp 0.35s 0.52s ease forwards;
       }
       .field-label {
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.1em;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
         color: var(--faint);
         display: block;
@@ -188,75 +260,109 @@
       }
       textarea {
         width: 100%;
-        background: var(--surface);
+        background: var(--bg-card);
         border: 1px solid var(--border);
-        border-radius: 10px;
+        border-radius: var(--radius-sm);
         padding: 14px 16px;
         color: var(--text);
-        font-family: "DM Sans", sans-serif;
+        font-family: var(--font-body);
         font-size: 14px;
         line-height: 1.6;
         resize: none;
         outline: none;
-        transition:
-          border-color 0.2s,
-          box-shadow 0.2s;
+        transition: var(--transition);
       }
-      textarea::placeholder {
-        color: var(--faint);
-      }
+      textarea::placeholder { color: var(--faint); }
+      textarea:hover { border-color: var(--border-hover); }
       textarea:focus {
         border-color: var(--red);
-        box-shadow: 0 0 0 3px var(--red-dim);
+        box-shadow: 0 0 0 4px var(--red-dim);
       }
       .char-count {
         font-size: 11px;
         color: var(--faint);
         text-align: right;
         margin-top: 6px;
+        font-variant-numeric: tabular-nums;
       }
+      .char-count.near-limit { color: var(--red); }
 
+      /* ── BOTÃO ── */
       .btn-enviar {
-        margin-top: 20px;
+        margin-top: 18px;
         width: 100%;
         padding: 14px;
         background: var(--red);
-        color: #090d14;
+        color: #ffffff;
         border: none;
-        border-radius: 10px;
-        font-family: "Syne", sans-serif;
+        border-radius: var(--radius-sm);
+        font-family: var(--font-head);
         font-weight: 700;
         font-size: 14px;
         cursor: pointer;
-        transition:
-          filter 0.2s,
-          transform 0.2s;
+        transition: var(--transition);
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
         opacity: 0;
-        animation: fadeUp 0.3s 0.45s ease forwards;
+        animation: fadeUp 0.35s 0.58s ease forwards;
+        letter-spacing: 0.03em;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 6px 16px -4px rgba(220, 38, 38, 0.35);
       }
-      .btn-enviar:hover {
-        filter: brightness(1.1);
-        transform: translateY(-1px);
+      /* Shine effect */
+      .btn-enviar::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.25),
+          transparent
+        );
+        transition: left 0.6s ease;
       }
+      .btn-enviar:hover:not(:disabled) {
+        filter: brightness(1.08);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px -4px rgba(220, 38, 38, 0.4);
+      }
+      .btn-enviar:hover:not(:disabled)::before { left: 100%; }
+      .btn-enviar:hover:not(:disabled) i { transform: translateX(2px); }
+      .btn-enviar i { transition: transform 0.2s ease; }
       .btn-enviar:disabled {
-        opacity: 0.4;
+        opacity: 0.5;
         cursor: not-allowed;
         transform: none;
+        box-shadow: none;
+      }
+
+      @media (max-width: 520px) {
+        .card { padding: 36px 26px; }
+        h1 { font-size: 20px; }
       }
     </style>
   </head>
   <body>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
     <div class="card">
       <div class="logo-wrap">
         <img src="/static/img/ciamedia.png" alt="Ciamed" />
       </div>
 
       <div class="header">
-        <div class="tag">❌ Reprovação</div>
+        <div class="tag-icon-wrap">
+          <i class="fa-solid fa-xmark"></i>
+        </div>
+        <div class="tag">Reprovação</div>
         <h1>Informar Motivo</h1>
         <p class="subtitle">
           Descreva o motivo da reprovação. O vendedor será notificado
@@ -295,43 +401,48 @@
     <script>
       const textarea = document.getElementById("motivo");
       const charCount = document.getElementById("charCount");
+      const charCountWrap = charCount.parentElement;
 
       textarea.addEventListener("input", () => {
-        charCount.textContent = textarea.value.length;
+        const len = textarea.value.length;
+        charCount.textContent = len;
+        charCountWrap.classList.toggle("near-limit", len > 450);
       });
 
       function enviar() {
         const motivo = textarea.value.trim();
         if (!motivo) {
           textarea.style.borderColor = "var(--red)";
+          textarea.style.boxShadow = "0 0 0 4px var(--red-dim)";
           textarea.focus();
+          textarea.animate(
+            [
+              { transform: "translateX(0)" },
+              { transform: "translateX(-6px)" },
+              { transform: "translateX(6px)" },
+              { transform: "translateX(-4px)" },
+              { transform: "translateX(0)" },
+            ],
+            { duration: 320, easing: "ease-out" }
+          );
           return;
         }
 
         const btn = document.getElementById("btnEnviar");
         btn.disabled = true;
-        btn.innerHTML =
-          '<i class="fa-solid fa-circle-notch fa-spin"></i> Enviando...';
+        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Enviando...';
 
-        // Valores vindos do Flask via Jinja2
         const resumeUrl = "{{ resume_url }}";
         const empresa = "{{ empresa }}";
-        const uuid = "{{ uuid }}"; // ← NOVO: UUID da submissão
+        const uuid = "{{ uuid }}";
 
-        // Monta a URL do /confirmar passando todos os parâmetros necessários:
-        //   acao=reprovar          → Flask sabe que é uma reprovação
-        //   empresa                → para exibir na tela de confirmação
-        //   motivo                 → Flask registra no banco E passa pro N8N
-        //   resumeUrl              → Flask chama o N8N para continuar o fluxo
-        //   uuid                   → Flask registra a reprovação no SQLite
         const url =
           `/confirmar?acao=reprovar&empresa=${encodeURIComponent(empresa)}&motivo=${encodeURIComponent(motivo)}&resumeUrl=${encodeURIComponent(resumeUrl)}` +
-          `&uuid=${encodeURIComponent(uuid)}`; // ← NOVO
+          `&uuid=${encodeURIComponent(uuid)}`;
 
         window.location.href = url;
       }
 
-      // Atalho: Ctrl + Enter para enviar
       textarea.addEventListener("keydown", (e) => {
         if (e.ctrlKey && e.key === "Enter") enviar();
       });

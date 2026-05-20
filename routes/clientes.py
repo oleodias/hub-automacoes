@@ -535,55 +535,69 @@ def fila_cadastro_liberar():
     cadastro_liberar_proximo()
     return jsonify({'status': 'ok'})
 
+# ══════════════════════════════════════════════════════════════
+# ADICIONAR no routes/clientes.py — LOGO ABAIXO da rota
+# /fila_cadastro/liberar_proximo
+# ══════════════════════════════════════════════════════════════
+
+@clientes_bp.route('/fila_cadastro/status', methods=['GET'])
+def fila_cadastro_status():
+    """Mostra o estado atual da fila de cadastro — útil pra debug."""
+    from utils.fila import _fila_cadastro, _cadastro_em_execucao
+    return jsonify({
+        "em_execucao": _cadastro_em_execucao,
+        "tamanho_fila": len(_fila_cadastro),
+        "itens": [
+            {"id": item["id"], "resume_url": item["resume_url"][:80] + "..."}
+            for item in _fila_cadastro
+        ]
+    })
+
+
+@clientes_bp.route('/fila_cadastro/reset', methods=['POST'])
+def fila_cadastro_reset():
+    """
+    Destrava a fila forçadamente. Usa quando:
+      - O robô falhou e a fila ficou presa
+      - Tem execuções fantasma que nunca vão terminar
+
+    O que faz:
+      1. Limpa toda a fila (remove todos os itens pendentes)
+      2. Reseta a flag _cadastro_em_execucao pra False
+      3. NÃO acorda nenhum Wait node do N8N (as execuções
+         pendentes no N8N vão expirar sozinhas pelo timeout)
+    """
+    from utils.fila import _fila_cadastro, _fila_cadastro_lock
+    import utils.fila as fila_module
+
+    with _fila_cadastro_lock:
+        qtd_removidos = len(_fila_cadastro)
+        _fila_cadastro.clear()
+        fila_module._cadastro_em_execucao = False
+
+    logger.warning(f"[FILA] ⚠️ RESET forçado! {qtd_removidos} item(ns) removido(s) da fila.")
+
+    return jsonify({
+        "status": "ok",
+        "mensagem": f"Fila resetada. {qtd_removidos} item(ns) removido(s).",
+        "em_execucao": False,
+        "tamanho_fila": 0
+    })
+
 
 # ══════════════════════════════════════════════════════════════
-# Integração N8N → Robô RPA
+# PEÇA 3A — Rota /n8n_iniciar_cadastro ATUALIZADA
+# ══════════════════════════════════════════════════════════════
+# Substitui a versão anterior (Entrega 1).
+# Diferença: agora trata o retorno padronizado do robô e
+# registra erro_robo no banco quando falha.
 # ══════════════════════════════════════════════════════════════
 
 @clientes_bp.route('/n8n_iniciar_cadastro', methods=['POST'])
 def n8n_iniciar_cadastro():
-    dados_n8n = request.json
-    cnpj      = dados_n8n.get('cnpj')
-    razao     = dados_n8n.get('razao_social')
-    vendedor  = dados_n8n.get('vendedor')
-    logger.info(f"[N8N] Solicitação recebida!")
-    logger.info(f"Cliente: {razao} | 👤 Vendedor: {vendedor}")
-    exec_id = iniciar_execucao_robo('cliente_novo')
-    try:
-        resultado = cadastro_novo.executar({
-            "cnpj": cnpj, "razao_social": razao, "vendedor": vendedor
-        })
-        finalizar_execucao_robo(exec_id, 'sucesso')
-        return jsonify({
-            "status": "sucesso",
-            "mensagem": f"Robô finalizou o cadastro de {razao}",
-            "resultado": resultado
-        }), 200
-    except Exception as e:
-        finalizar_execucao_robo(exec_id, 'erro', {'erro': str(e)})
-        logger.error(f"Erro ao processar chamado do n8n: {e}")
-        return jsonify({"status": "erro", "detalhes": str(e)}), 500
-
-
-# ══════════════════════════════════════════════════════════════
-# Integração N8N → Robô de REATIVAÇÃO
-# ══════════════════════════════════════════════════════════════
-# O n8n chama esta rota DEPOIS que a farmacêutica aprovou a ficha.
-# Em vez de mandar todos os campos no payload (como faz o cadastro
-# novo), essa rota LÊ DO BANCO pelo uuid — porque o /receber_ficha
-# já enriqueceu e salvou tudo (endereço, CNAE, IE, etc).
-#
-# O n8n só precisa mandar:
-#   uuid           → pra buscar os dados completos no banco
-#   acao_bloqueio  → decisão da farmacêutica (manter/alterar/null)
-#   valor_bloqueio → valor novo (só quando acao_bloqueio == "alterar")
-# ══════════════════════════════════════════════════════════════
-
-@clientes_bp.route('/n8n_iniciar_reativacao', methods=['POST'])
-def n8n_iniciar_reativacao():
     dados_n8n = request.json or {}
 
-    # ── 1. Validar campos obrigatórios do payload ──
+    # ── 1. Validar UUID obrigatório ──
     uuid_ficha = dados_n8n.get('uuid', '').strip()
     if not uuid_ficha:
         return jsonify({"status": "erro", "detalhes": "Campo 'uuid' ausente no payload."}), 400
@@ -595,18 +609,16 @@ def n8n_iniciar_reativacao():
 
     d = sub['dados_json']
 
-    # Validar que é reativação e tem código NL
-    if d.get('tipo_cadastro') != 'REATIVACAO':
-        return jsonify({"status": "erro", "detalhes": f"Submissão {uuid_ficha} não é REATIVACAO (tipo: {d.get('tipo_cadastro')})."}), 400
-
-    codigo_nl = d.get('codigo_nl', '').strip()
-    if not codigo_nl:
-        return jsonify({"status": "erro", "detalhes": "Código NL ausente nos dados da submissão."}), 400
+    if d.get('tipo_cadastro') != 'NOVO':
+        return jsonify({
+            "status": "erro",
+            "detalhes": f"Submissão {uuid_ficha} não é NOVO (tipo: {d.get('tipo_cadastro')})."
+        }), 400
 
     razao = d.get('razao_social', '') or sub.get('razao_social', '')
-    logger.info(f"[N8N] Reativação recebida | NL: {codigo_nl} | Empresa: {razao}")
+    logger.info(f"[N8N] Cadastro NOVO recebido | Empresa: {razao} | UUID: {uuid_ficha}")
 
-    # ── 3. Montar contatos (campos planos → lista de dicts) ──
+    # ── 3. Montar contatos ──
     contatos = []
     if d.get('compras_nome'):
         contatos.append({
@@ -637,12 +649,8 @@ def n8n_iniciar_reativacao():
             "check_boleto": False, "check_docs": False,
         })
 
-    # ── 4. Mapear pro formato que executar() espera ──
+    # ── 4. Mapear pro formato do robô ──
     dados_robo = {
-        # Chave crítica
-        "codigo_nl":                codigo_nl,
-
-        # Dados enriquecidos (já vieram do CNPJ.ws no /receber_ficha)
         "cnpj_limpo":               d.get('cnpj_limpo', ''),
         "razao_social":             razao,
         "nome_fantasia":            d.get('nome_fantasia', ''),
@@ -654,45 +662,268 @@ def n8n_iniciar_reativacao():
         "complemento":              d.get('complemento', ''),
         "bairro":                   d.get('bairro', ''),
         "uf":                       d.get('uf', ''),
-
-        # Bloqueio (vem do payload do n8n, NÃO do banco)
-        "acao_bloqueio":            dados_n8n.get('acao_bloqueio'),
-        "valor_bloqueio":           dados_n8n.get('valor_bloqueio'),
-
-        # Comercial
         "regra_faturamento":        d.get('regra_faturamento', ''),
         "representante":            d.get('representante', ''),
         "vendedor":                 d.get('vendedor', ''),
         "forma_captacao":           d.get('captacao', ''),
-
-        # Contatos
         "email_xml":                d.get('email_xml_1', ''),
         "contatos_da_tela":         contatos,
-
-        # Telefone
         "telefone_empresa":         d.get('telefone_empresa', ''),
-
-        # CEBAS — consulta contra planilha local
         "tem_cebas":                consultar_cebas(d.get('cnpj_limpo', '')),
     }
 
-    # ── 5. Disparar o robô ──
+    # ── 5. Disparar o robô (com tratamento de erro completo) ──
+    exec_id = iniciar_execucao_robo('cliente_novo')
+    try:
+        resultado = cadastro_novo.executar(dados_robo)
+
+        # O robô SEMPRE retorna um dict com "status"
+        status_robo = resultado.get('status', 'Erro')
+
+        if status_robo in ('Sucesso', 'Sucesso com avisos'):
+            finalizar_execucao_robo(exec_id, 'sucesso', resultado)
+            banco_cadastros.atualizar_status(uuid_ficha, 'cadastrado')
+
+            return jsonify({
+                "status":         "sucesso",
+                "mensagem":       f"Robô finalizou o cadastro de {razao}",
+                "resultado":      resultado,
+                "codigo_cliente": resultado.get('codigo_cliente'),
+            }), 200
+
+        else:
+            # Robô retornou status de erro (controlado, não exceção)
+            finalizar_execucao_robo(exec_id, 'erro', resultado)
+            banco_cadastros.registrar_erro_robo(uuid_ficha, {
+                "etapa_falha":     resultado.get('etapa_falha'),
+                "etapa_concluida": resultado.get('etapa_concluida'),
+                "erro_detalhe":    resultado.get('erro_detalhe', 'Erro não especificado'),
+                "data_erro":       datetime.now().strftime('%d/%m/%Y %H:%M'),
+                "tentativa_robo":  sub.get('tentativa', 1),
+            })
+
+            return jsonify({
+                "status":    "erro_robo",
+                "mensagem":  f"Robô falhou no cadastro de {razao}",
+                "resultado": resultado,
+            }), 200  # ← 200 propositalmente! O N8N precisa receber o body pra decidir no Switch
+
+    except Exception as e:
+        # Exceção não tratada (crash do robô)
+        finalizar_execucao_robo(exec_id, 'erro', {'erro': str(e)})
+        banco_cadastros.registrar_erro_robo(uuid_ficha, {
+            "etapa_falha":     "excecao_nao_tratada",
+            "etapa_concluida": None,
+            "erro_detalhe":    str(e),
+            "data_erro":       datetime.now().strftime('%d/%m/%Y %H:%M'),
+            "tentativa_robo":  sub.get('tentativa', 1),
+        })
+        logger.error(f"[N8N] Exceção no cadastro NOVO de {razao}: {e}")
+
+        return jsonify({
+            "status":   "erro_robo",
+            "mensagem": f"Exceção no cadastro de {razao}: {str(e)}",
+        }), 200  # ← 200 pra o N8N conseguir ler o body
+
+
+# ══════════════════════════════════════════════════════════════
+# PEÇA 3B — Rota /n8n_iniciar_reativacao ATUALIZADA
+# ══════════════════════════════════════════════════════════════
+# Mesma lógica de tratamento de erro da rota de cadastro novo.
+# Substitui a versão atual no routes/clientes.py.
+# ══════════════════════════════════════════════════════════════
+
+@clientes_bp.route('/n8n_iniciar_reativacao', methods=['POST'])
+def n8n_iniciar_reativacao():
+    dados_n8n = request.json or {}
+
+    # ── 1. Validar campos obrigatórios ──
+    uuid_ficha = dados_n8n.get('uuid', '').strip()
+    if not uuid_ficha:
+        return jsonify({"status": "erro", "detalhes": "Campo 'uuid' ausente no payload."}), 400
+
+    # ── 2. Buscar dados completos no banco ──
+    sub = banco_cadastros.buscar_submissao(uuid_ficha)
+    if not sub:
+        return jsonify({"status": "erro", "detalhes": f"UUID {uuid_ficha} não encontrado no banco."}), 404
+
+    d = sub['dados_json']
+
+    if d.get('tipo_cadastro') != 'REATIVACAO':
+        return jsonify({
+            "status": "erro",
+            "detalhes": f"Submissão {uuid_ficha} não é REATIVACAO (tipo: {d.get('tipo_cadastro')})."
+        }), 400
+
+    codigo_nl = d.get('codigo_nl', '').strip()
+    if not codigo_nl:
+        return jsonify({"status": "erro", "detalhes": "Código NL ausente nos dados da submissão."}), 400
+
+    razao = d.get('razao_social', '') or sub.get('razao_social', '')
+    logger.info(f"[N8N] Reativação recebida | NL: {codigo_nl} | Empresa: {razao}")
+
+    # ── 3. Montar contatos ──
+    contatos = []
+    if d.get('compras_nome'):
+        contatos.append({
+            "nome": d['compras_nome'], "codigo": "30",
+            "tel": d.get('compras_tel', ''), "email": d.get('compras_email', ''),
+            "email_xml": d.get('email_xml_1', ''), "email_danfe": "",
+            "check_boleto": False, "check_docs": True,
+        })
+    if d.get('rec_nome'):
+        contatos.append({
+            "nome": d['rec_nome'], "codigo": "35",
+            "tel": d.get('rec_tel', ''), "email": d.get('rec_email', ''),
+            "email_xml": "", "email_danfe": "",
+            "check_boleto": False, "check_docs": False,
+        })
+    if d.get('fin_nome'):
+        contatos.append({
+            "nome": d['fin_nome'], "codigo": "50",
+            "tel": d.get('fin_tel', ''), "email": d.get('fin_email', ''),
+            "email_xml": "", "email_danfe": "",
+            "check_boleto": True, "check_docs": False,
+        })
+    if d.get('farma_nome'):
+        contatos.append({
+            "nome": d['farma_nome'], "codigo": "20",
+            "tel": d.get('farma_tel', ''), "email": d.get('farma_email', ''),
+            "email_xml": "", "email_danfe": "",
+            "check_boleto": False, "check_docs": False,
+        })
+
+    # ── 4. Mapear pro formato do robô ──
+    dados_robo = {
+        "codigo_nl":                codigo_nl,
+        "cnpj_limpo":               d.get('cnpj_limpo', ''),
+        "razao_social":             razao,
+        "nome_fantasia":            d.get('nome_fantasia', ''),
+        "inscricao_estadual":       d.get('inscricao_estadual', ''),
+        "cnae_principal_descricao": d.get('cnae_principal_descricao', ''),
+        "cep":                      d.get('cep', ''),
+        "logradouro":               d.get('logradouro', ''),
+        "numero":                   d.get('numero', ''),
+        "complemento":              d.get('complemento', ''),
+        "bairro":                   d.get('bairro', ''),
+        "uf":                       d.get('uf', ''),
+        "acao_bloqueio":            dados_n8n.get('acao_bloqueio'),
+        "valor_bloqueio":           dados_n8n.get('valor_bloqueio'),
+        "regra_faturamento":        d.get('regra_faturamento', ''),
+        "representante":            d.get('representante', ''),
+        "vendedor":                 d.get('vendedor', ''),
+        "forma_captacao":           d.get('captacao', ''),
+        "email_xml":                d.get('email_xml_1', ''),
+        "contatos_da_tela":         contatos,
+        "telefone_empresa":         d.get('telefone_empresa', ''),
+        "tem_cebas":                consultar_cebas(d.get('cnpj_limpo', '')),
+    }
+
+    # ── 5. Disparar o robô (com tratamento de erro completo) ──
     exec_id = iniciar_execucao_robo('cliente_reativacao')
     try:
         resultado = cadastro_reativacao.executar(dados_robo)
-        finalizar_execucao_robo(exec_id, 'sucesso', resultado)
+        status_robo = resultado.get('status', 'Erro')
 
-        # Atualiza status no banco
-        banco_cadastros.atualizar_status(uuid_ficha, 'cadastrado')
+        if status_robo in ('Sucesso', 'Sucesso com avisos'):
+            finalizar_execucao_robo(exec_id, 'sucesso', resultado)
+            banco_cadastros.atualizar_status(uuid_ficha, 'cadastrado')
 
-        return jsonify({
-            "status":         "sucesso",
-            "mensagem":       f"Robô finalizou a reativação do NL {codigo_nl}",
-            "resultado":      resultado,
-            "codigo_cliente": resultado.get('codigo_cliente'),
-        }), 200
+            return jsonify({
+                "status":         "sucesso",
+                "mensagem":       f"Robô finalizou a reativação do NL {codigo_nl}",
+                "resultado":      resultado,
+                "codigo_cliente": resultado.get('codigo_cliente'),
+            }), 200
+
+        else:
+            finalizar_execucao_robo(exec_id, 'erro', resultado)
+            banco_cadastros.registrar_erro_robo(uuid_ficha, {
+                "etapa_falha":     resultado.get('etapa_falha'),
+                "etapa_concluida": resultado.get('etapa_concluida'),
+                "erro_detalhe":    resultado.get('erro_detalhe', 'Erro não especificado'),
+                "data_erro":       datetime.now().strftime('%d/%m/%Y %H:%M'),
+                "tentativa_robo":  sub.get('tentativa', 1),
+            })
+
+            return jsonify({
+                "status":    "erro_robo",
+                "mensagem":  f"Robô falhou na reativação do NL {codigo_nl}",
+                "resultado": resultado,
+            }), 200
 
     except Exception as e:
         finalizar_execucao_robo(exec_id, 'erro', {'erro': str(e)})
-        logger.error(f"Erro na reativação do NL {codigo_nl}: {e}")
-        return jsonify({"status": "erro", "detalhes": str(e)}), 500
+        banco_cadastros.registrar_erro_robo(uuid_ficha, {
+            "etapa_falha":     "excecao_nao_tratada",
+            "etapa_concluida": None,
+            "erro_detalhe":    str(e),
+            "data_erro":       datetime.now().strftime('%d/%m/%Y %H:%M'),
+            "tentativa_robo":  sub.get('tentativa', 1),
+        })
+        logger.error(f"[N8N] Exceção na reativação do NL {codigo_nl}: {e}")
+
+        return jsonify({
+            "status":   "erro_robo",
+            "mensagem": f"Exceção na reativação de {razao}: {str(e)}",
+        }), 200
+
+
+# ══════════════════════════════════════════════════════════════
+# PEÇA 3C — Rota /reprocessar_cadastro (NOVA)
+# ══════════════════════════════════════════════════════════════
+# Botão do monitor de cadastros chama esta rota.
+# Prepara a submissão pra re-entrar na fila sem re-aprovação.
+# ══════════════════════════════════════════════════════════════
+
+@clientes_bp.route('/reprocessar_cadastro', methods=['POST'])
+@permissao_required('clientes')
+def reprocessar_cadastro():
+    """
+    Reprocessa uma submissão que falhou no robô.
+    Muda o status de 'erro_robo' → 'aprovado' e dispara o N8N.
+
+    O N8N vai ver o status 'aprovado' e colocar na fila normalmente,
+    como se fosse a primeira vez — mas sem passar pela aprovação
+    da farmacêutica de novo.
+    """
+    dados = request.json or {}
+    uuid_ficha = dados.get('uuid', '').strip()
+
+    if not uuid_ficha:
+        return jsonify({"status": "erro", "mensagem": "UUID não informado."}), 400
+
+    # Tenta reprocessar no banco
+    sucesso = banco_cadastros.reprocessar_submissao(uuid_ficha)
+    if not sucesso:
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Não foi possível reprocessar. Verifique se o status é 'erro_robo'."
+        }), 400
+
+    # Busca dados pra saber o tipo (NOVO ou REATIVACAO)
+    sub = banco_cadastros.buscar_submissao(uuid_ficha)
+    d = sub['dados_json']
+    tipo = d.get('tipo_cadastro', 'NOVO')
+
+    logger.info(f"[REPROCESSAR] UUID {uuid_ficha} preparado | Tipo: {tipo}")
+
+    # ── Disparar o webhook do N8N pra re-entrar na fila ──
+    # O N8N recebe o UUID e coloca na fila como se fosse novo.
+    # A farmacêutica NÃO é acionada — vai direto pro robô.
+    try:
+        # URL do webhook do N8N para reprocessamento
+        # (pode ser o mesmo webhook principal — o N8N vai ver
+        # que o status já é 'aprovado' e pular a aprovação)
+        # TODO: definir se usa webhook separado ou o mesmo
+        #       por enquanto, retorna sucesso e o operador
+        #       dispara manualmente no N8N se necessário
+        pass
+    except Exception as e:
+        logger.error(f"[REPROCESSAR] Erro ao chamar N8N: {e}")
+
+    return jsonify({
+        "status":   "ok",
+        "mensagem": f"Submissão {uuid_ficha[:8]}... preparada para reprocessamento.",
+        "tipo":     tipo,
+    })

@@ -42,6 +42,7 @@ def _submissao_to_dict(sub):
         'dados_json':         sub.dados_json or {},
         'docs_enviados':      sub.docs_enviados or [],
         'motivos_reprovacao': sub.motivos_reprovacao or [],
+        'erro_robo':          sub.erro_robo,
         'created_at':         sub.created_at.strftime('%d/%m/%Y %H:%M') if sub.created_at else '',
         'updated_at':         sub.updated_at.strftime('%d/%m/%Y %H:%M') if sub.updated_at else '',
     }
@@ -176,6 +177,66 @@ def atualizar_status(uuid, status):
         db.session.commit()
         logger.info(f"Status atualizado | UUID: {uuid} | Status: {status}")
 
+def registrar_erro_robo(uuid, erro_data):
+    """
+    Registra que o robô falhou nesta submissão.
+    Muda o status para 'erro_robo' e salva os detalhes do erro.
+ 
+    Parâmetros:
+        uuid      → UUID da submissão
+        erro_data → dict com detalhes do erro:
+            {
+                "etapa_falha":     "fase_3_contatos",
+                "etapa_concluida": "fase_2_endereco",
+                "erro_detalhe":    "Timeout ao clicar...",
+                "data_erro":       "19/05/2026 16:54",
+                "tentativa_robo":  1
+            }
+    """
+    sub = db.session.get(Submissao, uuid)
+    if not sub:
+        logger.warning(f"[ERRO_ROBO] UUID não encontrado: {uuid}")
+        return False
+ 
+    sub.status = 'erro_robo'
+    sub.erro_robo = erro_data
+    db.session.commit()
+ 
+    logger.warning(
+        f"[ERRO_ROBO] Registrado | UUID: {uuid} "
+        f"| Etapa: {erro_data.get('etapa_falha', '?')} "
+        f"| Detalhe: {erro_data.get('erro_detalhe', '?')[:80]}"
+    )
+    return True
+ 
+ 
+def reprocessar_submissao(uuid):
+    """
+    Prepara uma submissão com erro para ser reprocessada pelo robô.
+    Só funciona se o status atual for 'erro_robo'.
+ 
+    O que faz:
+        - Muda o status para 'aprovado' (pra re-entrar na fila sem re-aprovação)
+        - Limpa o erro_robo (pra não confundir com erro anterior)
+ 
+    Retorna True se reprocessou, False se não encontrou ou status inválido.
+    """
+    sub = db.session.get(Submissao, uuid)
+    if not sub:
+        logger.warning(f"[REPROCESSAR] UUID não encontrado: {uuid}")
+        return False
+ 
+    if sub.status != 'erro_robo':
+        logger.warning(f"[REPROCESSAR] UUID {uuid} não está em erro_robo (status: {sub.status})")
+        return False
+ 
+    sub.status = 'aprovado'
+    sub.erro_robo = None
+    db.session.commit()
+ 
+    logger.info(f"[REPROCESSAR] Submissão {uuid} preparada para reprocessamento.")
+    return True
+
 
 def listar_submissoes(status=None, tipo=None, busca=None, data_de=None, data_ate=None):
     """
@@ -262,6 +323,7 @@ def stats_submissoes():
         'aprovado': 0,
         'reprovado': 0,
         'cadastrado': 0,
+        'erro_robo': 0,
     }
 
     # Uma única query agrupada por status — eficiente e limpa

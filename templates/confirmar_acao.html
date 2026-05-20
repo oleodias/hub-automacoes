@@ -6,37 +6,46 @@
   <title>Confirmação — Ciamed</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="icon" href="/static/img/logosvg.svg" />
 
   <style>
     :root {
-      --bg:      #090d14;
-      --surface: #0f1623;
-      --card:    #131c2e;
-      --border:  rgba(255,255,255,0.07);
-      --teal:    #0ee6b8;
-      --green:   #34d399;
-      --amber:   #f59e0b;
-      --purple:  #a855f7;
-      --red:     #f87171;
-      --text:    #e8edf5;
-      --muted:   #7a8ba3;
-      --faint:   #4a5a72;
+      --bg-base:        #f1f5f9;
+      --bg-surface:     #ffffff;
+      --bg-card:        #ffffff;
+      --border:         #e2e8f0;
+      --border-hover:   #cbd5e1;
+      --teal:           #0d9488;
+      --teal-dim:       rgba(13, 148, 136, 0.08);
+      --green:          #16a34a;
+      --green-dim:      rgba(22, 163, 74, 0.08);
+      --amber:          #d97706;
+      --purple:         #7c3aed;
+      --red:            #dc2626;
+      --text:           #0f172a;
+      --text-secondary: #475569;
+      --faint:          #94a3b8;
+      --font-head:      "Syne", sans-serif;
+      --font-body:      "DM Sans", sans-serif;
+      --radius:         16px;
+      --radius-sm:      10px;
+      --transition:     0.22s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: var(--bg);
+      background: var(--bg-base);
       color: var(--text);
-      font-family: "DM Sans", sans-serif;
+      font-family: var(--font-body);
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 20px;
       overflow: hidden;
+      position: relative;
     }
 
     /* Grid texture */
@@ -44,71 +53,87 @@
       content: "";
       position: fixed; inset: 0;
       background-image:
-        linear-gradient(rgba(14,230,184,0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(14,230,184,0.02) 1px, transparent 1px);
+        linear-gradient(rgba(13, 148, 136, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(13, 148, 136, 0.03) 1px, transparent 1px);
       background-size: 48px 48px;
       pointer-events: none;
     }
 
-    /* Glow radial ao fundo */
+    /* Glow radial — colorido pela ação */
     body::after {
       content: "";
       position: fixed;
-      width: 600px; height: 600px;
+      width: 700px; height: 700px;
       border-radius: 50%;
-      background: radial-gradient(circle, var(--glow-color, rgba(14,230,184,0.06)) 0%, transparent 70%);
+      background: radial-gradient(circle, var(--glow-color, rgba(13, 148, 136, 0.15)) 0%, transparent 65%);
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       pointer-events: none;
-      transition: background 0.6s ease;
+      transition: background 0.8s ease;
+      filter: blur(40px);
+      z-index: 0;
     }
 
     /* ── CARD ── */
     .card {
-      background: var(--card);
+      background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 20px;
+      border-radius: var(--radius);
       padding: 52px 48px;
       max-width: 480px;
       width: 100%;
       text-align: center;
       position: relative;
       z-index: 1;
+      box-shadow:
+        0 1px 2px rgba(15, 23, 42, 0.04),
+        0 16px 40px -8px rgba(15, 23, 42, 0.08);
       opacity: 0;
       transform: translateY(24px) scale(0.97);
-      animation: cardIn 0.5s 0.1s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      animation: cardIn 0.55s 0.1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      overflow: hidden;
     }
 
     @keyframes cardIn {
       to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
-    /* Linha colorida no topo */
+    /* Linha colorida no topo — animada */
     .card::before {
       content: "";
       position: absolute;
-      top: 0; left: 10%; right: 10%;
-      height: 2px;
-      border-radius: 0 0 4px 4px;
-      background: var(--accent-color, var(--teal));
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--accent-color, var(--teal)) 30%,
+        var(--accent-color, var(--teal)) 70%,
+        transparent 100%
+      );
+      background-size: 200% 100%;
       opacity: 0;
-      animation: lineIn 0.4s 0.5s ease forwards;
+      animation:
+        lineIn 0.45s 0.5s ease forwards,
+        lineShimmer 4s 0.95s linear infinite;
     }
     @keyframes lineIn { to { opacity: 1; } }
+    @keyframes lineShimmer { to { background-position: -200% 0; } }
 
     /* ── ÍCONE ── */
     .icon-ring {
-      width: 88px; height: 88px;
+      width: 96px; height: 96px;
       border-radius: 50%;
-      background: var(--icon-bg, var(--teal-dim, rgba(14,230,184,0.1)));
-      border: 1px solid var(--icon-border, rgba(14,230,184,0.2));
+      background: var(--icon-bg, var(--teal-dim));
+      border: 1px solid var(--icon-border, rgba(13, 148, 136, 0.2));
       display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 28px;
-      font-size: 32px;
+      margin: 0 auto 24px;
+      font-size: 34px;
       color: var(--accent-color, var(--teal));
       opacity: 0;
       transform: scale(0.5);
-      animation: iconIn 0.5s 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      animation: iconIn 0.55s 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      position: relative;
     }
     @keyframes iconIn { to { opacity: 1; transform: scale(1); } }
 
@@ -116,15 +141,34 @@
     .icon-ring::after {
       content: "";
       position: absolute;
-      width: 88px; height: 88px;
+      inset: -1px;
       border-radius: 50%;
-      border: 1px solid var(--accent-color, var(--teal));
+      border: 1.5px solid var(--accent-color, var(--teal));
       opacity: 0;
-      animation: ripple 2s 0.8s ease-out infinite;
+      animation: ripple 2s 0.85s ease-out infinite;
+    }
+    .icon-ring::before {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      border-radius: 50%;
+      border: 1.5px solid var(--accent-color, var(--teal));
+      opacity: 0;
+      animation: ripple 2s 1.5s ease-out infinite;
     }
     @keyframes ripple {
-      0%   { transform: scale(1); opacity: 0.4; }
+      0%   { transform: scale(1); opacity: 0.45; }
       100% { transform: scale(1.8); opacity: 0; }
+    }
+
+    /* Ícone interno pulsa suave */
+    .icon-ring i {
+      animation: iconPulse 2.6s ease-in-out infinite;
+      display: inline-block;
+    }
+    @keyframes iconPulse {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.08); }
     }
 
     /* ── TEXTOS ── */
@@ -145,7 +189,7 @@
     }
 
     h1 {
-      font-family: "Syne", sans-serif;
+      font-family: var(--font-head);
       font-size: 26px;
       font-weight: 700;
       color: var(--text);
@@ -157,7 +201,7 @@
 
     p {
       font-size: 14px;
-      color: var(--muted);
+      color: var(--text-secondary);
       line-height: 1.65;
       opacity: 0;
       animation: fadeUp 0.4s 0.55s ease forwards;
@@ -185,11 +229,16 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      background: var(--surface);
+      background: var(--bg-base);
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 12px 16px;
       text-align: left;
+      transition: var(--transition);
+    }
+    .info-chip:hover {
+      border-color: var(--border-hover);
+      transform: translateX(2px);
     }
     .info-chip i {
       font-size: 13px;
@@ -200,45 +249,48 @@
     .info-chip span {
       font-size: 13px;
       color: var(--text);
-      font-weight: 500;
+      font-weight: 600;
     }
     .info-chip small {
       font-size: 11px;
       color: var(--faint);
       display: block;
       margin-top: 2px;
+      letter-spacing: 0.04em;
     }
 
     /* ── BOTÃO FECHAR ── */
     .btn-close-page {
-      margin-top: 28px;
+      margin-top: 26px;
       width: 100%;
       padding: 13px;
-      background: var(--surface);
+      background: var(--bg-base);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      color: var(--muted);
-      font-family: "DM Sans", sans-serif;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-family: var(--font-body);
       font-size: 14px;
-      font-weight: 500;
+      font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: var(--transition);
       opacity: 0;
       animation: fadeUp 0.4s 0.75s ease forwards;
     }
     .btn-close-page:hover {
-      background: var(--card);
+      background: var(--bg-card);
       color: var(--text);
-      border-color: rgba(255,255,255,0.13);
+      border-color: var(--border-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
     }
 
     /* ── LOGO ── */
     .logo-wrap {
-      margin-bottom: 32px;
+      margin-bottom: 28px;
       opacity: 0;
       animation: fadeUp 0.4s 0.15s ease forwards;
     }
-    .logo-wrap img { height: 36px; }
+    .logo-wrap img { height: 32px; }
 
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(8px); }
@@ -247,20 +299,33 @@
 
     /* ── LOADING STATE ── */
     .loading-bar {
-      height: 3px;
+      height: 4px;
       background: var(--border);
       border-radius: 100px;
-      margin-top: 20px;
+      margin-top: 22px;
       overflow: hidden;
       opacity: 0;
       animation: fadeUp 0.4s 0.7s ease forwards;
+      position: relative;
     }
     .loading-bar-fill {
       height: 100%;
       width: 0%;
-      background: var(--accent-color, var(--teal));
+      background: linear-gradient(
+        90deg,
+        var(--accent-color, var(--teal)),
+        var(--accent-color, var(--teal)) 40%,
+        rgba(255, 255, 255, 0.5) 50%,
+        var(--accent-color, var(--teal)) 60%,
+        var(--accent-color, var(--teal))
+      );
+      background-size: 200% 100%;
+      animation: barShimmer 1.5s linear infinite;
       border-radius: 100px;
-      transition: width 0.1s linear;
+      transition: width 0.15s linear;
+    }
+    @keyframes barShimmer {
+      to { background-position: -200% 0; }
     }
     .loading-label {
       font-size: 11px;
@@ -268,6 +333,7 @@
       margin-top: 8px;
       opacity: 0;
       animation: fadeUp 0.4s 0.75s ease forwards;
+      letter-spacing: 0.04em;
     }
 
     @media (max-width: 520px) {
@@ -292,7 +358,6 @@
   <h1 id="titulo">Aguarde um momento</h1>
   <p id="subtitulo">Estamos registrando sua resposta no sistema.</p>
 
-  <!-- Barra de progresso enquanto chama o N8N -->
   <div class="loading-bar" id="loadingBar">
     <div class="loading-bar-fill" id="loadingFill"></div>
   </div>
@@ -327,38 +392,37 @@
   // ── CONFIG POR AÇÃO ──────────────────────────────
   const configs = {
     aprovar: {
-      tag:       "✅ Triagem Farmacêutica",
-      titulo:    "Ficha Aprovada!",
-      subtitulo: "O robô de cadastro foi acionado automaticamente. Você será notificada quando o código do cliente estiver disponível.",
-      icon:      "fa-solid fa-check",
-      accentColor:  "#34d399",
-      iconBg:    "rgba(52,211,153,0.1)",
-      iconBorder:"rgba(52,211,153,0.2)",
-      glowColor: "rgba(52,211,153,0.06)",
+      tag:         "Triagem Farmacêutica",
+      titulo:      "Ficha Aprovada!",
+      subtitulo:   "O robô de cadastro foi acionado automaticamente. Você será notificada quando o código do cliente estiver disponível.",
+      icon:        "fa-solid fa-check",
+      accentColor: "#16a34a",
+      iconBg:      "rgba(22, 163, 74, 0.08)",
+      iconBorder:  "rgba(22, 163, 74, 0.22)",
+      glowColor:   "rgba(22, 163, 74, 0.14)",
     },
     reprovar: {
-      tag:       "❌ Triagem Farmacêutica",
-      titulo:    "Reprovação Registrada",
-      subtitulo: "O vendedor será notificado automaticamente com o motivo informado para que o cliente corrija os documentos.",
-      icon:      "fa-solid fa-xmark",
-      accentColor:  "#f87171",
-      iconBg:    "rgba(248,113,113,0.1)",
-      iconBorder:"rgba(248,113,113,0.2)",
-      glowColor: "rgba(248,113,113,0.06)",
+      tag:         "Triagem Farmacêutica",
+      titulo:      "Reprovação Registrada",
+      subtitulo:   "O vendedor será notificado automaticamente com o motivo informado para que o cliente corrija os documentos.",
+      icon:        "fa-solid fa-xmark",
+      accentColor: "#dc2626",
+      iconBg:      "rgba(220, 38, 38, 0.08)",
+      iconBorder:  "rgba(220, 38, 38, 0.22)",
+      glowColor:   "rgba(220, 38, 38, 0.12)",
     },
     mascaras: {
-      tag:       "🎭 Atualização de Máscaras",
-      titulo:    "Máscaras Confirmadas!",
-      subtitulo: "O financeiro foi notificado automaticamente. O cliente está liberado para início do processo de crédito.",
-      icon:      "fa-solid fa-shield-check",
-      accentColor:  "#a855f7",
-      iconBg:    "rgba(168,85,247,0.1)",
-      iconBorder:"rgba(168,85,247,0.2)",
-      glowColor: "rgba(168,85,247,0.06)",
+      tag:         "Atualização de Máscaras",
+      titulo:      "Máscaras Confirmadas!",
+      subtitulo:   "O financeiro foi notificado automaticamente. O cliente está liberado para início do processo de crédito.",
+      icon:        "fa-solid fa-shield-check",
+      accentColor: "#7c3aed",
+      iconBg:      "rgba(124, 58, 237, 0.08)",
+      iconBorder:  "rgba(124, 58, 237, 0.22)",
+      glowColor:   "rgba(124, 58, 237, 0.12)",
     }
   };
 
-  // ── LÊ OS PARÂMETROS DA URL ──────────────────────
   const params   = new URLSearchParams(window.location.search);
   const acao     = params.get("acao") || "aprovar";
   const empresa  = params.get("empresa") || "";
@@ -366,17 +430,14 @@
 
   const cfg = configs[acao] || configs.aprovar;
 
-  // ── APLICA CORES ─────────────────────────────────
-  document.documentElement.style.setProperty("--accent-color",  cfg.accentColor);
-  document.documentElement.style.setProperty("--icon-bg",       cfg.iconBg);
-  document.documentElement.style.setProperty("--icon-border",   cfg.iconBorder);
-  document.documentElement.style.setProperty("--glow-color",    cfg.glowColor);
+  document.documentElement.style.setProperty("--accent-color", cfg.accentColor);
+  document.documentElement.style.setProperty("--icon-bg",      cfg.iconBg);
+  document.documentElement.style.setProperty("--icon-border",  cfg.iconBorder);
+  document.documentElement.style.setProperty("--glow-color",   cfg.glowColor);
 
-  // Atualiza ícone
   const iconEl = document.getElementById("mainIcon");
   iconEl.className = cfg.icon;
 
-  // ── ANIMA BARRA DE PROGRESSO ─────────────────────
   const fill = document.getElementById("loadingFill");
   let pct = 0;
   const interval = setInterval(() => {
@@ -384,10 +445,7 @@
     fill.style.width = pct + "%";
   }, 120);
 
-  // ── CHAMA O FLASK (QUE CHAMA O N8N) ─────────────
-  // O Flask já passou o resumeUrl como parte da rota, então só precisamos
-  // confirmar que chegamos aqui — o Flask já chamou o N8N no servidor.
-  // Se quiser chamar aqui no cliente também, descomentar abaixo:
+  // Chama o N8N no cliente também (opcional, mantido conforme original)
   /*
   const resumeUrl = params.get("resumeUrl");
   if (resumeUrl) {
@@ -396,22 +454,18 @@
   }
   */
 
-  // ── MOSTRA RESULTADO APÓS 1.8s ───────────────────
   setTimeout(() => {
     clearInterval(interval);
     fill.style.width = "100%";
 
     setTimeout(() => {
-      // Esconde loading
       document.getElementById("loadingBar").style.opacity   = "0.3";
       document.getElementById("loadingLabel").textContent   = "Confirmado ✓";
 
-      // Atualiza textos
       document.getElementById("tagLabel").textContent   = cfg.tag;
       document.getElementById("titulo").textContent     = cfg.titulo;
       document.getElementById("subtitulo").textContent  = cfg.subtitulo;
 
-      // Mostra chips com infos
       if (empresa) {
         document.getElementById("chipEmpresa").textContent = empresa;
         document.getElementById("chipHora").textContent    = new Date().toLocaleString("pt-BR");
@@ -419,10 +473,8 @@
         document.getElementById("infoRow").style.display  = "";
       }
 
-      // Mostra botão fechar
       document.getElementById("btnFechar").style.display = "";
 
-      // Animação de entrada das infos
       ["divider","infoRow","btnFechar"].forEach((id, i) => {
         const el = document.getElementById(id);
         if (el) {

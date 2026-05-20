@@ -1175,20 +1175,129 @@ def executar(dados_cliente):
         print("> 🏁 Fim da execução.")
 
 
-# ── TESTE DE BANCADA ───────────────────────────────────
+# ─────────────────────────────────────────────────────────────
+# TESTE DE BANCADA — CADASTRO NOVO COMPLETO
+# Roda direto no terminal: python -m automacoes.clientes.cadastro_novo
+#
+# Este bloco simula EXATAMENTE o payload que a rota Flask monta
+# quando recebe o UUID do n8n e lê do banco. Assim você pode
+# testar o robô sem precisar do n8n nem do Flask rodando.
+#
+# ⚠️  ANTES DE RODAR:
+#   1. Troque o CNPJ por um que NÃO exista no ERP (pra não duplicar)
+#   2. Confirme que o Chrome e o ChromeDriver estão acessíveis
+#   3. Confirme que o ERP está acessível na rede
+# ─────────────────────────────────────────────────────────────
+
 if __name__ == "__main__":
-    print("🧪 Iniciando Teste de Bancada...")
+    print("🧪 Iniciando Teste de Bancada — CADASTRO NOVO COMPLETO...")
+    print("=" * 60)
+
     dados_teste = {
-        "cnpj_limpo": "00000000000191",
-        "razao_social": "EMPRESA DE TESTE LTDA",
-        "nome_fantasia": "TESTE FANTASIA",
-        "inscricao_estadual": "ISENTO",
-        "cnae_principal_descricao": "4771-7/02 - Comércio varejista de medicamentos",        
-        "cep": "01001000",
-        "logradouro": "Praça da Sé",
-        "numero": "123",
-        "complemento": "Sala 1",
-        "bairro": "Sé",
-        "uf": "SP"
+        # ════════════════════════════════════════════════
+        # DADOS BÁSICOS (vêm do CNPJ.ws via /receber_ficha)
+        # ════════════════════════════════════════════════
+        "cnpj_limpo": "32063032000122",       # ← TROCAR por um CNPJ de teste
+        "razao_social": "EMPRESA TESTE CADASTRO NOVO LTDA",
+        "nome_fantasia": "TESTE FANTASIA",     # fallback: razao_social[:20]
+        "inscricao_estadual": "ISENTO",        # ou número real, ou "Isento / Não encontrada"
+        "cnae_principal_descricao": "4771-7/02 - Comércio varejista de produtos farmacêuticos, sem manipulação de fórmulas",
+
+        # ════════════════════════════════════════════════
+        # ENDEREÇO (vêm do CNPJ.ws)
+        # ════════════════════════════════════════════════
+        "cep": "95960000",
+        "logradouro": "Rua Antonio Bratti",
+        "numero": "25",
+        "complemento": "Sala 3",
+        "bairro": "Centro",
+        "uf": "SP",  # ⚠️ Se mudar pra "RS", o robô PULA o campo de região (trava do RS)
+
+        # ════════════════════════════════════════════════
+        # COMERCIAL (vêm do formulário da ficha)
+        # ════════════════════════════════════════════════
+        "regra_faturamento": "CAIXA",          # "CAIXA" → comentário + observação | qualquer outro → pula
+        "representante": "ALDOVANDO", # vazio "" → pula a etapa
+        "vendedor": "CAMILA",                     # código do vendedor no ERP | vazio "" → pula
+        "forma_captacao": "1",                 # código do dropdown de captação | vazio "" → pula
+
+        # ════════════════════════════════════════════════
+        # CONTATOS (montados pela rota Flask a partir dos campos flat)
+        # ════════════════════════════════════════════════
+        "email_xml": "nfe@empresateste.com.br",
+        "contatos_da_tela": [
+            {
+                "nome": "MARIA COMPRAS",
+                "codigo": "30",       # 30 = Compras
+                "tel": "51999991111",
+                "email": "compras@empresateste.com.br",
+                "email_xml": "nfe@empresateste.com.br",
+                "email_danfe": "",
+                "check_boleto": False,
+                "check_docs": True,
+            },
+            {
+                "nome": "JOAO RECEBIMENTO",
+                "codigo": "35",       # 35 = Recebimento
+                "tel": "51999992222",
+                "email": "recebimento@empresateste.com.br",
+                "email_xml": "",
+                "email_danfe": "",
+                "check_boleto": False,
+                "check_docs": False,
+            },
+            {
+                "nome": "ANA FINANCEIRO - ENVIO BOLETO",
+                "codigo": "50",       # 50 = Financeiro (marca check_boleto)
+                "tel": "51999993333",
+                "email": "financeiro@empresateste.com.br",
+                "email_xml": "",
+                "email_danfe": "",
+                "check_boleto": True,
+                "check_docs": False,
+            },
+            {
+                "nome": "DR CARLOS FARMACEUTICO",
+                "codigo": "20",       # 20 = Farmacêutico
+                "tel": "51999994444",
+                "email": "farmacia@empresateste.com.br",
+                "email_xml": "",
+                "email_danfe": "",
+                "check_boleto": False,
+                "check_docs": False,
+            },
+        ],
+
+        # ════════════════════════════════════════════════
+        # TELEFONE
+        # ════════════════════════════════════════════════
+        "telefone_empresa": "5133334444",      # vazio "" → pula
+
+        # ════════════════════════════════════════════════
+        # CEBAS (consultado pela rota Flask via planilha)
+        # ════════════════════════════════════════════════
+        # "SIM" → operação 240 (quando CNAE não é varejista/atacadista)
+        # "NAO" → operação 220 (quando CNAE não é varejista/atacadista)
+        # Ignorado quando CNAE é varejista (223) ou atacadista (224)
+        "tem_cebas": "NAO",
     }
-    executar(dados_teste)
+
+    print()
+    print("📋 Payload montado:")
+    print(f"   CNPJ:         {dados_teste['cnpj_limpo']}")
+    print(f"   Razão Social: {dados_teste['razao_social']}")
+    print(f"   UF:           {dados_teste['uf']}")
+    print(f"   Faturamento:  {dados_teste['regra_faturamento']}")
+    print(f"   Vendedor:     {dados_teste['vendedor']}")
+    print(f"   Contatos:     {len(dados_teste['contatos_da_tela'])} contato(s)")
+    print(f"   CEBAS:        {dados_teste['tem_cebas']}")
+    print()
+    print("=" * 60)
+    print("🚀 Chamando executar()...")
+    print()
+
+    resultado = executar(dados_teste)
+
+    print()
+    print("=" * 60)
+    print(f"📊 Resultado: {resultado}")

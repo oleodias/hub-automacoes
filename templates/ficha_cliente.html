@@ -4,61 +4,72 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ficha Cadastral Digital - Ciamed</title>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
     <link rel="icon" href="/static/img/logosvg.svg" />
 
     <style>
-      /* ── TOKENS ─────────────────────────────────────── */
+      /* ══════════════════════════════════════════════════════════════
+         TOKENS — alinhado com Monitor de Cadastros (TEMA CLARO)
+      ══════════════════════════════════════════════════════════════ */
       :root {
-        --bg-base: #090d14;
-        --bg-surface: #0f1623;
-        --bg-card: #131c2e;
-        --border: rgba(255, 255, 255, 0.06);
-        --border-hover: rgba(255, 255, 255, 0.13);
-        --teal: #00b3b2;
-        --teal-dim: rgba(14, 230, 184, 0.1);
-        --amber: #f59e0b;
-        --amber-dim: rgba(245, 158, 11, 0.1);
-        --blue: #3b82f6;
-        --blue-dim: rgba(59, 130, 246, 0.1);
-        --purple: #a855f7;
-        --purple-dim: rgba(168, 85, 247, 0.1);
-        --green: #34d399;
-        --green-dim: rgba(52, 211, 153, 0.1);
-        --red: #f87171;
-        --red-dim: rgba(248, 113, 113, 0.1);
-        --text-primary: #e8edf5;
-        --text-secondary: #7a8ba3;
-        --text-muted: #ffffffe9;
-        --font-head: "Syne", sans-serif;
-        --font-body: "DM Sans", sans-serif;
-        --radius-card: 14px;
-        --radius-sm: 8px;
-        --transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+        --bg-base:        #f1f5f9;
+        --bg-surface:     #ffffff;
+        --bg-card:        #ffffff;
+        --bg-inner:       #f8fafc;
+        --border:         #e2e8f0;
+        --border-hover:   #cbd5e1;
+
+        --teal:           #0d9488;
+        --teal-soft:      #14b8a6;
+        --teal-dim:       rgba(13, 148, 136, 0.08);
+        --teal-border:    rgba(13, 148, 136, 0.22);
+
+        --amber:          #d97706;
+        --amber-dim:      rgba(217, 119, 6, 0.08);
+        --amber-border:   rgba(217, 119, 6, 0.22);
+
+        --blue:           #2563eb;
+        --blue-dim:       rgba(37, 99, 235, 0.08);
+        --blue-border:    rgba(37, 99, 235, 0.22);
+
+        --purple:         #7c3aed;
+        --purple-dim:     rgba(124, 58, 237, 0.08);
+        --purple-border:  rgba(124, 58, 237, 0.22);
+
+        --green:          #16a34a;
+        --green-dim:      rgba(22, 163, 74, 0.08);
+        --green-border:   rgba(22, 163, 74, 0.22);
+
+        --red:            #dc2626;
+        --red-dim:        rgba(220, 38, 38, 0.08);
+        --red-border:     rgba(220, 38, 38, 0.22);
+
+        --text-primary:   #0f172a;
+        --text-secondary: #475569;
+        --text-muted:     #64748b;
+        --faint:          #94a3b8;
+
+        --font-head:      "Syne", sans-serif;
+        --font-body:      "DM Sans", sans-serif;
+        --radius-card:    14px;
+        --radius-sm:      8px;
+        --transition:     0.22s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
-      /* ── CORREÇÃO DO AUTOFILL (TIRA O FUNDO CLARO DO NAVEGADOR) ── */
+      /* AUTOFILL — fundo branco no novo tema */
       input:-webkit-autofill,
       input:-webkit-autofill:hover,
       input:-webkit-autofill:focus,
       input:-webkit-autofill:active {
-        -webkit-box-shadow: 0 0 0 30px var(--bg-surface) inset !important;
+        -webkit-box-shadow: 0 0 0 30px var(--bg-card) inset !important;
         -webkit-text-fill-color: var(--text-primary) !important;
         transition: background-color 5000s ease-in-out 0s;
       }
 
-      *,
-      *::before,
-      *::after {
+      *, *::before, *::after {
         box-sizing: border-box;
         margin: 0;
         padding: 0;
@@ -73,37 +84,46 @@
         min-height: 100vh;
         padding: 32px 20px 60px;
         animation: pageEnter 0.4s ease forwards;
+        position: relative;
       }
 
-      /* Grid texture */
+      /* Grid texture sutil teal */
       body::before {
         content: "";
         position: fixed;
         inset: 0;
         background-image:
-          linear-gradient(rgba(14, 230, 184, 0.015) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(14, 230, 184, 0.015) 1px, transparent 1px);
+          linear-gradient(rgba(13, 148, 136, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(13, 148, 136, 0.03) 1px, transparent 1px);
         background-size: 48px 48px;
         pointer-events: none;
         z-index: 0;
       }
 
-      @keyframes pageEnter {
-        from {
-          opacity: 0;
-          transform: translateY(12px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
+      /* Orb decorativo top-right */
+      body::after {
+        content: "";
+        position: fixed;
+        width: 480px; height: 480px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(13, 148, 136, 0.10), transparent 70%);
+        top: -180px; right: -160px;
+        filter: blur(80px);
+        pointer-events: none;
+        z-index: 0;
+        animation: orbFloat 16s ease-in-out infinite;
+      }
+      @keyframes orbFloat {
+        0%, 100% { transform: translate(0, 0); }
+        50%      { transform: translate(-30px, 20px); }
       }
 
+      @keyframes pageEnter {
+        from { opacity: 0; transform: translateY(12px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
       @keyframes fadeUp {
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
+        to { opacity: 1; transform: translateY(0); }
       }
 
       /* ── CONTAINER ──────────────────────────────────── */
@@ -127,7 +147,29 @@
         opacity: 0;
         transform: translateY(16px);
         animation: fadeUp 0.5s 0.1s ease forwards;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03), 0 8px 24px -8px rgba(15, 23, 42, 0.06);
       }
+      /* Animated accent strip top */
+      .ficha-header::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          var(--teal-soft) 30%,
+          var(--teal) 50%,
+          var(--teal-soft) 70%,
+          transparent 100%
+        );
+        background-size: 200% 100%;
+        animation: lineShimmer 4s linear infinite;
+      }
+      @keyframes lineShimmer { to { background-position: -200% 0; } }
+
       .header-logo-wrap {
         flex-shrink: 0;
         padding-right: 30px;
@@ -166,7 +208,7 @@
         text-transform: uppercase;
         color: var(--teal);
         background: var(--teal-dim);
-        border: 1px solid rgba(14, 230, 184, 0.2);
+        border: 1px solid var(--teal-border);
         padding: 6px 14px;
         border-radius: 100px;
         margin-bottom: 12px;
@@ -202,19 +244,16 @@
         opacity: 0;
         transform: translateY(16px);
         animation: fadeUp 0.45s ease forwards;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03), 0 8px 20px -10px rgba(15, 23, 42, 0.05);
+        transition: box-shadow 0.3s ease;
       }
-      .card-dark:nth-child(1) {
-        animation-delay: 0.15s;
+      .card-dark:hover {
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 28px -10px rgba(15, 23, 42, 0.08);
       }
-      .card-dark:nth-child(2) {
-        animation-delay: 0.22s;
-      }
-      .card-dark:nth-child(3) {
-        animation-delay: 0.29s;
-      }
-      .card-dark:nth-child(4) {
-        animation-delay: 0.36s;
-      }
+      .card-dark:nth-child(1) { animation-delay: 0.15s; }
+      .card-dark:nth-child(2) { animation-delay: 0.22s; }
+      .card-dark:nth-child(3) { animation-delay: 0.29s; }
+      .card-dark:nth-child(4) { animation-delay: 0.36s; }
 
       .card-title-row {
         display: flex;
@@ -248,18 +287,10 @@
         display: flex;
         align-items: center;
       }
-      .secao-label.teal {
-        color: var(--teal);
-      }
-      .secao-label.amber {
-        color: var(--amber);
-      }
-      .secao-label.red {
-        color: var(--red);
-      }
-      .secao-label.purple {
-        color: var(--purple);
-      }
+      .secao-label.teal   { color: var(--teal); }
+      .secao-label.amber  { color: var(--amber); }
+      .secao-label.red    { color: var(--red); }
+      .secao-label.purple { color: var(--purple); }
 
       /* ── FORM GRID ───────────────────────────────────── */
       .form-grid {
@@ -267,28 +298,13 @@
         flex-direction: column;
         gap: 14px;
       }
-      .form-row {
-        display: grid;
-        gap: 14px;
-      }
-      .cols-3 {
-        grid-template-columns: 1fr 1fr 1fr;
-      }
-      .cols-2 {
-        grid-template-columns: 1fr 1fr;
-      }
-      .cols-1 {
-        grid-template-columns: 1fr;
-      }
-      .cols-2-1 {
-        grid-template-columns: 2fr 1fr;
-      }
-      .cols-1-2 {
-        grid-template-columns: 1fr 2fr;
-      }
-      .cols-3-3 {
-        grid-template-columns: 1fr 1fr 1fr;
-      }
+      .form-row { display: grid; gap: 14px; }
+      .cols-3   { grid-template-columns: 1fr 1fr 1fr; }
+      .cols-2   { grid-template-columns: 1fr 1fr; }
+      .cols-1   { grid-template-columns: 1fr; }
+      .cols-2-1 { grid-template-columns: 2fr 1fr; }
+      .cols-1-2 { grid-template-columns: 1fr 2fr; }
+      .cols-3-3 { grid-template-columns: 1fr 1fr 1fr; }
 
       .form-field {
         display: flex;
@@ -297,8 +313,8 @@
       }
       .form-field label {
         font-size: 10px;
-        font-weight: 500;
-        letter-spacing: 0.1em;
+        font-weight: 600;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
         color: var(--text-muted);
       }
@@ -309,7 +325,7 @@
 
       .form-control,
       .input-dark {
-        background: var(--bg-surface);
+        background: var(--bg-card);
         border: 1px solid var(--border);
         color: var(--text-primary);
         padding: 10px 14px;
@@ -319,6 +335,11 @@
         outline: none;
         transition: var(--transition);
         width: 100%;
+        color-scheme: light;
+      }
+      .form-control:hover:not([readonly]),
+      .input-dark:hover:not([readonly]) {
+        border-color: var(--border-hover);
       }
       .form-control:focus,
       .input-dark:focus {
@@ -327,22 +348,19 @@
       }
       .form-control[readonly],
       .input-readonly {
-        background: rgba(255, 255, 255, 0.02);
+        background: var(--bg-inner);
         color: var(--text-secondary);
         cursor: not-allowed;
       }
       .form-control::placeholder {
-        color: var(--text-muted);
+        color: var(--faint);
       }
       select.form-control {
         cursor: pointer;
-        color-scheme: dark;
       }
       select.form-control option {
         background: var(--bg-card);
-      }
-      .form-control::placeholder {
-        color: rgba(118, 104, 104, 0.857); /* Um preto bem transparente */
+        color: var(--text-primary);
       }
 
       /* ── RADIO CARDS ─────────────────────────────────── */
@@ -357,7 +375,7 @@
         display: flex;
         align-items: center;
         gap: 10px;
-        background: var(--bg-surface);
+        background: var(--bg-card);
         border: 1px solid var(--border);
         border-radius: var(--radius-sm);
         padding: 12px 16px;
@@ -370,6 +388,8 @@
       .radio-card:hover {
         border-color: var(--border-hover);
         color: var(--text-primary);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
       }
       .radio-card input[type="radio"] {
         display: none;
@@ -394,7 +414,7 @@
         width: 6px;
         height: 6px;
         border-radius: 50%;
-        background: #090d14;
+        background: #ffffff;
       }
       .radio-card.checked-teal {
         border-color: var(--teal);
@@ -422,22 +442,23 @@
         padding: 16px 20px;
         border-radius: var(--radius-sm);
         border: 1px solid var(--border);
+        transition: var(--transition);
       }
       .highlight-box.teal {
         background: var(--teal-dim);
-        border-color: rgba(14, 230, 184, 0.2);
+        border-color: var(--teal-border);
       }
       .highlight-box.amber {
         background: var(--amber-dim);
-        border-color: rgba(245, 158, 11, 0.2);
+        border-color: var(--amber-border);
       }
       .highlight-box.purple {
         background: var(--purple-dim);
-        border-color: rgba(168, 85, 247, 0.2);
+        border-color: var(--purple-border);
       }
       .highlight-box.red {
         background: var(--red-dim);
-        border-color: rgba(248, 113, 113, 0.2);
+        border-color: var(--red-border);
       }
       .highlight-box label {
         font-size: 13px !important;
@@ -447,34 +468,28 @@
         display: block;
         margin-bottom: 12px;
       }
-      .highlight-box.teal label {
-        color: var(--teal) !important;
-      }
-      .highlight-box.amber label {
-        color: var(--amber) !important;
-      }
-      .highlight-box.purple label {
-        color: var(--purple) !important;
-      }
-      .highlight-box.red label {
-        color: var(--red) !important;
-      }
+      .highlight-box.teal label   { color: var(--teal) !important; }
+      .highlight-box.amber label  { color: var(--amber) !important; }
+      .highlight-box.purple label { color: var(--purple) !important; }
+      .highlight-box.red label    { color: var(--red) !important; }
 
       /* ── API BOX ─────────────────────────────────────── */
       .api-box {
-        background: rgba(0, 0, 0, 0.2);
+        background: var(--bg-inner);
         border: 1px dashed var(--border-hover);
         border-radius: var(--radius-sm);
         padding: 20px;
         margin-top: 6px;
+        transition: var(--transition);
       }
+      .api-box:hover { border-color: var(--teal-border); }
       .api-box-title {
         display: flex;
         align-items: center;
         gap: 8px;
         font-size: 12px;
-        font-weight: 600;
-        letter-spacing: 0.08em;
+        font-weight: 700;
+        letter-spacing: 0.1em;
         text-transform: uppercase;
         color: var(--teal);
         margin-bottom: 16px;
@@ -493,19 +508,15 @@
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background: var(--text-muted);
+        background: var(--faint);
         flex-shrink: 0;
       }
       .api-dot.loading {
         background: var(--amber);
         animation: pulse 1.5s infinite;
       }
-      .api-dot.ok {
-        background: var(--green);
-      }
-      .api-dot.error {
-        background: var(--red);
-      }
+      .api-dot.ok    { background: var(--green); }
+      .api-dot.error { background: var(--red); }
 
       /* ── CONTATO CARDS ───────────────────────────────── */
       .contact-cards-grid {
@@ -515,7 +526,7 @@
         margin-top: 6px;
       }
       .contact-card {
-        background: var(--bg-surface);
+        background: var(--bg-inner);
         border: 1px solid var(--border);
         border-radius: var(--radius-sm);
         padding: 18px;
@@ -526,6 +537,9 @@
       }
       .contact-card:hover {
         border-color: var(--border-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px -8px rgba(15, 23, 42, 0.08);
+        background: var(--bg-card);
       }
       .contact-card-title {
         display: flex;
@@ -533,26 +547,21 @@
         gap: 8px;
         font-family: var(--font-head);
         font-size: 12px;
-        font-weight: 600;
-        letter-spacing: 0.06em;
+        font-weight: 700;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
         padding-bottom: 10px;
         border-bottom: 1px solid var(--border);
       }
-      .contact-card:nth-child(1) .contact-card-title {
-        color: var(--teal);
-      }
-      .contact-card:nth-child(2) .contact-card-title {
-        color: var(--blue);
-      }
-      .contact-card:nth-child(3) .contact-card-title {
-        color: var(--amber);
-      }
-      .contact-card:nth-child(4) .contact-card-title {
-        color: var(--purple);
-      }
+      .contact-card:nth-child(1) .contact-card-title { color: var(--teal); }
+      .contact-card:nth-child(2) .contact-card-title { color: var(--blue); }
+      .contact-card:nth-child(3) .contact-card-title { color: var(--amber); }
+      .contact-card:nth-child(4) .contact-card-title { color: var(--purple); }
       .contact-card .form-field label {
         color: var(--text-muted);
+      }
+      .contact-card .form-control {
+        background: var(--bg-card);
       }
 
       /* ── FILE UPLOAD ─────────────────────────────────── */
@@ -563,7 +572,7 @@
         margin-top: 4px;
       }
       .doc-item {
-        background: var(--bg-surface);
+        background: var(--bg-inner);
         border: 1px solid var(--border);
         border-radius: var(--radius-sm);
         padding: 16px;
@@ -574,6 +583,8 @@
       }
       .doc-item:hover {
         border-color: var(--border-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px -8px rgba(15, 23, 42, 0.08);
       }
       .doc-label {
         display: flex;
@@ -581,7 +592,7 @@
         gap: 8px;
         font-size: 12px;
         font-weight: 600;
-        color: var(--text-secondary);
+        color: var(--text-primary);
       }
       .doc-label i {
         color: var(--text-muted);
@@ -589,7 +600,7 @@
       }
       .doc-input-wrap {
         position: relative;
-        background: rgba(0, 0, 0, 0.2);
+        background: var(--bg-card);
         border: 1.5px dashed var(--border-hover);
         border-radius: 6px;
         padding: 12px;
@@ -604,6 +615,7 @@
       .doc-input-wrap.has-file {
         border-color: var(--green);
         background: var(--green-dim);
+        border-style: solid;
       }
       .doc-input-wrap input[type="file"] {
         position: absolute;
@@ -615,7 +627,7 @@
       }
       .doc-input-text {
         font-size: 11px;
-        color: var(--text-muted);
+        color: var(--text-secondary);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -623,14 +635,15 @@
       }
       .doc-input-wrap.has-file .doc-input-text {
         color: var(--green);
+        font-weight: 600;
       }
 
       /* ── BOTÃO SUBMIT ────────────────────────────────── */
       .btn-submit {
         width: 100%;
-        padding: 16px;
-        background: linear-gradient(135deg, var(--teal), #00b3b2);
-        color: #090d14;
+        padding: 18px;
+        background: linear-gradient(135deg, var(--teal), var(--teal-soft));
+        color: #ffffff;
         border: none;
         border-radius: var(--radius-sm);
         font-family: var(--font-head);
@@ -644,22 +657,46 @@
         gap: 10px;
         margin-top: 28px;
         letter-spacing: 0.04em;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 8px 20px -4px rgba(13, 148, 136, 0.35);
       }
-      .btn-submit:hover {
-        filter: brightness(1.1);
+      /* Shine effect */
+      .btn-submit::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.3),
+          transparent
+        );
+        transition: left 0.6s ease;
+      }
+      .btn-submit:hover:not(:disabled) {
+        filter: brightness(1.06);
         transform: translateY(-2px);
+        box-shadow: 0 14px 28px -4px rgba(13, 148, 136, 0.4);
       }
+      .btn-submit:hover:not(:disabled)::before { left: 100%; }
+      .btn-submit:hover:not(:disabled) i { transform: translateY(-2px); }
+      .btn-submit i { transition: transform 0.25s ease; }
       .btn-submit:disabled {
-        opacity: 0.4;
+        opacity: 0.5;
         cursor: not-allowed;
         transform: none;
+        box-shadow: none;
       }
 
       /* ── BTN CONSULTAR ───────────────────────────────── */
       .btn-consultar {
         padding: 10px 20px;
         background: var(--teal);
-        color: #090d14;
+        color: #ffffff;
         border: none;
         border-radius: var(--radius-sm);
         font-family: var(--font-head);
@@ -673,7 +710,8 @@
         gap: 6px;
       }
       .btn-consultar:hover {
-        filter: brightness(1.1);
+        filter: brightness(1.08);
+        transform: translateY(-1px);
       }
       .btn-consultar:disabled {
         opacity: 0.4;
@@ -689,37 +727,29 @@
         margin-top: 16px;
         align-items: center;
         gap: 10px;
+        font-weight: 500;
       }
-      .alert-box.show {
-        display: flex;
-      }
+      .alert-box.show { display: flex; }
       .alert-box.success {
         background: var(--green-dim);
-        border: 1px solid rgba(52, 211, 153, 0.2);
-        color: #6ee7b7;
+        border: 1px solid var(--green-border);
+        color: var(--green);
       }
       .alert-box.error {
         background: var(--red-dim);
-        border: 1px solid rgba(248, 113, 113, 0.2);
-        color: #fca5a5;
+        border: 1px solid var(--red-border);
+        color: var(--red);
       }
       .alert-box.warning {
         background: var(--amber-dim);
-        border: 1px solid rgba(245, 158, 11, 0.2);
-        color: #fde68a;
+        border: 1px solid var(--amber-border);
+        color: var(--amber);
       }
 
       /* ── ANIMAÇÕES ───────────────────────────────────── */
       @keyframes pulse {
-        0%,
-        100% {
-          opacity: 1;
-          transform: scale(1);
-        }
-        50% {
-          opacity: 0.5;
-          transform: scale(0.8);
-        }
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50%      { opacity: 0.5; transform: scale(0.8); }
       }
 
       /* ── CHECKBOX DE DISPENSA DE DOCUMENTO ─────────────────── */
@@ -743,7 +773,7 @@
         height: 14px;
       }
       .doc-input-wrap.disabled {
-        opacity: 0.3;
+        opacity: 0.4;
         pointer-events: none;
         border-style: solid;
       }
@@ -752,60 +782,59 @@
       .faq-faturamento {
         width: 100%;
         margin-top: 14px;
-        background: rgba(0, 0, 0, 0.15);
-        border: 1px solid rgba(168, 85, 247, 0.2);
+        background: var(--bg-card);
+        border: 1px solid var(--purple-border);
         border-radius: var(--radius-sm);
         overflow: hidden;
       }
       .faq-faturamento summary {
         padding: 10px 14px;
         font-size: 11px;
-        font-weight: 600;
+        font-weight: 700;
         color: var(--purple);
         cursor: pointer;
-        list-style: none; /* Remove a setinha padrão do navegador */
+        list-style: none;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 6px;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.08em;
         transition: var(--transition);
       }
-      .faq-faturamento summary::-webkit-details-marker {
-        display: none;
-      }
+      .faq-faturamento summary::-webkit-details-marker { display: none; }
       .faq-faturamento summary:hover {
-        background: rgba(168, 85, 247, 0.1);
+        background: var(--purple-dim);
       }
       .faq-faturamento[open] summary {
-        border-bottom: 1px solid rgba(168, 85, 247, 0.1);
+        border-bottom: 1px solid var(--purple-border);
+        background: var(--purple-dim);
       }
       .faq-faturamento[open] summary i::before {
-        content: "\f077"; /* Muda o ícone para seta para cima quando aberto */
+        content: "\f077";
       }
       .faq-faturamento p {
         padding: 12px 14px;
         margin: 0;
         font-size: 12px;
-        color: var(--text-primary);
+        color: var(--text-secondary);
         text-align: left;
-        line-height: 1.5;
+        line-height: 1.55;
       }
 
       /* ── FAQ ICMS ─────────────────────────────── */
       .faq-icms {
         width: 100%;
         margin-top: 14px;
-        background: rgba(0, 0, 0, 0.15);
-        border: 1px solid rgba(14, 230, 184, 0.2);
+        background: var(--bg-card);
+        border: 1px solid var(--teal-border);
         border-radius: var(--radius-sm);
         overflow: hidden;
       }
       .faq-icms summary {
         padding: 10px 14px;
         font-size: 11px;
-        font-weight: 600;
+        font-weight: 700;
         color: var(--teal);
         cursor: pointer;
         list-style: none;
@@ -814,17 +843,16 @@
         justify-content: center;
         gap: 6px;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.08em;
         transition: var(--transition);
       }
-      .faq-icms summary::-webkit-details-marker {
-        display: none;
-      }
+      .faq-icms summary::-webkit-details-marker { display: none; }
       .faq-icms summary:hover {
-        background: rgba(14, 230, 184, 0.1);
+        background: var(--teal-dim);
       }
       .faq-icms[open] summary {
-        border-bottom: 1px solid rgba(14, 230, 184, 0.1);
+        border-bottom: 1px solid var(--teal-border);
+        background: var(--teal-dim);
       }
       .faq-icms[open] summary i::before {
         content: "\f077";
@@ -833,30 +861,20 @@
         padding: 12px 14px;
         margin: 0;
         font-size: 12px;
-        color: var(--text-primary);
+        color: var(--text-secondary);
         text-align: left;
-        line-height: 1.5;
+        line-height: 1.55;
       }
 
       /* ── RESPONSIVO ──────────────────────────────────── */
       @media (max-width: 1024px) {
-        .contact-cards-grid {
-          grid-template-columns: 1fr 1fr;
-        }
-        .doc-grid {
-          grid-template-columns: 1fr 1fr;
-        }
-        .cols-3 {
-          grid-template-columns: 1fr 1fr;
-        }
-        .cols-3-3 {
-          grid-template-columns: 1fr 1fr;
-        }
+        .contact-cards-grid { grid-template-columns: 1fr 1fr; }
+        .doc-grid           { grid-template-columns: 1fr 1fr; }
+        .cols-3             { grid-template-columns: 1fr 1fr; }
+        .cols-3-3           { grid-template-columns: 1fr 1fr; }
       }
       @media (max-width: 640px) {
-        body {
-          padding: 16px 12px 40px;
-        }
+        body { padding: 16px 12px 40px; }
         .contact-cards-grid,
         .doc-grid,
         .cols-3,
@@ -866,12 +884,8 @@
         .cols-3-3 {
           grid-template-columns: 1fr;
         }
-        .radio-group {
-          flex-direction: column;
-        }
-        .card-dark {
-          padding: 20px 16px;
-        }
+        .radio-group { flex-direction: column; }
+        .card-dark { padding: 20px 16px; }
       }
     </style>
   </head>
@@ -881,10 +895,7 @@
       <!-- HEADER -->
       <div class="ficha-header">
         <div class="header-logo-wrap">
-          <img
-            src="{{ url_for('static', filename='img/logo-2024.png') }}"
-            alt="Ciamed"
-          />
+          <img src="{{ url_for('static', filename='img/logo-2024.png') }}" alt="Ciamed" />
         </div>
 
         <div class="header-text-wrap">
@@ -916,54 +927,18 @@
 
           <div class="form-grid">
             <!-- Linha 1: ICMS + Regime + Faturamento -->
-            <div
-              style="
-                display: flex;
-                gap: 16px;
-                flex-wrap: wrap;
-                margin-bottom: 20px;
-                align-items: flex-start;
-              "
-            >
-              <div
-                class="highlight-box teal"
-                style="
-                  flex: 1;
-                  min-width: 250px;
-                  display: flex;
-                  flex-direction: column;
-                  align-items: center;
-                  justify-content: flex-start;
-                  padding: 28px 15px 22px 15px;
-                "
-              >
-                <label
-                  style="
-                    font-size: 14px !important;
-                    margin-bottom: 16px;
-                    text-align: center;
-                  "
-                >
+            <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; align-items: flex-start;">
+              <div class="highlight-box teal" style="flex: 1; min-width: 250px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 28px 15px 22px 15px;">
+                <label style="font-size: 14px !important; margin-bottom: 16px; text-align: center;">
                   <i class="fa-solid fa-receipt me-2"></i> Contribuinte do ICMS?
                   <span style="color: var(--red)">*</span>
                 </label>
-                <div
-                  class="radio-group"
-                  style="justify-content: center; width: 100%"
-                >
-                  <label
-                    class="radio-card"
-                    id="rcIcmsSim"
-                    style="justify-content: center; max-width: 140px"
-                  >
+                <div class="radio-group" style="justify-content: center; width: 100%">
+                  <label class="radio-card" id="rcIcmsSim" style="justify-content: center; max-width: 140px">
                     <input type="radio" name="cliIcms" value="Sim" required />
                     <span class="radio-dot"></span> Sim
                   </label>
-                  <label
-                    class="radio-card"
-                    id="rcIcmsNao"
-                    style="justify-content: center; max-width: 140px"
-                  >
+                  <label class="radio-card" id="rcIcmsNao" style="justify-content: center; max-width: 140px">
                     <input type="radio" name="cliIcms" value="Não" required />
                     <span class="radio-dot"></span> Não
                   </label>
@@ -985,127 +960,48 @@
                 </details>
               </div>
 
-              <div
-                class="highlight-box amber"
-                id="wrapperRegimeEspecial"
-                style="
-                  display: none;
-                  flex: 1;
-                  min-width: 250px;
-                  flex-direction: column;
-                  align-items: center;
-                  justify-content: flex-start;
-                  padding: 28px 15px 22px 15px;
-                "
-              >
-                <label
-                  style="
-                    font-size: 14px !important;
-                    margin-bottom: 16px;
-                    text-align: center;
-                  "
-                >
+              <div class="highlight-box amber" id="wrapperRegimeEspecial" style="display: none; flex: 1; min-width: 250px; flex-direction: column; align-items: center; justify-content: flex-start; padding: 28px 15px 22px 15px;">
+                <label style="font-size: 14px !important; margin-bottom: 16px; text-align: center;">
                   <i class="fa-solid fa-file-signature me-2"></i> Regime
                   Especial de ICMS? <span style="color: var(--red)">*</span>
                 </label>
-                <div
-                  class="radio-group"
-                  style="justify-content: center; width: 100%"
-                >
-                  <label
-                    class="radio-card"
-                    id="rcRegimeSim"
-                    style="justify-content: center; max-width: 140px"
-                  >
+                <div class="radio-group" style="justify-content: center; width: 100%">
+                  <label class="radio-card" id="rcRegimeSim" style="justify-content: center; max-width: 140px">
                     <input type="radio" name="cliRegimeEspecial" value="Sim" />
                     <span class="radio-dot"></span> Sim
                   </label>
-                  <label
-                    class="radio-card"
-                    id="rcRegimeNao"
-                    style="justify-content: center; max-width: 140px"
-                  >
+                  <label class="radio-card" id="rcRegimeNao" style="justify-content: center; max-width: 140px">
                     <input type="radio" name="cliRegimeEspecial" value="Não" />
                     <span class="radio-dot"></span> Não
                   </label>
                 </div>
-                <p
-                  style="
-                    font-size: 11px;
-                    color: var(--amber);
-                    margin-top: auto;
-                    margin-bottom: 0;
-                    text-align: center;
-                    padding-top: 16px;
-                  "
-                >
+                <p style="font-size: 11px; color: var(--amber); margin-top: auto; margin-bottom: 0; text-align: center; padding-top: 16px;">
                   Se sim, anexar ao final.
                 </p>
               </div>
 
-              <div
-                class="highlight-box purple"
-                style="
-                  flex: 1;
-                  min-width: 250px;
-                  display: flex;
-                  flex-direction: column;
-                  align-items: center;
-                  justify-content: flex-start;
-                  padding: 28px 15px 22px 15px;
-                "
-              >
-                <label
-                  style="
-                    font-size: 14px !important;
-                    margin-bottom: 16px;
-                    text-align: center;
-                  "
-                >
+              <div class="highlight-box purple" style="flex: 1; min-width: 250px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 28px 15px 22px 15px;">
+                <label style="font-size: 14px !important; margin-bottom: 16px; text-align: center;">
                   <i class="fa-solid fa-boxes-packing me-2"></i> Regra de
                   Faturamento <span style="color: var(--red)">*</span>
                 </label>
-                <div
-                  class="radio-group"
-                  style="justify-content: center; width: 100%"
-                >
-                  <label
-                    class="radio-card"
-                    id="rcFatCaixa"
-                    style="justify-content: center; max-width: 140px"
-                  >
-                    <input
-                      type="radio"
-                      name="cliRegraFat"
-                      value="Caixa"
-                      required
-                    />
+                <div class="radio-group" style="justify-content: center; width: 100%">
+                  <label class="radio-card" id="rcFatCaixa" style="justify-content: center; max-width: 140px">
+                    <input type="radio" name="cliRegraFat" value="Caixa" required />
                     <span class="radio-dot"></span> Caixa
                   </label>
-                  <label
-                    class="radio-card"
-                    id="rcFatUnit"
-                    style="justify-content: center; max-width: 140px"
-                  >
-                    <input
-                      type="radio"
-                      name="cliRegraFat"
-                      value="Unitario"
-                      required
-                    />
+                  <label class="radio-card" id="rcFatUnit" style="justify-content: center; max-width: 140px">
+                    <input type="radio" name="cliRegraFat" value="Unitario" required />
                     <span class="radio-dot"></span> Unitário
                   </label>
                 </div>
 
                 <details class="faq-faturamento" style="margin-top: auto">
                   <summary>
-                    <i class="fa-solid fa-circle-question"></i> Qual a
-                    diferença?
+                    <i class="fa-solid fa-circle-question"></i> Qual a diferença?
                   </summary>
                   <p>
-                    <strong
-                      >Faturamento de Medicamentos: Caixa x Comprimido</strong
-                    ><br />
+                    <strong>Faturamento de Medicamentos: Caixa x Comprimido</strong><br />
                     Essa diferença é muito relevante, pois a Nota Fiscal será
                     emitida com a unidade desejada pelo cliente. Exemplo: 1
                     caixa de paracetamol ou 30 comprimidos de paracetamol. O
@@ -1115,60 +1011,24 @@
                 </details>
               </div>
             </div>
+
             <!-- Linha 2: CNPJ + Telefone + WhatsApp + Botão -->
             <div style="margin-bottom: 20px">
-              <div
-                class="form-field"
-                style="
-                  display: flex;
-                  flex-direction: column;
-                  align-items: center;
-                  margin-bottom: 24px;
-                "
-              >
-                <label style="margin-bottom: 8px"
-                  >CNPJ <span class="req">*</span></label
-                >
-                <div
-                  style="display: flex; gap: 8px; width: 100%; max-width: 240px"
-                >
-                  <input
-                    type="text"
-                    id="cliCnpj"
-                    class="form-control"
-                    placeholder="00.000.000/0000-00"
-                    required
-                    style="flex: 1; text-align: center; font-size: 16px"
-                  />
+              <div class="form-field" style="display: flex; flex-direction: column; align-items: center; margin-bottom: 24px;">
+                <label style="margin-bottom: 8px">CNPJ <span class="req">*</span></label>
+                <div style="display: flex; gap: 8px; width: 100%; max-width: 240px">
+                  <input type="text" id="cliCnpj" class="form-control" placeholder="00.000.000/0000-00" required style="flex: 1; text-align: center; font-size: 16px" />
                 </div>
               </div>
 
               <div style="display: flex; gap: 20px; flex-wrap: nowrap">
                 <div class="form-field" style="flex: 1">
                   <label>Telefone Principal <span class="req">*</span></label>
-                  <input
-                    type="text"
-                    id="cliTelefone"
-                    class="form-control"
-                    placeholder="(XX) XXXXX-XXXX"
-                    required
-                  />
+                  <input type="text" id="cliTelefone" class="form-control" placeholder="(XX) XXXXX-XXXX" required />
                 </div>
                 <div class="form-field" style="flex: 1">
-                  <label
-                    ><i
-                      class="fa-brands fa-whatsapp"
-                      style="color: #25d366"
-                    ></i>
-                    WhatsApp <span class="req">*</span></label
-                  >
-                  <input
-                    type="text"
-                    id="cliWhatsapp"
-                    class="form-control"
-                    placeholder="(XX) XXXXX-XXXX"
-                    required
-                  />
+                  <label><i class="fa-brands fa-whatsapp" style="color: #25d366"></i> WhatsApp <span class="req">*</span></label>
+                  <input type="text" id="cliWhatsapp" class="form-control" placeholder="(XX) XXXXX-XXXX" required />
                 </div>
               </div>
             </div>
@@ -1182,46 +1042,21 @@
               <div class="form-row cols-2-1">
                 <div class="form-field">
                   <label>Razão Social</label>
-                  <input
-                    type="text"
-                    id="cliRazao"
-                    class="form-control input-readonly"
-                    readonly
-                  />
+                  <input type="text" id="cliRazao" class="form-control input-readonly" readonly />
                 </div>
                 <div class="form-field">
                   <label>Situação Cadastral</label>
-                  <input
-                    type="text"
-                    id="cliSituacao"
-                    class="form-control input-readonly"
-                    readonly
-                    style="
-                      text-align: center;
-                      font-weight: 400;
-                      text-transform: uppercase;
-                    "
-                  />
+                  <input type="text" id="cliSituacao" class="form-control input-readonly" readonly style="text-align: center; font-weight: 400; text-transform: uppercase;" />
                 </div>
 
                 <div class="form-field" style="grid-column: 1/-1">
                   <label>Endereço Completo</label>
-                  <input
-                    type="text"
-                    id="cliEndereco"
-                    class="form-control input-readonly"
-                    readonly
-                  />
+                  <input type="text" id="cliEndereco" class="form-control input-readonly" readonly />
                 </div>
 
                 <div class="form-field" style="grid-column: 1/-1">
                   <label>CNAE Principal</label>
-                  <input
-                    type="text"
-                    id="cliCnae"
-                    class="form-control input-readonly"
-                    readonly
-                  />
+                  <input type="text" id="cliCnae" class="form-control input-readonly" readonly />
                 </div>
               </div>
             </div>
@@ -1239,16 +1074,8 @@
             <!-- Emails -->
             <div class="form-row cols-3">
               <div class="form-field">
-                <label
-                  >E-mail Principal (XML/NF-e) <span class="req">*</span></label
-                >
-                <input
-                  type="email"
-                  id="cliEmailXml"
-                  class="form-control"
-                  placeholder="nfe@empresa.com.br"
-                  required
-                />
+                <label>E-mail Principal (XML/NF-e) <span class="req">*</span></label>
+                <input type="email" id="cliEmailXml" class="form-control" placeholder="nfe@empresa.com.br" required />
               </div>
               <div class="form-field">
                 <label>E-mail Secundário</label>
@@ -1268,33 +1095,15 @@
                 </div>
                 <div class="form-field">
                   <label>Nome <span class="req">*</span></label>
-                  <input
-                    type="text"
-                    id="ctoComprasNome"
-                    class="form-control"
-                    placeholder="Nome do responsável"
-                    required
-                  />
+                  <input type="text" id="ctoComprasNome" class="form-control" placeholder="Nome do responsável" required />
                 </div>
                 <div class="form-field">
                   <label>Telefone <span class="req">*</span></label>
-                  <input
-                    type="text"
-                    id="ctoComprasTel"
-                    class="form-control"
-                    placeholder="(XX) XXXXX-XXXX"
-                    required
-                  />
+                  <input type="text" id="ctoComprasTel" class="form-control" placeholder="(XX) XXXXX-XXXX" required />
                 </div>
                 <div class="form-field">
                   <label>E-mail <span class="req">*</span></label>
-                  <input
-                    type="email"
-                    id="ctoComprasEmail"
-                    class="form-control"
-                    placeholder="compras@empresa.com.br"
-                    required
-                  />
+                  <input type="email" id="ctoComprasEmail" class="form-control" placeholder="compras@empresa.com.br" required />
                 </div>
               </div>
 
@@ -1304,30 +1113,15 @@
                 </div>
                 <div class="form-field">
                   <label>Nome <span class="req">*</span></label>
-                  <input
-                    type="text"
-                    id="ctoRecNome"
-                    class="form-control"
-                    required
-                  />
+                  <input type="text" id="ctoRecNome" class="form-control" required />
                 </div>
                 <div class="form-field">
                   <label>Telefone <span class="req">*</span></label>
-                  <input
-                    type="text"
-                    id="ctoRecTel"
-                    class="form-control"
-                    required
-                  />
+                  <input type="text" id="ctoRecTel" class="form-control" required />
                 </div>
                 <div class="form-field">
                   <label>E-mail <span class="req">*</span></label>
-                  <input
-                    type="email"
-                    id="ctoRecEmail"
-                    class="form-control"
-                    required
-                  />
+                  <input type="email" id="ctoRecEmail" class="form-control" required />
                 </div>
               </div>
 
@@ -1337,30 +1131,15 @@
                 </div>
                 <div class="form-field">
                   <label>Nome <span class="req">*</span></label>
-                  <input
-                    type="text"
-                    id="ctoFinNome"
-                    class="form-control"
-                    required
-                  />
+                  <input type="text" id="ctoFinNome" class="form-control" required />
                 </div>
                 <div class="form-field">
                   <label>Telefone <span class="req">*</span></label>
-                  <input
-                    type="text"
-                    id="ctoFinTel"
-                    class="form-control"
-                    required
-                  />
+                  <input type="text" id="ctoFinTel" class="form-control" required />
                 </div>
                 <div class="form-field">
                   <label>E-mail <span class="req">*</span></label>
-                  <input
-                    type="email"
-                    id="ctoFinEmail"
-                    class="form-control"
-                    required
-                  />
+                  <input type="email" id="ctoFinEmail" class="form-control" required />
                 </div>
               </div>
 
@@ -1370,30 +1149,15 @@
                 </div>
                 <div class="form-field">
                   <label>Nome <span class="req">*</span></label>
-                  <input
-                    type="text"
-                    id="ctoFarmaNome"
-                    class="form-control"
-                    required
-                  />
+                  <input type="text" id="ctoFarmaNome" class="form-control" required />
                 </div>
                 <div class="form-field">
                   <label>Telefone <span class="req">*</span></label>
-                  <input
-                    type="text"
-                    id="ctoFarmaTel"
-                    class="form-control"
-                    required
-                  />
+                  <input type="text" id="ctoFarmaTel" class="form-control" required />
                 </div>
                 <div class="form-field">
                   <label>E-mail <span class="req">*</span></label>
-                  <input
-                    type="email"
-                    id="ctoFarmaEmail"
-                    class="form-control"
-                    required
-                  />
+                  <input type="email" id="ctoFarmaEmail" class="form-control" required />
                 </div>
               </div>
             </div>
@@ -1408,70 +1172,28 @@
           </div>
 
           <!-- AVISO PROTOCOLO DE RENOVAÇÃO -->
-          <div
-            style="
-              display: flex;
-              align-items: flex-start;
-              gap: 12px;
-              background: rgba(245, 158, 11, 0.08);
-              border: 1px solid rgba(245, 158, 11, 0.25);
-              border-radius: 10px;
-              padding: 14px 16px;
-              margin-bottom: 20px;
-            "
-          >
-            <i
-              class="fa-solid fa-triangle-exclamation"
-              style="
-                color: var(--amber);
-                font-size: 15px;
-                margin-top: 2px;
-                flex-shrink: 0;
-              "
-            ></i>
-            <p
-              style="
-                margin: 0;
-                font-size: 13px;
-                color: var(--text-secondary);
-                line-height: 1.6;
-              "
-            >
+          <div style="display: flex; align-items: flex-start; gap: 12px; background: var(--amber-dim); border: 1px solid var(--amber-border); border-radius: 10px; padding: 14px 16px; margin-bottom: 20px;">
+            <i class="fa-solid fa-triangle-exclamation" style="color: var(--amber); font-size: 15px; margin-top: 2px; flex-shrink: 0;"></i>
+            <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
               <strong style="color: var(--amber)">Atenção:</strong>
               Caso algum desses documentos esteja vencido, além do documento,
               precisamos também do
-              <strong style="color: var(--text)">protocolo de renovação</strong
-              >.
+              <strong style="color: var(--text-primary)">protocolo de renovação</strong>.
             </p>
           </div>
 
-          <div
-            id="wrapperUploadRegime"
-            style="display: none; margin-bottom: 20px"
-          >
+          <div id="wrapperUploadRegime" style="display: none; margin-bottom: 20px">
             <div class="highlight-box red">
-              <label
-                ><i class="fa-solid fa-file-signature me-2"></i> Anexo do Regime
-                Especial de ICMS <span style="color: var(--red)">*</span></label
-              >
+              <label><i class="fa-solid fa-file-signature me-2"></i> Anexo do Regime Especial de ICMS <span style="color: var(--red)">*</span></label>
               <div class="doc-input-wrap" id="wrapDocRegime">
-                <input
-                  type="file"
-                  id="docRegimeEspecial"
-                  onchange="marcarDoc(this, 'wrapDocRegime')"
-                />
+                <input type="file" id="docRegimeEspecial" onchange="marcarDoc(this, 'wrapDocRegime')" />
                 <div class="doc-input-text">
                   <i class="fa-solid fa-cloud-arrow-up"></i>
                   <span id="lblDocRegime">Clique ou arraste o arquivo</span>
                 </div>
               </div>
               <label class="doc-missing">
-                <input
-                  type="checkbox"
-                  onchange="
-                    dispensarDoc('docRegimeEspecial', 'wrapDocRegime', this)
-                  "
-                />
+                <input type="checkbox" onchange="dispensarDoc('docRegimeEspecial', 'wrapDocRegime', this)" />
                 Não possuo no momento
               </label>
             </div>
@@ -1484,49 +1206,30 @@
                 <span style="color: var(--red)">*</span>
               </div>
               <div class="doc-input-wrap" id="wrapAlvara">
-                <input
-                  type="file"
-                  id="docAlvara"
-                  required
-                  onchange="marcarDoc(this, 'wrapAlvara')"
-                />
+                <input type="file" id="docAlvara" required onchange="marcarDoc(this, 'wrapAlvara')" />
                 <div class="doc-input-text">
-                  <i class="fa-solid fa-cloud-arrow-up"></i
-                  ><span id="lblAlvara">Clique ou arraste</span>
+                  <i class="fa-solid fa-cloud-arrow-up"></i><span id="lblAlvara">Clique ou arraste</span>
                 </div>
               </div>
               <label class="doc-missing">
-                <input
-                  type="checkbox"
-                  onchange="dispensarDoc('docAlvara', 'wrapAlvara', this)"
-                />
+                <input type="checkbox" onchange="dispensarDoc('docAlvara', 'wrapAlvara', this)" />
                 Não possuo no momento
               </label>
             </div>
 
             <div class="doc-item">
               <div class="doc-label">
-                <i class="fa-solid fa-file-shield"></i> 2. Certidão de
-                Regularidade
+                <i class="fa-solid fa-file-shield"></i> 2. Certidão de Regularidade
                 <span style="color: var(--red)">*</span>
               </div>
               <div class="doc-input-wrap" id="wrapCRT">
-                <input
-                  type="file"
-                  id="docCRT"
-                  required
-                  onchange="marcarDoc(this, 'wrapCRT')"
-                />
+                <input type="file" id="docCRT" required onchange="marcarDoc(this, 'wrapCRT')" />
                 <div class="doc-input-text">
-                  <i class="fa-solid fa-cloud-arrow-up"></i
-                  ><span id="lblCRT">Clique ou arraste</span>
+                  <i class="fa-solid fa-cloud-arrow-up"></i><span id="lblCRT">Clique ou arraste</span>
                 </div>
               </div>
               <label class="doc-missing">
-                <input
-                  type="checkbox"
-                  onchange="dispensarDoc('docCRT', 'wrapCRT', this)"
-                />
+                <input type="checkbox" onchange="dispensarDoc('docCRT', 'wrapCRT', this)" />
                 Não possuo no momento
               </label>
             </div>
@@ -1537,22 +1240,13 @@
                 <span style="color: var(--red)">*</span>
               </div>
               <div class="doc-input-wrap" id="wrapAFE">
-                <input
-                  type="file"
-                  id="docAFE"
-                  required
-                  onchange="marcarDoc(this, 'wrapAFE')"
-                />
+                <input type="file" id="docAFE" required onchange="marcarDoc(this, 'wrapAFE')" />
                 <div class="doc-input-text">
-                  <i class="fa-solid fa-cloud-arrow-up"></i
-                  ><span id="lblAFE">Clique ou arraste</span>
+                  <i class="fa-solid fa-cloud-arrow-up"></i><span id="lblAFE">Clique ou arraste</span>
                 </div>
               </div>
               <label class="doc-missing">
-                <input
-                  type="checkbox"
-                  onchange="dispensarDoc('docAFE', 'wrapAFE', this)"
-                />
+                <input type="checkbox" onchange="dispensarDoc('docAFE', 'wrapAFE', this)" />
                 Não possuo no momento
               </label>
             </div>
@@ -1563,49 +1257,30 @@
                 <span style="color: var(--red)">*</span>
               </div>
               <div class="doc-input-wrap" id="wrapBalanco">
-                <input
-                  type="file"
-                  id="docBalanco"
-                  required
-                  onchange="marcarDoc(this, 'wrapBalanco')"
-                />
+                <input type="file" id="docBalanco" required onchange="marcarDoc(this, 'wrapBalanco')" />
                 <div class="doc-input-text">
-                  <i class="fa-solid fa-cloud-arrow-up"></i
-                  ><span id="lblBalanco">Clique ou arraste</span>
+                  <i class="fa-solid fa-cloud-arrow-up"></i><span id="lblBalanco">Clique ou arraste</span>
                 </div>
               </div>
               <label class="doc-missing">
-                <input
-                  type="checkbox"
-                  onchange="dispensarDoc('docBalanco', 'wrapBalanco', this)"
-                />
+                <input type="checkbox" onchange="dispensarDoc('docBalanco', 'wrapBalanco', this)" />
                 Não possuo no momento
               </label>
             </div>
 
             <div class="doc-item">
               <div class="doc-label">
-                <i class="fa-solid fa-chart-line"></i> 5. Balancete (&lt;90
-                dias)
+                <i class="fa-solid fa-chart-line"></i> 5. Balancete (&lt;90 dias)
                 <span style="color: var(--red)">*</span>
               </div>
               <div class="doc-input-wrap" id="wrapBalancete">
-                <input
-                  type="file"
-                  id="docBalancete"
-                  required
-                  onchange="marcarDoc(this, 'wrapBalancete')"
-                />
+                <input type="file" id="docBalancete" required onchange="marcarDoc(this, 'wrapBalancete')" />
                 <div class="doc-input-text">
-                  <i class="fa-solid fa-cloud-arrow-up"></i
-                  ><span id="lblBalancete">Clique ou arraste</span>
+                  <i class="fa-solid fa-cloud-arrow-up"></i><span id="lblBalancete">Clique ou arraste</span>
                 </div>
               </div>
               <label class="doc-missing">
-                <input
-                  type="checkbox"
-                  onchange="dispensarDoc('docBalancete', 'wrapBalancete', this)"
-                />
+                <input type="checkbox" onchange="dispensarDoc('docBalancete', 'wrapBalancete', this)" />
                 Não possuo no momento
               </label>
             </div>
@@ -1616,22 +1291,13 @@
                 <span style="color: var(--red)">*</span>
               </div>
               <div class="doc-input-wrap" id="wrapContrato">
-                <input
-                  type="file"
-                  id="docContrato"
-                  required
-                  onchange="marcarDoc(this, 'wrapContrato')"
-                />
+                <input type="file" id="docContrato" required onchange="marcarDoc(this, 'wrapContrato')" />
                 <div class="doc-input-text">
-                  <i class="fa-solid fa-cloud-arrow-up"></i
-                  ><span id="lblContrato">Clique ou arraste</span>
+                  <i class="fa-solid fa-cloud-arrow-up"></i><span id="lblContrato">Clique ou arraste</span>
                 </div>
               </div>
               <label class="doc-missing">
-                <input
-                  type="checkbox"
-                  onchange="dispensarDoc('docContrato', 'wrapContrato', this)"
-                />
+                <input type="checkbox" onchange="dispensarDoc('docContrato', 'wrapContrato', this)" />
                 Não possuo no momento
               </label>
             </div>
@@ -1639,14 +1305,8 @@
         </div>
 
         <!-- BOTÃO SUBMIT -->
-        <button
-          type="button"
-          class="btn-submit"
-          id="btnEnviar"
-          onclick="enviarParaN8N()"
-        >
-          <i class="fa-solid fa-cloud-arrow-up"></i> Enviar Cadastro para
-          Análise
+        <button type="button" class="btn-submit" id="btnEnviar" onclick="enviarParaN8N()">
+          <i class="fa-solid fa-cloud-arrow-up"></i> Enviar Cadastro para Análise
         </button>
 
         <div class="alert-box" id="alertBox">

@@ -94,6 +94,18 @@ content %}
           <div class="stat-label">Cadastrados ERP</div>
         </div>
       </div>
+      <div class="stat-item">
+        <div
+          class="stat-icon"
+          style="background: rgba(245, 158, 11, 0.1); color: #f59e0b"
+        >
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div>
+          <div class="stat-value" id="statErroRobo">—</div>
+          <div class="stat-label">Erro no Robô</div>
+        </div>
+      </div>
     </div>
 
     <!-- FILTROS -->
@@ -119,6 +131,7 @@ content %}
             <option value="aprovado">✅ Aprovado</option>
             <option value="reprovado">❌ Reprovado</option>
             <option value="cadastrado">🤖 Cadastrado ERP</option>
+            <option value="erro_robo">⚠️ Erro no Robô</option>
           </select>
         </div>
         <div class="filtro-group">
@@ -379,6 +392,59 @@ content %}
           </div>
           <div id="modalReprovacoes" class="reprovacoes-lista"></div>
         </div>
+        <!-- Bloco de erro do robô (só aparece quando status é erro_robo) -->
+        <div class="modal-section" id="blocoErroRobo" style="display:none">
+          <div class="section-title" style="color: #f59e0b">
+            <i class="fa-solid fa-triangle-exclamation" style="color: #f59e0b"></i>
+            Detalhes do Erro do Robô
+          </div>
+          <div style="
+            background: rgba(245, 158, 11, 0.06);
+            border: 1px solid rgba(245, 158, 11, 0.15);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 10px;
+          ">
+            <div style="display:grid; grid-template-columns:140px 1fr; gap:8px; font-size:13px;">
+              <span style="color:var(--text-muted)">Etapa com falha:</span>
+              <span id="erroEtapaFalha" style="color:#f59e0b; font-weight:600">—</span>
+ 
+              <span style="color:var(--text-muted)">Última etapa OK:</span>
+              <span id="erroEtapaConcluida" style="color:var(--text-secondary)">—</span>
+ 
+              <span style="color:var(--text-muted)">Detalhe do erro:</span>
+              <span id="erroDetalhe" style="color:var(--text-secondary); word-break:break-word">—</span>
+ 
+              <span style="color:var(--text-muted)">Data do erro:</span>
+              <span id="erroData" style="color:var(--text-secondary)">—</span>
+            </div>
+          </div>
+ 
+          <button onclick="reprocessarCadastro()" id="btnReprocessar" style="
+            margin-top: 16px;
+            width: 100%;
+            padding: 12px;
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 8px;
+            color: #f59e0b;
+            font-family: 'Syne', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+          "
+          onmouseover="this.style.background='rgba(245,158,11,0.2)'"
+          onmouseout="this.style.background='rgba(245,158,11,0.12)'"
+          >
+            <i class="fa-solid fa-rotate-right"></i>
+            Reprocessar Cadastro
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -420,6 +486,11 @@ content %}
         cor: "#a855f7",
         bg: "rgba(168,85,247,0.1)",
       },
+      erro_robo: {
+        label: "⚠️ Erro no Robô",
+        cor: "#f59e0b",
+        bg: "rgba(245,158,11,0.1)",
+      },
     };
 
     // ══════════════════════════════════════════════════════════════
@@ -456,6 +527,7 @@ content %}
         stats.reprovado || 0;
       document.getElementById("statCadastrado").textContent =
         stats.cadastrado || 0;
+        document.getElementById("statErroRobo").textContent = stats.erro_robo || 0;
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -669,8 +741,60 @@ content %}
         secao.style.display = "none";
       }
 
+      // ── Bloco de Erro do Robô ──
+      const blocoErro = document.getElementById("blocoErroRobo");
+      if (c.status === "erro_robo" && c.erro_robo) {
+        blocoErro.style.display = "block";
+        document.getElementById("erroEtapaFalha").textContent = c.erro_robo.etapa_falha || "Não identificada";
+        document.getElementById("erroEtapaConcluida").textContent = c.erro_robo.etapa_concluida || "Nenhuma";
+        document.getElementById("erroDetalhe").textContent = c.erro_robo.erro_detalhe || "Sem detalhes";
+        document.getElementById("erroData").textContent = c.erro_robo.data_erro || "—";
+        // Guarda o UUID pra usar no botão de reprocessar
+        document.getElementById("btnReprocessar").dataset.uuid = c.uuid;
+      } else {
+        blocoErro.style.display = "none";
+      }
+
       document.getElementById("modalOverlay").classList.add("active");
       document.body.style.overflow = "hidden";
+    }
+
+    async function reprocessarCadastro() {
+      const btn = document.getElementById("btnReprocessar");
+      const uuid = btn.dataset.uuid;
+ 
+      if (!uuid) return alert("UUID não encontrado.");
+ 
+      if (!confirm("Confirma o reprocessamento deste cadastro?\n\nO robô vai tentar novamente sem passar pela aprovação da farmacêutica.")) {
+        return;
+      }
+ 
+      // Desabilita o botão durante o processamento
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Reprocessando...';
+ 
+      try {
+        const res = await fetch("/reprocessar_cadastro", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ uuid }),
+        });
+        const data = await res.json();
+ 
+        if (data.status === "ok") {
+          alert("✅ Cadastro enviado para reprocessamento!\n\nO robô vai tentar novamente em breve.");
+          // Fecha o modal e recarrega os dados
+          document.getElementById("modalOverlay").classList.remove("active");
+          carregarDados();
+        } else {
+          alert("❌ Erro: " + (data.mensagem || "Falha no reprocessamento."));
+        }
+      } catch (e) {
+        alert("❌ Erro de conexão: " + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Reprocessar Cadastro';
+      }
     }
 
     function exportarExcel() {
