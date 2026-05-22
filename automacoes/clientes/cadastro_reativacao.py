@@ -145,8 +145,35 @@ def executar(dados_cliente):
             campo_cod.send_keys(Keys.TAB)
             time.sleep(0.8)  # Respiro para o onchange do ADF processar
             print(f"   ✅ Código NL {codigo_nl} digitado e validado.")
+                    
         except Exception as e:
             raise Exception(f"Falha ao preencher o campo de código NL: {e}")
+        
+        # ── Passo 1.1.1: Tratar popup de comentário (nem sempre aparece) ──
+        # Atualizado com a lógica de iframe para o robô conseguir enxergar o botão
+        try:
+            # 1. Aguarda até 2 segundos o iframe do pop-up aparecer e muda o foco
+            WebDriverWait(driver, 2).until(
+                EC.frame_to_be_available_and_switch_to_it((By.XPATH, "//iframe[@class='af_dialog_content']"))
+            )
+            print("   ℹ️ Popup de comentário detectado. Foco alterado para o iframe.")
+
+            # 2. Procura o botão de fechar dentro do iframe
+            # Aproveitei o ID "btnFechar" que você já usava no código original
+            btn_fechar_popup = WebDriverWait(driver, 3).until(
+                EC.element_to_be_clickable((By.ID, "btnFechar"))
+            )
+            # Usando o click via JS que você já usava para garantir no Oracle ADF
+            driver.execute_script("arguments[0].click();", btn_fechar_popup) 
+            time.sleep(1)
+            print("   ✅ Popup fechado.")
+
+            # 3. Retorna o foco para a página principal OBRIGATORIAMENTE
+            driver.switch_to.default_content()
+
+        except TimeoutException:
+            # Caminho normal: nenhum popup apareceu, segue o fluxo
+            pass
 
         # ── Passo 1.2: Clicar na lupa (JS click obrigatório no ADF) ──
         try:
@@ -169,7 +196,7 @@ def executar(dados_cliente):
         )
         try:
             espera_grid = WebDriverWait(driver, 15)
-            time.sleep(2.5)
+            time.sleep(1.5)
             linha_resultado = espera_grid.until(
                 EC.element_to_be_clickable((By.XPATH, xpath_linha_resultado))
             )
@@ -189,14 +216,14 @@ def executar(dados_cliente):
         try:
             print("   🖱️ Clicando na linha do resultado...")
             linha_resultado.click()
-            time.sleep(2.5)
+            time.sleep(1.5)
 
             print("   🎯 Clicando em 'Cadastro particionado'...")
             link_cadastro = wait.until(
                 EC.element_to_be_clickable((By.ID, "tabPsPessoas:0:lnkCadastroWizard"))
             )
             link_cadastro.click()
-            time.sleep(2.5)
+            time.sleep(1.5)
             print("   ✅ Cadastro particionado acessado.")
         except Exception as e:
             raise Exception(f"Falha ao clicar na linha ou no link Cadastro particionado: {e}")
@@ -1919,7 +1946,7 @@ def executar(dados_cliente):
     finally:
         # Mantém o navegador aberto durante os primeiros testes pra você conferir.
         # Quando o robô estiver estável, descomenta a linha abaixo.
-        # driver.quit()
+        driver.quit()
         print("> 🏁 Fim da execução do robô de reativação.")
 
 

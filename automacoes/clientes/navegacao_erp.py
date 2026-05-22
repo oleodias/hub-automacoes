@@ -80,7 +80,7 @@ def fazer_login(driver):
                 campo_motivo.clear()
                 campo_motivo.send_keys("d")
                 botoes_finalizar[0].click()
-                time.sleep(2) 
+                time.sleep(1.5) 
             
             xpath_continuar = "//button[contains(., 'Continuar')]"
             wait.until(EC.element_to_be_clickable((By.XPATH, xpath_continuar))).click()

@@ -911,16 +911,56 @@ def reprocessar_cadastro():
     # ── Disparar o webhook do N8N pra re-entrar na fila ──
     # O N8N recebe o UUID e coloca na fila como se fosse novo.
     # A farmacêutica NÃO é acionada — vai direto pro robô.
+    # -- Disparar o webhook do N8N pra re-entrar na fila --
+    N8N_WEBHOOK_URL = os.getenv('N8N_WEBHOOK_REPROCESSAR')
+
+    # Preparar o payload convertendo todos os valores para string (idêntico ao receber_ficha)
+    payload_n8n = {
+        **d,  # Desempacota os dados originais que vieram do banco_cadastros
+        'uuid': uuid_ficha,
+        'tipo_cadastro': tipo
+    }
+    payload_str = {k: str(v) for k, v in payload_n8n.items()}
+
+    arquivos_abertos = {}
+    pasta = os.path.join('uploads_fiches', uuid_ficha)
+
+    # Identificar e abrir os arquivos físicos salvos localmente para enviar ao N8N
+    if os.path.exists(pasta):
+        for arquivo in os.listdir(pasta):
+            nome_sem_ext = os.path.splitext(arquivo)[0]
+            caminho = os.path.join(pasta, arquivo)
+            
+            arquivos_abertos[nome_sem_ext] = (
+                arquivo, 
+                open(caminho, 'rb'), 
+                'application/octet-stream'
+            )
+
     try:
-        # URL do webhook do N8N para reprocessamento
-        # (pode ser o mesmo webhook principal — o N8N vai ver
-        # que o status já é 'aprovado' e pular a aprovação)
-        # TODO: definir se usa webhook separado ou o mesmo
-        #       por enquanto, retorna sucesso e o operador
-        #       dispara manualmente no N8N se necessário
-        pass
+        resposta_n8n = req_ext.post(
+            N8N_WEBHOOK_URL, 
+            data=payload_str,
+            files=arquivos_abertos if arquivos_abertos else None,
+            timeout=60
+        )
+        
+        logger.info(f"[REPROCESSAR] Status N8N: {resposta_n8n.status_code} | UUID: {uuid_ficha}")
+
     except Exception as e:
-        logger.error(f"[REPROCESSAR] Erro ao chamar N8N: {e}")
+        logger.error(f"[REPROCESSAR] Erro ao disparar webhook: {e}")
+        return jsonify({
+            'status': 'erro', 
+            'mensagem': f'Erro ao disparar reprocessamento no N8N: {str(e)}'
+        }), 500
+        
+    finally:
+        # Garante o fechamento de todos os arquivos abertos para evitar vazamento de memória
+        for nome, (_, fp, _) in arquivos_abertos.items():
+            try:
+                fp.close()
+            except Exception:
+                pass
 
     return jsonify({
         "status":   "ok",
