@@ -30,6 +30,22 @@ def permissoes_padrao():
     """Retorna dict com todos os módulos liberados (padrão para novos usuários)."""
     return {modulo: True for modulo in MODULOS_HUB}
 
+SETORES_CIAMED = [
+    'TI',
+    'Controladoria',
+    'Comercial Público',
+    'Comercial Privado',
+    'Jurídico',
+    'Estoque',
+    'Faturamento',
+    'Fiscal',
+    'Logística',
+    'Compras',
+    'Financeiro',
+    'RH / Departamento Pessoal',
+    'Qualidade / Farmacêutica',
+    'Diretoria',
+]
 
 # ══════════════════════════════════════════════════════════════
 # MODELO: Usuário
@@ -468,3 +484,178 @@ class Nota(db.Model):
 
     def __repr__(self):
         return f'<Nota {self.id} | {self.fornecedor} | {self.mes}/{self.ano}>'
+    
+
+# ══════════════════════════════════════════════════════════════
+# MÓDULO: Central de Suporte
+# ══════════════════════════════════════════════════════════════
+# Cinco tabelas:
+#   chamados              → tickets abertos pelos usuários
+#   chamados_anexos       → arquivos anexados a um chamado
+#   chamados_historico    → timeline de eventos do chamado
+#   notificacoes          → avisos para o usuário (sininho)
+#   faq_perguntas         → perguntas frequentes por módulo
+# ══════════════════════════════════════════════════════════════
+ 
+ 
+class Chamado(db.Model):
+    """
+    Chamado de suporte aberto por um usuário do Hub.
+ 
+    Ciclo de vida do status:
+        'pendente'     → recém-criado, ninguém olhou ainda
+        'em_analise'   → admin reconheceu e está trabalhando
+        'resolvido'    → problema resolvido
+        'cancelado'    → usuário desistiu (só pode cancelar se pendente)
+ 
+    Prioridade:
+        'baixa'   → resolução em até 24h
+        'media'   → resolução em até 8h
+        'alta'    → resolução em até 2h
+        'critica' → resolução em até 30min
+ 
+    Protocolo:
+        Formato SUP-XXXX, gerado automaticamente na criação.
+        Visível para o usuário e usado para referência rápida.
+    """
+ 
+    __tablename__ = 'chamados'
+ 
+    id         = db.Column(db.Integer, primary_key=True)
+    protocolo  = db.Column(db.String(20), unique=True, nullable=False, index=True)
+ 
+    # Quem abriu (puxado da sessão, não digitado)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+ 
+    # Módulo relacionado (chave de MODULOS_HUB ou 'geral')
+    modulo     = db.Column(db.String(50), default='geral')
+ 
+    # Classificação
+    prioridade = db.Column(db.String(20), default='media')
+ 
+    # Conteúdo
+    assunto    = db.Column(db.String(255), nullable=False)
+    mensagem   = db.Column(db.Text, nullable=False)
+ 
+    # Status do chamado
+    status     = db.Column(db.String(20), default='pendente')
+ 
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+ 
+    # Relacionamentos
+    usuario   = db.relationship('Usuario', backref='chamados')
+    anexos    = db.relationship('ChamadoAnexo', backref='chamado', cascade='all, delete-orphan')
+    historico = db.relationship('ChamadoHistorico', backref='chamado', cascade='all, delete-orphan',
+                                order_by='ChamadoHistorico.created_at')
+ 
+    def __repr__(self):
+        return f'<Chamado #{self.protocolo} | {self.assunto[:30]} | {self.status}>'
+ 
+ 
+class ChamadoAnexo(db.Model):
+    """
+    Arquivo anexado a um chamado (print, XML, PDF, etc.).
+ 
+    Os arquivos ficam em: uploads/chamados/SUP-XXXX/nome_arquivo.ext
+    Tamanho máximo: 10MB por arquivo, 5 arquivos por chamado.
+    """
+ 
+    __tablename__ = 'chamados_anexos'
+ 
+    id             = db.Column(db.Integer, primary_key=True)
+    chamado_id     = db.Column(db.Integer, db.ForeignKey('chamados.id'), nullable=False)
+    nome_arquivo   = db.Column(db.String(255), nullable=False)
+    caminho        = db.Column(db.String(500), nullable=False)
+    tipo_mime      = db.Column(db.String(100))
+    tamanho_bytes  = db.Column(db.Integer)
+    created_at     = db.Column(db.DateTime, default=datetime.now)
+ 
+    def __repr__(self):
+        return f'<ChamadoAnexo {self.nome_arquivo} | chamado={self.chamado_id}>'
+ 
+ 
+class ChamadoHistorico(db.Model):
+    """
+    Evento na timeline de um chamado.
+ 
+    Tipos de evento:
+        'criacao'          → chamado foi criado
+        'mudanca_status'   → status mudou (registra anterior e novo)
+        'resposta_admin'   → admin escreveu uma resposta
+        'anexo'            → arquivo foi anexado
+ 
+    A timeline é montada ordenando por created_at.
+    """
+ 
+    __tablename__ = 'chamados_historico'
+ 
+    id              = db.Column(db.Integer, primary_key=True)
+    chamado_id      = db.Column(db.Integer, db.ForeignKey('chamados.id'), nullable=False)
+    usuario_id      = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True)
+    tipo            = db.Column(db.String(30), nullable=False)
+    status_anterior = db.Column(db.String(20), nullable=True)
+    status_novo     = db.Column(db.String(20), nullable=True)
+    mensagem        = db.Column(db.Text, nullable=True)
+    created_at      = db.Column(db.DateTime, default=datetime.now)
+ 
+    # Relacionamento para pegar o nome de quem fez a ação
+    usuario = db.relationship('Usuario')
+ 
+    def __repr__(self):
+        return f'<ChamadoHistorico {self.tipo} | chamado={self.chamado_id}>'
+ 
+ 
+class Notificacao(db.Model):
+    """
+    Notificação visual para o usuário (sininho na navbar).
+ 
+    Criada automaticamente quando:
+        - Admin muda o status de um chamado do usuário
+        - Admin responde a um chamado do usuário
+ 
+    O frontend faz polling a cada 60s em /api/notificacoes/count
+    para atualizar o badge do sininho.
+    """
+ 
+    __tablename__ = 'notificacoes'
+ 
+    id          = db.Column(db.Integer, primary_key=True)
+    usuario_id  = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    chamado_id  = db.Column(db.Integer, db.ForeignKey('chamados.id'), nullable=True)
+    tipo        = db.Column(db.String(30), nullable=False)
+    titulo      = db.Column(db.String(255), nullable=False)
+    lida        = db.Column(db.Boolean, default=False)
+    created_at  = db.Column(db.DateTime, default=datetime.now)
+ 
+    # Relacionamentos
+    usuario = db.relationship('Usuario', backref='notificacoes')
+    chamado = db.relationship('Chamado')
+ 
+    def __repr__(self):
+        return f'<Notificacao {self.tipo} | user={self.usuario_id} | lida={self.lida}>'
+ 
+ 
+class FaqPergunta(db.Model):
+    """
+    Pergunta frequente exibida na Central de Suporte.
+ 
+    Organizada por módulo (chave de MODULOS_HUB ou 'geral').
+    Admin pode criar/editar/excluir pelo painel.
+    Suporta markdown básico na resposta.
+    Soft-delete via 'ativo'.
+    """
+ 
+    __tablename__ = 'faq_perguntas'
+ 
+    id         = db.Column(db.Integer, primary_key=True)
+    modulo     = db.Column(db.String(50), nullable=False, index=True)
+    pergunta   = db.Column(db.String(500), nullable=False)
+    resposta   = db.Column(db.Text, nullable=False)
+    ordem      = db.Column(db.Integer, default=0)
+    ativo      = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+ 
+    def __repr__(self):
+        return f'<FaqPergunta {self.id} | {self.modulo} | {self.pergunta[:40]}>'

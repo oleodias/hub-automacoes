@@ -1,5 +1,6 @@
 import sys
 import json
+import os
 import time
 import re
 from selenium import webdriver
@@ -7,6 +8,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Evita problemas de acentuação no console do Windows
 sys.stdout.reconfigure(encoding='utf-8')
@@ -27,9 +31,12 @@ def descobrir_regiao(uf):
     return mapa_regioes.get(uf.upper(), '')
 
 def fazer_login(driver):
-    url = "http://192.168.200.252:8585/NLWeb/site/9000/emp/1"
-    usuario = "LEONARDO DIA"
-    senha = "123"
+    """Realiza o login automático e trata as sessões abertas."""
+    # Puxa os dados do .env
+    url = os.getenv('NLWEB_URL')
+    usuario = os.getenv('NLWEB_USER')
+    senha = os.getenv('NLWEB_PASS')
+
     wait = WebDriverWait(driver, 20)
 
     try:

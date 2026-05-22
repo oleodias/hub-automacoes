@@ -19,6 +19,10 @@
       rel="stylesheet"
     />
     <link rel="icon" href="/static/img/logosvg.svg" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/suporte.css') }}"
+    />
 
     <style>
       /* 1. PROÍBE O NAVEGADOR DE ROLAR A TELA INTEIRA */
@@ -138,9 +142,39 @@
         class="brand-logo"
         style="filter: brightness(0) invert(1)"
       />
-      <span class="divider-text" style="color: #ffffff"
-        >{% block navbar_title %}Hub de Automações{% endblock %}</span
+      <span class="divider-text" style="color: #ffffff">
+        {% block navbar_title %}Hub de Automações{% endblock %}</span
       >
+      <div style="flex: 1"></div>
+
+      <!-- Sininho de notificações -->
+      <div class="notif-wrap" id="notifWrap">
+        <button
+          class="notif-btn"
+          onclick="toggleNotifDropdown()"
+          aria-label="Notificações"
+        >
+          <i class="fa-solid fa-bell"></i>
+          <span class="notif-badge hidden" id="notifBadge">0</span>
+        </button>
+        <div class="notif-dropdown" id="notifDropdown">
+          <div class="notif-header">
+            <h4>Notificações</h4>
+            <span class="notif-count-badge" id="notifCountBadge">0 novas</span>
+          </div>
+          <div class="notif-list" id="notifList">
+            <div class="notif-empty">Sem notificações no momento</div>
+          </div>
+          <div class="notif-footer">
+            <button onclick="markAllNotifRead()">
+              Marcar todas como lidas
+            </button>
+            <button class="primary" onclick="window.location.href = '/suporte'">
+              Ver todas →
+            </button>
+          </div>
+        </div>
+      </div>
     </nav>
 
     <div class="main-content">{% block content %}{% endblock %}</div>
@@ -223,6 +257,109 @@
       });
     </script>
     <script src="{{ url_for('static', filename='js/session_memory.js') }}"></script>
+    <script>
+      // ── Sininho de Notificações (global em todas as páginas) ──
+      function toggleNotifDropdown() {
+        document.getElementById("notifDropdown").classList.toggle("open");
+        loadNotifications();
+      }
+
+      document.addEventListener("mousedown", function (e) {
+        var wrap = document.getElementById("notifWrap");
+        if (wrap && !wrap.contains(e.target)) {
+          document.getElementById("notifDropdown").classList.remove("open");
+        }
+      });
+
+      function loadNotifications() {
+        fetch("/api/notificacoes")
+          .then(function (r) {
+            return r.json();
+          })
+          .then(function (data) {
+            var list = document.getElementById("notifList");
+            var notifs = data.notificacoes || [];
+            var unread = notifs.filter(function (n) {
+              return !n.lida;
+            }).length;
+            document.getElementById("notifCountBadge").textContent =
+              unread + " novas";
+            if (notifs.length === 0) {
+              list.innerHTML =
+                '<div class="notif-empty">Sem notificações no momento</div>';
+              return;
+            }
+            list.innerHTML = notifs
+              .map(function (n) {
+                return (
+                  '<div class="notif-item ' +
+                  (n.lida ? "read" : "") +
+                  '"' +
+                  ' onclick="handleNotifClick(' +
+                  n.id +
+                  ", " +
+                  n.chamado_id +
+                  ')">' +
+                  '<span class="notif-item-dot"></span>' +
+                  '<div class="notif-item-body">' +
+                  '<div class="notif-item-msg">' +
+                  escNotifHtml(n.titulo) +
+                  "</div>" +
+                  '<div class="notif-item-time">' +
+                  escNotifHtml(n.created_at) +
+                  "</div>" +
+                  "</div></div>"
+                );
+              })
+              .join("");
+          })
+          .catch(function () {});
+      }
+
+      function handleNotifClick(notifId, chamadoId) {
+        fetch("/api/notificacoes/" + notifId + "/lida", { method: "POST" });
+        if (chamadoId) window.location.href = "/suporte";
+        document.getElementById("notifDropdown").classList.remove("open");
+      }
+
+      function markAllNotifRead() {
+        fetch("/api/notificacoes/ler-todas", { method: "POST" }).then(
+          function () {
+            loadNotifications();
+            var badge = document.getElementById("notifBadge");
+            if (badge) {
+              badge.textContent = "0";
+              badge.classList.add("hidden");
+            }
+          },
+        );
+      }
+
+      function escNotifHtml(str) {
+        if (!str) return "";
+        var d = document.createElement("div");
+        d.textContent = str;
+        return d.innerHTML;
+      }
+
+      // Poll badge a cada 60s
+      function pollNotifBadge() {
+        fetch("/api/notificacoes/count")
+          .then(function (r) {
+            return r.json();
+          })
+          .then(function (data) {
+            var badge = document.getElementById("notifBadge");
+            if (badge) {
+              badge.textContent = data.count;
+              badge.classList.toggle("hidden", data.count === 0);
+            }
+          })
+          .catch(function () {});
+      }
+      setInterval(pollNotifBadge, 60000);
+      pollNotifBadge();
+    </script>
 
     {% block scripts %}{% endblock %}
   </body>

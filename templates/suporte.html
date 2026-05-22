@@ -1,162 +1,340 @@
-{% extends "base.html" %} {% block title %}Suporte - Ciamed{% endblock %} {%
-block css %}
-<link
-  rel="stylesheet"
-  href="{{ url_for('static', filename='css/suporte.css') }}"
-/>
-{% endblock %} {% block navbar_title %}Central de Suporte{% endblock %} {% block
-content %}
-<div class="section-header">
-  <div class="eyebrow">Central de Suporte</div>
-  <h3>Como podemos ajudar?</h3>
-</div>
+{% extends "base.html" %}
+{% block title %}Central de Suporte — Hub Ciamed{% endblock %}
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/suporte.css') }}" />
+{% endblock %}
+{% block navbar_title %}Central de Suporte{% endblock %}
+{% block content %}
+<div class="sup-page" data-screen-label="Central de Suporte">
 
-<div class="suporte-grid">
-  <div class="card-dark">
-    <div class="card-title-row">
-      <i class="fa-solid fa-book-open"></i>
-      <h5>Perguntas Frequentes</h5>
+  <!-- ═══ Header ═══ -->
+  <div class="sup-head" id="supHead">
+    <div class="eyebrow" id="supEyebrow">Base de conhecimento</div>
+    <h1 id="supTitle">Como podemos ajudar você?</h1>
+    <p id="supDesc">
+      Consulte respostas para as dúvidas mais comuns sobre os robôs do Hub,
+      organizadas por módulo.
+    </p>
+  </div>
+
+  <!-- ═══ Tabs (envolto em scroller para responsividade) ═══ -->
+  <div class="sup-tabs-scroller" id="supTabsScroller">
+    <div class="sup-tabs" role="tablist" id="supTabsList">
+      <button class="sup-tab active" data-tab="faq" role="tab" onclick="supSwitchTab('faq')">
+        <i class="fa-solid fa-circle-question"></i>
+        <span class="sup-tab-label">FAQ</span>
+        <span class="sup-tab-count" id="faqCount">-</span>
+      </button>
+      <button class="sup-tab" data-tab="novo" role="tab" onclick="supSwitchTab('novo')">
+        <i class="fa-solid fa-plus"></i>
+        <span class="sup-tab-label">Novo Chamado</span>
+      </button>
+      <button class="sup-tab" data-tab="chamados" role="tab" onclick="supSwitchTab('chamados')">
+        <i class="fa-solid fa-folder-open"></i>
+        <span class="sup-tab-label">Meus Chamados</span>
+        <span class="sup-tab-count" id="chamadosCount">-</span>
+      </button>
+      <button class="sup-tab" data-tab="guias" role="tab" onclick="supSwitchTab('guias')">
+        <i class="fa-solid fa-book-open"></i>
+        <span class="sup-tab-label">Guias</span>
+      </button>
     </div>
-    <div class="accordion" id="faqAccordion">
-      <div class="accordion-item-dark">
-        <button
-          class="accordion-button-dark"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#collapseOne"
-          aria-expanded="false"
-          aria-controls="collapseOne"
-        >
-          A SEFAZ está retornando erro de comunicação. E agora?
-          <i class="fa-solid fa-chevron-down chevron"></i>
-        </button>
-        <div
-          id="collapseOne"
-          class="accordion-collapse collapse"
-          data-bs-parent="#faqAccordion"
-        >
-          <div class="accordion-body-dark">
-            Geralmente isso ocorre por instabilidade nos servidores do governo.
-            Aguarde alguns minutos e tente buscar a nota novamente. Se o
-            problema persistir, verifique a conexão com a internet.
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SEÇÃO: FAQ
+       ═══════════════════════════════════════════════════════ -->
+  <div class="sup-section active" id="sec-faq">
+    <div class="sup-search" style="margin-bottom: 22px">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input
+        id="faqSearch"
+        placeholder="Buscar no FAQ — ex: SEFAZ, CNPJ, exportar…"
+        oninput="supFilterFaq()"
+      />
+      <span class="result-count" id="faqResultCount" style="display: none"></span>
+      <button class="clear-btn" id="faqClearBtn" style="display: none" onclick="supClearFaqSearch()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <div class="faq-grid" id="faqGrid">
+      <!-- Preenchido via JS -->
+    </div>
+    <div class="sup-card sup-empty" id="faqEmpty" style="display: none">
+      <div class="sup-empty-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+      <h3>Nenhuma pergunta encontrada</h3>
+      <p>Tente outros termos ou abra um chamado descrevendo seu problema.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SEÇÃO: NOVO CHAMADO
+       ═══════════════════════════════════════════════════════ -->
+  <div class="sup-section" id="sec-novo">
+    <div id="novoForm">
+      <div class="novo-chamado-grid">
+        <div class="sup-card sup-form-card">
+          <div class="sup-form-fields">
+            <div class="sup-form-row-2">
+              <div class="sup-field">
+                <label>Módulo relacionado <span class="required">*</span></label>
+                <select class="sup-select" id="chamadoModulo" required>
+                  <option value="">Selecione um módulo…</option>
+                  {% for key, name in modulos.items() %}
+                  <option value="{{ key }}">{{ name }}</option>
+                  {% endfor %}
+                  <option value="geral">Geral / Outro</option>
+                </select>
+              </div>
+              <div class="sup-field">
+                <label>Prioridade</label>
+                <div class="prio-selector">
+                  <button type="button" class="prio-pill" data-prio="baixa" style="--pill-color: #3b82f6" onclick="supSetPriority('baixa')">
+                    <div class="dot" style="background: #3b82f6"></div>
+                    <span class="label">Baixa</span>
+                  </button>
+                  <button type="button" class="prio-pill active" data-prio="media" style="--pill-color: #f59e0b" onclick="supSetPriority('media')">
+                    <div class="dot" style="background: #f59e0b"></div>
+                    <span class="label">Média</span>
+                  </button>
+                  <button type="button" class="prio-pill" data-prio="alta" style="--pill-color: #f97316" onclick="supSetPriority('alta')">
+                    <div class="dot" style="background: #f97316"></div>
+                    <span class="label">Alta</span>
+                  </button>
+                  <button type="button" class="prio-pill" data-prio="critica" style="--pill-color: #ef4444" onclick="supSetPriority('critica')">
+                    <div class="dot" style="background: #ef4444"></div>
+                    <span class="label">Crítica</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="sup-field">
+              <label>Assunto <span class="required">*</span></label>
+              <input class="sup-input" id="chamadoAssunto" placeholder="Ex: Erro ao cadastrar item 105" maxlength="120" required />
+              <span class="hint"><span id="assuntoCount">0</span>/120</span>
+            </div>
+
+            <div class="sup-field">
+              <label>Descrição <span class="required">*</span></label>
+              <textarea class="sup-textarea" id="chamadoDescricao" placeholder="Descreva o que aconteceu em detalhes — o que estava tentando fazer, o que aconteceu, qual mensagem apareceu…" required></textarea>
+            </div>
+
+            <div class="sup-field">
+              <label>Anexos</label>
+              <div class="sup-dropzone" id="dropzone"
+                   ondragover="supDragOver(event)" ondragleave="supDragLeave(event)" ondrop="supDrop(event)"
+                   onclick="document.getElementById('fileInput').click()">
+                <span class="sup-dropzone-paste">
+                  <i class="fa-regular fa-clipboard" style="font-size: 10px"></i>
+                  Cole prints com <span class="kbd">Ctrl</span>+<span class="kbd">V</span>
+                </span>
+                <div class="sup-dropzone-icon">
+                  <i class="fa-solid fa-cloud-arrow-up"></i>
+                </div>
+                <div class="sup-dropzone-title">
+                  Arraste arquivos aqui,
+                  <span class="sup-dropzone-cta">clique para selecionar</span>
+                  ou cole com Ctrl+V
+                </div>
+                <div class="sup-dropzone-hint">
+                  Máx. 5 arquivos · 10MB cada · PNG, JPG, PDF, XML, XLSX
+                </div>
+                <input type="file" id="fileInput" multiple style="display: none" onchange="supHandleFiles(this.files)" />
+              </div>
+              <div class="sup-attachments" id="attachmentsList"></div>
+            </div>
+          </div>
+
+          <div class="sup-form-footer">
+            <span class="sup-form-footer-note">
+              <i class="fa-solid fa-circle-info"></i>
+              Você será notificado quando houver resposta do TI
+            </span>
+            <button type="button" class="sup-btn primary lg" onclick="supSubmitChamado()">
+              <i class="fa-solid fa-paper-plane"></i> Enviar chamado
+            </button>
           </div>
         </div>
-      </div>
 
-      <div class="accordion-item-dark">
-        <button
-          class="accordion-button-dark"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#collapseTwo"
-          aria-expanded="false"
-          aria-controls="collapseTwo"
-        >
-          O NCM não foi validado no sistema.
-          <i class="fa-solid fa-chevron-down chevron"></i>
-        </button>
-        <div
-          id="collapseTwo"
-          class="accordion-collapse collapse"
-          data-bs-parent="#faqAccordion"
-        >
-          <div class="accordion-body-dark">
-            Isso significa que o NCM presente no arquivo XML não existe na base
-            de dados do ERP. Você precisará abrir um chamado para o setor Fiscal
-            cadastrar o novo NCM antes de prosseguir.
+        <!-- Sidebar direita -->
+        <aside class="sup-sidebar">
+          <div class="sup-solicitante">
+            <div class="sup-solicitante-label">
+              <i class="fa-solid fa-lock" style="font-size: 10px"></i>
+              Solicitante
+            </div>
+            <div class="sup-solicitante-row">
+              <div class="sup-solicitante-avatar">{{ session.get('usuario_nome', 'U')[0] }}</div>
+              <div class="sup-solicitante-info">
+                <div class="sup-solicitante-name">{{ session.get('usuario_nome', 'Usuário') }}</div>
+                <div class="sup-solicitante-sector">
+                  <i class="fa-solid fa-building"></i>
+                  Setor: {{ session.get('usuario_setor', 'N/A') }}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      <div class="accordion-item-dark">
-        <button
-          class="accordion-button-dark"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#collapseThree"
-          aria-expanded="false"
-          aria-controls="collapseThree"
-        >
-          Onde ficam salvos os XMLs baixados?
-          <i class="fa-solid fa-chevron-down chevron"></i>
-        </button>
-        <div
-          id="collapseThree"
-          class="accordion-collapse collapse"
-          data-bs-parent="#faqAccordion"
-        >
-          <div class="accordion-body-dark">
-            Todos os arquivos XML processados pelo robô são armazenados
-            automaticamente na pasta segura do servidor da Ciamed, não sendo
-            necessário salvar manualmente no seu computador.
+          <div class="sup-card sup-tips">
+            <div class="sup-tips-header">
+              <i class="fa-solid fa-lightbulb"></i>
+              <h4>Dicas para um bom chamado</h4>
+            </div>
+            <div class="sup-tip">
+              <div class="sup-tip-icon"><i class="fa-solid fa-bullseye"></i></div>
+              <div>
+                <div class="sup-tip-title">Seja específico no assunto</div>
+                <div class="sup-tip-body">Inclua o número da nota, código do item ou tela.</div>
+              </div>
+            </div>
+            <div class="sup-tip">
+              <div class="sup-tip-icon"><i class="fa-solid fa-camera"></i></div>
+              <div>
+                <div class="sup-tip-title">Anexe prints da tela</div>
+                <div class="sup-tip-body">Imagens aceleram muito a resolução. Cole com Ctrl+V.</div>
+              </div>
+            </div>
+            <div class="sup-tip">
+              <div class="sup-tip-icon"><i class="fa-solid fa-list-check"></i></div>
+              <div>
+                <div class="sup-tip-title">Diga o passo a passo</div>
+                <div class="sup-tip-body">O que estava fazendo, o que esperava e o que aconteceu.</div>
+              </div>
+            </div>
           </div>
+
+          <div class="sup-card sup-sla">
+            <div class="sup-sla-label">
+              <i class="fa-regular fa-clock"></i> Tempo médio de resposta
+            </div>
+            <div class="sup-sla-grid">
+              <div class="sup-sla-item">
+                <div class="sup-sla-dot" style="background: #ef4444"></div>
+                <div>
+                  <div class="sup-sla-name">Crítica</div>
+                  <div class="sup-sla-time">&lt; 30min</div>
+                </div>
+              </div>
+              <div class="sup-sla-item">
+                <div class="sup-sla-dot" style="background: #f97316"></div>
+                <div>
+                  <div class="sup-sla-name">Alta</div>
+                  <div class="sup-sla-time">&lt; 2h</div>
+                </div>
+              </div>
+              <div class="sup-sla-item">
+                <div class="sup-sla-dot" style="background: #f59e0b"></div>
+                <div>
+                  <div class="sup-sla-name">Média</div>
+                  <div class="sup-sla-time">&lt; 8h</div>
+                </div>
+              </div>
+              <div class="sup-sla-item">
+                <div class="sup-sla-dot" style="background: #3b82f6"></div>
+                <div>
+                  <div class="sup-sla-name">Baixa</div>
+                  <div class="sup-sla-time">&lt; 24h</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- Success state (hidden) -->
+    <div id="novoSuccess" style="display: none">
+      <div class="sup-card sup-success">
+        <div class="sup-success-icon"><i class="fa-solid fa-check"></i></div>
+        <h2>Chamado criado!</h2>
+        <div class="sup-success-protocol" id="successProtocol">#SUP-0000</div>
+        <p>O time de TI foi notificado e responderá em breve.</p>
+        <div class="sup-success-actions">
+          <button class="sup-btn" onclick="supResetForm()">
+            <i class="fa-solid fa-plus"></i> Abrir outro chamado
+          </button>
+          <button class="sup-btn primary" onclick="supSwitchTab('chamados')">
+            Ver meus chamados <i class="fa-solid fa-arrow-right"></i>
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="card-dark">
-    <div class="card-title-row">
-      <i class="fa-solid fa-envelope-open-text"></i>
-      <h5>Abrir um Chamado</h5>
+  <!-- ═══════════════════════════════════════════════════════
+       SEÇÃO: MEUS CHAMADOS
+       ═══════════════════════════════════════════════════════ -->
+  <div class="sup-section" id="sec-chamados">
+    <div class="sup-stats" id="statsGrid">
+      <!-- Preenchido via JS -->
     </div>
-    <form id="formSuporte" onsubmit="enviarChamado(event)" class="form-dark">
-      <div class="form-row-2">
-        <div class="form-field">
-          <label>Seu Nome</label>
-          <input type="text" id="nomeUser" required placeholder="Nome" />
-        </div>
-        <div class="form-field">
-          <label>Setor</label>
-          <select id="setorUser" required>
-            <option value="" selected disabled>Selecione</option>
-            <option value="Controladoria">Controladoria</option>
-            <option value="TI">TI</option>
-            <option value="Comercial Público">Comercial Público</option>
-            <option value="Comercial Privado">Comercial Privado</option>
-            <option value="Jurídico">Jurídico</option>
-            <option value="Estoque">Estoque</option>
-            <option value="Faturamento">Faturamento</option>
-          </select>
+
+    <div class="sup-filters">
+      <div class="sup-filter-pills-scroller">
+        <div class="sup-filter-pills" id="filterPills">
+          <button class="sup-filter-pill active" data-filter="todos" onclick="supSetFilter('todos')">
+            <i class="fa-solid fa-list"></i> <span>Todos</span>
+          </button>
+          <button class="sup-filter-pill" data-filter="pendente" onclick="supSetFilter('pendente')">
+            <i class="fa-solid fa-clock"></i> <span>Pendentes</span>
+          </button>
+          <button class="sup-filter-pill" data-filter="em_analise" onclick="supSetFilter('em_analise')">
+            <i class="fa-solid fa-magnifying-glass"></i> <span>Em Análise</span>
+          </button>
+          <button class="sup-filter-pill" data-filter="resolvido" onclick="supSetFilter('resolvido')">
+            <i class="fa-solid fa-circle-check"></i> <span>Resolvidos</span>
+          </button>
         </div>
       </div>
-      <div class="form-field">
-        <label>Assunto do Erro / Dúvida</label>
-        <input
-          type="text"
-          id="assuntoChamado"
-          required
-          placeholder="Ex: Erro ao cadastrar item 105"
-        />
+      <div class="sup-search sup-search-inline">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input id="chamadosSearch" placeholder="Buscar por protocolo, assunto ou descrição…" oninput="supFilterChamados()" />
       </div>
-      <div class="form-field">
-        <label>Descrição</label>
-        <textarea
-          id="mensagemChamado"
-          rows="4"
-          required
-          placeholder="Descreva o que aconteceu em detalhes..."
-        ></textarea>
-      </div>
+    </div>
+
+    <div id="chamadosList">
+      <!-- Preenchido via JS -->
+    </div>
+    <div class="sup-card sup-empty" id="chamadosEmpty" style="display: none">
+      <div class="sup-empty-icon"><i class="fa-solid fa-circle-check"></i></div>
+      <h3 id="chamadosEmptyTitle">Nenhum chamado encontrado</h3>
+      <p id="chamadosEmptyText">Você não abriu nenhum chamado — tudo funcionando! 🎉</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SEÇÃO: GUIAS
+       ═══════════════════════════════════════════════════════ -->
+  <div class="sup-section" id="sec-guias">
+    <div class="guias-banner">
+      <div class="guias-banner-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
       <div>
-        <button type="submit" class="btn-enviar" id="btnEnviarChamado">
-          <i class="fa-solid fa-paper-plane"></i> Enviar Chamado
-        </button>
-        <div id="msgRetorno" class="mt-3 text-center fw-bold d-none"></div>
+        <div class="guias-banner-title">Guias passo a passo chegando em breve</div>
+        <div class="guias-banner-body">
+          Estamos preparando tutoriais visuais e vídeos curtos para cada robô.
+          Enquanto isso, consulte o FAQ ou abra um chamado.
+        </div>
       </div>
-    </form>
+    </div>
+    <div class="guias-grid" id="guiasGrid">
+      <!-- Preenchido via JS -->
+    </div>
   </div>
 </div>
 
-<div class="footer">
-  <p>© 2026 Leonardo Dias · Ciamed Distribuidora de Medicamentos®</p>
+<!-- ═══ Modal de detalhe do chamado ═══ -->
+<div class="sup-overlay" id="chamadoOverlay" onclick="supCloseModal()">
+  <div class="sup-modal" onclick="event.stopPropagation()">
+    <div class="sup-modal-header" id="modalHeader">
+      <!-- Preenchido via JS -->
+    </div>
+    <div class="sup-modal-body" id="modalBody">
+      <!-- Preenchido via JS -->
+    </div>
+  </div>
 </div>
-{% endblock %} {% block scripts %}
+{% endblock %}
+{% block scripts %}
 <script src="{{ url_for('static', filename='js/suporte.js') }}"></script>
-<script>
-  // Inicializar Popovers (os tooltips já estão no base.html)
-  document.querySelectorAll('[data-bs-toggle="popover"]').forEach((el) => {
-    new bootstrap.Popover(el);
-  });
-</script>
 {% endblock %}
