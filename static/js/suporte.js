@@ -22,17 +22,25 @@
   };
 
   const STATUS_META = {
-    pendente:   { label: "Pendente",   cls: "st-pendente",   icon: "fa-clock" },
-    em_analise: { label: "Em Análise", cls: "st-em_analise", icon: "fa-magnifying-glass" },
-    resolvido:  { label: "Resolvido",  cls: "st-resolvido",  icon: "fa-circle-check" },
-    cancelado:  { label: "Cancelado",  cls: "st-cancelado",  icon: "fa-ban" },
+    pendente: { label: "Pendente", cls: "st-pendente", icon: "fa-clock" },
+    em_analise: {
+      label: "Em Análise",
+      cls: "st-em_analise",
+      icon: "fa-magnifying-glass",
+    },
+    resolvido: {
+      label: "Resolvido",
+      cls: "st-resolvido",
+      icon: "fa-circle-check",
+    },
+    cancelado: { label: "Cancelado", cls: "st-cancelado", icon: "fa-ban" },
   };
 
   const PRIO_META = {
-    baixa:   { label: "Baixa",    cls: "prio-baixa" },
-    media:   { label: "Média",    cls: "prio-media" },
-    alta:    { label: "Alta",     cls: "prio-alta" },
-    critica: { label: "Crítica",  cls: "prio-critica" },
+    baixa: { label: "Baixa", cls: "prio-baixa" },
+    media: { label: "Média", cls: "prio-media" },
+    alta: { label: "Alta", cls: "prio-alta" },
+    critica: { label: "Crítica", cls: "prio-critica" },
   };
 
   const TAB_META = {
@@ -99,14 +107,16 @@
     }
 
     // Auto-scroll da tab ativa pra dentro do viewport (em monitores estreitos)
-    const activeTab = document.querySelector('.sup-tab.active');
-    const scroller = document.getElementById('supTabsScroller');
+    const activeTab = document.querySelector(".sup-tab.active");
+    const scroller = document.getElementById("supTabsScroller");
     if (activeTab && scroller) {
       const aRect = activeTab.getBoundingClientRect();
       const sRect = scroller.getBoundingClientRect();
       if (aRect.left < sRect.left || aRect.right > sRect.right) {
-        const target = activeTab.offsetLeft - (scroller.clientWidth - activeTab.offsetWidth) / 2;
-        scroller.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
+        const target =
+          activeTab.offsetLeft -
+          (scroller.clientWidth - activeTab.offsetWidth) / 2;
+        scroller.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
       }
     }
     updateTabsOverflowHint();
@@ -117,11 +127,12 @@
 
   // Atualiza atributos data-overflow-left/right pra mostrar os gradients
   function updateTabsOverflowHint() {
-    const scroller = document.getElementById('supTabsScroller');
+    const scroller = document.getElementById("supTabsScroller");
     if (!scroller) return;
-    const left  = scroller.scrollLeft > 4;
-    const right = scroller.scrollLeft + scroller.clientWidth < scroller.scrollWidth - 4;
-    scroller.dataset.overflowLeft  = left  ? "1" : "0";
+    const left = scroller.scrollLeft > 4;
+    const right =
+      scroller.scrollLeft + scroller.clientWidth < scroller.scrollWidth - 4;
+    scroller.dataset.overflowLeft = left ? "1" : "0";
     scroller.dataset.overflowRight = right ? "1" : "0";
   }
 
@@ -173,8 +184,12 @@
         const icon = MODULO_ICONS[group.modulo] || "fa-circle-info";
         const items = group.perguntas
           .map((p) => {
-            const pText = q ? highlightText(p.pergunta, q) : escHtml(p.pergunta);
-            const aText = q ? highlightText(p.resposta, q) : escHtml(p.resposta);
+            const pText = q
+              ? highlightText(p.pergunta, q)
+              : escHtml(p.pergunta);
+            const aText = q
+              ? highlightText(p.resposta, q)
+              : escHtml(p.resposta);
             return `
               <div class="faq-item" onclick="this.classList.toggle('open')">
                 <button class="faq-question" type="button">
@@ -413,10 +428,34 @@
     const s = chamadosStats;
     const grid = document.getElementById("statsGrid");
     const items = [
-      { key: "todos",      label: "Total de chamados", value: s.total || 0,       color: "#475569", icon: "fa-folder" },
-      { key: "pendente",   label: "Pendentes",         value: s.pendente || 0,    color: "#f59e0b", icon: "fa-clock" },
-      { key: "em_analise", label: "Em análise",        value: s.em_analise || 0,  color: "#3b82f6", icon: "fa-magnifying-glass" },
-      { key: "resolvido",  label: "Resolvidos",        value: s.resolvido || 0,   color: "#16a34a", icon: "fa-circle-check" },
+      {
+        key: "todos",
+        label: "Total de chamados",
+        value: s.total || 0,
+        color: "#475569",
+        icon: "fa-folder",
+      },
+      {
+        key: "pendente",
+        label: "Pendentes",
+        value: s.pendente || 0,
+        color: "#f59e0b",
+        icon: "fa-clock",
+      },
+      {
+        key: "em_analise",
+        label: "Em análise",
+        value: s.em_analise || 0,
+        color: "#3b82f6",
+        icon: "fa-magnifying-glass",
+      },
+      {
+        key: "resolvido",
+        label: "Resolvidos",
+        value: s.resolvido || 0,
+        color: "#16a34a",
+        icon: "fa-circle-check",
+      },
     ];
     grid.innerHTML = items
       .map(
@@ -762,10 +801,12 @@
 
     // Inicia os indicadores de overflow das tabs
     updateTabsOverflowHint();
-    const scroller = document.getElementById('supTabsScroller');
+    const scroller = document.getElementById("supTabsScroller");
     if (scroller) {
-      scroller.addEventListener('scroll', updateTabsOverflowHint, { passive: true });
-      window.addEventListener('resize', updateTabsOverflowHint);
+      scroller.addEventListener("scroll", updateTabsOverflowHint, {
+        passive: true,
+      });
+      window.addEventListener("resize", updateTabsOverflowHint);
     }
   });
 })();

@@ -27,6 +27,24 @@ content %}
     </button>
   </div>
   <div class="tab-conteudo ativo" id="aba-chamados">
+    <div class="stats-row" id="stats-chamados">
+      <div class="stat-card">
+        <div class="valor" id="ch-stat-total">-</div>
+        <div class="label">Total</div>
+      </div>
+      <div class="stat-card">
+        <div class="valor" id="ch-stat-pendente" style="color:#f59e0b">-</div>
+        <div class="label">Pendentes</div>
+      </div>
+      <div class="stat-card">
+        <div class="valor" id="ch-stat-analise" style="color:#3b82f6">-</div>
+        <div class="label">Em Análise</div>
+      </div>
+      <div class="stat-card">
+        <div class="valor" id="ch-stat-resolvido" style="color:#16a34a">-</div>
+        <div class="label">Resolvidos</div>
+      </div>
+    </div>
     <div class="filtros-chamados">
       <button class="filtro-btn ativo" onclick="filtrarChamados('todos', this)">
         Todos</button
@@ -359,9 +377,16 @@ content %}
             .then(function(data) {
                 chamados = data.chamados || [];
                 chamadosStats = data.stats || {};
+                var st = chamadosStats;
+    var el;
+    el = document.getElementById('ch-stat-total'); if (el) el.textContent = st.total || 0;
+    el = document.getElementById('ch-stat-pendente'); if (el) el.textContent = st.pendente || 0;
+    el = document.getElementById('ch-stat-analise'); if (el) el.textContent = st.em_analise || 0;
+    el = document.getElementById('ch-stat-resolvido'); if (el) el.textContent = st.resolvido || 0;
                 document.getElementById('tab-count-chamados').textContent = chamadosStats.total || 0;
                 renderizarChamados();
             });
+
     }
 
     function filtrarChamados(s, btn) {
@@ -371,10 +396,63 @@ content %}
         carregarChamados();
     }
 
+    function calcularSLA(createdAt, prioridade, status) {
+        // Só mostra SLA pra pendentes e em_analise
+        if (status === 'resolvido' || status === 'cancelado') return '';
+ 
+        var partes = createdAt.split(' ');
+        if (partes.length < 2) return '';
+        var d = partes[0].split('/');
+        var h = partes[1].split(':');
+        var criado = new Date(d[2], d[1] - 1, d[0], h[0], h[1]);
+        var agora = new Date();
+        var horasDecorridas = (agora - criado) / (1000 * 60 * 60);
+ 
+        // SLAs definidos na spec
+        var slaHoras = { 'critica': 0.5, 'alta': 2, 'media': 8, 'baixa': 24 };
+        var limite = slaHoras[prioridade] || 8;
+        var percentual = (horasDecorridas / limite) * 100;
+ 
+        var cor, icone, texto;
+        if (percentual >= 100) {
+            cor = '#ef4444'; icone = '🔴'; texto = 'SLA ESTOURADO';
+        } else if (percentual >= 75) {
+            cor = '#f97316'; icone = '🟠'; texto = 'SLA em risco';
+        } else if (percentual >= 50) {
+            cor = '#f59e0b'; icone = '🟡'; texto = 'Atenção';
+        } else {
+            cor = '#16a34a'; icone = '🟢'; texto = 'No prazo';
+        }
+ 
+        var tempoStr;
+        if (horasDecorridas < 1) {
+            tempoStr = Math.floor(horasDecorridas * 60) + 'min';
+        } else if (horasDecorridas < 24) {
+            tempoStr = Math.floor(horasDecorridas) + 'h';
+        } else {
+            tempoStr = Math.floor(horasDecorridas / 24) + 'd';
+        }
+ 
+        return '<span style="font-size:11px;color:' + cor + ';font-weight:600;margin-left:8px" title="' +
+            texto + ' — ' + tempoStr + ' de ' + limite + 'h">' +
+            icone + ' ' + tempoStr + '</span>';
+    }
+
     function renderizarChamados() {
         var c = document.getElementById('lista-chamados');
         var l = chamados;
-        l.sort(function(a, b) { return b.id - a.id; });
+         var prioPeso = { 'critica': 4, 'alta': 3, 'media': 2, 'baixa': 1 };
+    l.sort(function(a, b) {
+        // Pendentes e em_analise ficam acima dos resolvidos/cancelados
+        var statusPeso = { 'pendente': 2, 'em_analise': 2, 'resolvido': 0, 'cancelado': 0 };
+        var diffStatus = (statusPeso[b.status] || 0) - (statusPeso[a.status] || 0);
+        if (diffStatus !== 0) return diffStatus;
+        // Dentro do mesmo grupo de status, ordena por prioridade
+        var diffPrio = (prioPeso[b.prioridade] || 0) - (prioPeso[a.prioridade] || 0);
+        if (diffPrio !== 0) return diffPrio;
+        // Mesmo status e prioridade: mais recente primeiro
+        return b.id - a.id;
+    });
 
         if (!l.length) {
             c.innerHTML = '<div class="vazio">Nenhum chamado encontrado.</div>';
@@ -423,8 +501,10 @@ content %}
                         escHtmlAdmin(x.usuario) +
                     '</span>' +
                     '<span class="chamado-data">' +
-                        '<span style="font-weight:600;color:var(--teal);margin-right:8px">#' + escHtmlAdmin(x.protocolo) + '</span>' +
-                        escHtmlAdmin(x.created_at) +
+                        '<span style="font-weight:600;color:var(--teal);margin-right:8px">#' +
+                          escHtmlAdmin(x.protocolo) + '</span>' +
+                          calcularSLA(x.created_at, x.prioridade, x.status) +
+                          escHtmlAdmin(x.created_at) +
                     '</span>' +
                 '</div>' +
                 '<div class="chamado-assunto">' + escHtmlAdmin(x.assunto) + '</div>' +

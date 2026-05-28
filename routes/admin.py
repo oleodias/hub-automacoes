@@ -18,8 +18,8 @@ admin_bp = Blueprint('admin', __name__)
 @admin_required
 def admin():
     return render_template('admin.html', 
-                           usuario_nome=session.get('usuario_nome'),
-                           modulos=MODULOS_HUB)
+    usuario_nome=session.get('usuario_nome'),
+    modulos=MODULOS_HUB)
 
 # ══════════════════════════════════════════════════════════════
 # GESTÃO DE USUÁRIOS
