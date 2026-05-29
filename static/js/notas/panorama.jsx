@@ -39,22 +39,19 @@ const PanoramaView = ({ expectativas, notas, today, viewMonth, onJumpToMonth }) 
   const [highlight, setHighlight] = puseState({ row: null, col: null });
   const [hoveredCell, setHoveredCell] = puseState(null); // {expId, m, status}
 
-  // ---- histórico real vindo do backend: { expId: { mes1-12: status } }
+  // histórico vindo da API: { fornecedor_id: { mes: status } }
   const [historico, setHistorico] = puseState({});
   puseEffect(() => {
     let cancelled = false;
     fetch(`/notas/api/panorama?ano=${year}`)
-      .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
-      .then(data => {
+      .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then((data) => {
         if (cancelled) return;
         const map = {};
-        data.forEach(row => { map[row.fornecedor_id] = row.mensal; });
+        data.forEach((row) => { map[row.fornecedor_id] = row.mensal; });
         setHistorico(map);
       })
-      .catch(err => {
+      .catch((err) => {
         if (cancelled) return;
         console.error("Erro ao carregar panorama:", err);
         setHistorico({});
@@ -62,7 +59,7 @@ const PanoramaView = ({ expectativas, notas, today, viewMonth, onJumpToMonth }) 
     return () => { cancelled = true; };
   }, [year]);
 
-  // historicalStatus agora lê do estado 'historico' (dados reais do PostgreSQL)
+  // historicalStatus agora lê do estado (dados reais do PostgreSQL)
   const historicalStatus = (expId, _year, monthIdx0) => {
     const mensal = historico[expId];
     if (!mensal) return "na";

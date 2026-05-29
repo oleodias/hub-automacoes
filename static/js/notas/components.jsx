@@ -1,4 +1,4 @@
-/* global React, ReactDOM, CategoryIcon, UnitBadge, RetentionMark, formatBRL, dayLabel, statusOf, daysLate, urgencyTier */
+/* global React, ReactDOM, CategoryIcon, UnitBadge, RetentionMark, RetTags, RetentionPicker, retNome, retSort, formatBRL, dayLabel, statusOf, daysLate, urgencyTier */
 // Card + Modals — Controle de Notas Ciamed
 
 const { useState: cuseState, useRef: cuseRef, useEffect: cuseEffect } = React;
@@ -61,10 +61,8 @@ const NotaCard = ({
 
       <div className="card-row card-bottom">
         <UnitBadge unidade={nota.unidade} />
-        {nota.retencao && (
-          <span className="card-ret-pill" title="Retenção (INSS/ISSQN/IRRF/PIS/COFINS/CSLL)">
-            <RetentionMark tip="" /> retenção
-          </span>
+        {nota.retencao && nota.retencoes && nota.retencoes.length > 0 && (
+          <RetTags tipos={nota.retencoes} max={2} />
         )}
         {status === "recebida" && nota.valor != null && (
           <span className="card-valor">R$ {formatBRL(nota.valor)}</span>
@@ -99,7 +97,7 @@ const RegisterModal = ({ nota, today, onConfirm, onCancel }) => {
   const [dataRecebida, setDataRecebida] = cuseState(dataDefault);
   const [nfNumero, setNfNumero] = cuseState(nota.nfNumero || "");
   const [valor, setValor] = cuseState(nota.valor != null ? String(nota.valor).replace(".", ",") : "");
-  const [retencao, setRetencao] = cuseState(!!nota.retencao);
+  const [retencoes, setRetencoes] = cuseState(Array.isArray(nota.retencoes) ? [...nota.retencoes] : []);
   const nfRef = cuseRef(null);
 
   cuseEffect(() => {
@@ -120,7 +118,8 @@ const RegisterModal = ({ nota, today, onConfirm, onCancel }) => {
       recebidaEm: new Date(y, m - 1, d),
       nfNumero: nfNumero.trim(),
       valor: isFinite(v) ? v : null,
-      retencao,
+      retencoes: retSort(retencoes),
+      retencao: retencoes.length > 0,
     });
   };
 
@@ -154,12 +153,14 @@ const RegisterModal = ({ nota, today, onConfirm, onCancel }) => {
               <input type="text" inputMode="decimal" placeholder="0,00" value={valor} onChange={(e) => setValor(e.target.value)} />
             </div>
           </label>
-          <label className="field">
-            <span className="lbl">Retenção?</span>
-            <div className="seg">
-              <button type="button" className={!retencao ? "on" : ""} onClick={() => setRetencao(false)}>Não</button>
-              <button type="button" className={retencao ? "on ret" : ""} onClick={() => setRetencao(true)}>Sim — sinalizar</button>
-            </div>
+          <label className="field span-2">
+            <span className="lbl">Retenções <em>(marque os tipos aplicáveis)</em></span>
+            <RetentionPicker value={retencoes} onChange={setRetencoes} />
+            <span className="ret-help">
+              {retencoes.length === 0
+                ? "Sem retenção nesta nota."
+                : `${retencoes.length} tipo${retencoes.length > 1 ? "s" : ""} · ${retSort(retencoes).map(retNome).join(", ")}`}
+            </span>
           </label>
         </div>
 
@@ -186,7 +187,7 @@ const AvulsaModal = ({ today, onConfirm, onCancel }) => {
   const [dataRecebida, setDataRecebida] = cuseState(today.toISOString().slice(0, 10));
   const [nfNumero, setNfNumero] = cuseState("");
   const [valor, setValor] = cuseState("");
-  const [retencao, setRetencao] = cuseState(false);
+  const [retencoes, setRetencoes] = cuseState([]);
   const [obs, setObs] = cuseState("");
   const fornRef = cuseRef(null);
 
@@ -209,7 +210,9 @@ const AvulsaModal = ({ today, onConfirm, onCancel }) => {
       diaEsperado: 0,
       nfNumero: nfNumero.trim(),
       valor: isFinite(v) ? v : null,
-      retencao, obs,
+      retencoes: retSort(retencoes),
+      retencao: retencoes.length > 0,
+      obs,
       avulsa: true,
     });
   };
@@ -255,12 +258,9 @@ const AvulsaModal = ({ today, onConfirm, onCancel }) => {
               <input type="text" inputMode="decimal" placeholder="0,00" value={valor} onChange={(e) => setValor(e.target.value)} />
             </div>
           </label>
-          <label className="field">
-            <span className="lbl">Retenção?</span>
-            <div className="seg">
-              <button type="button" className={!retencao ? "on" : ""} onClick={() => setRetencao(false)}>Não</button>
-              <button type="button" className={retencao ? "on ret" : ""} onClick={() => setRetencao(true)}>Sim</button>
-            </div>
+          <label className="field span-2">
+            <span className="lbl">Retenções <em>(marque os tipos aplicáveis)</em></span>
+            <RetentionPicker value={retencoes} onChange={setRetencoes} />
           </label>
           <label className="field span-2">
             <span className="lbl">Observações</span>
@@ -317,7 +317,19 @@ const DetailDrawer = ({ nota, today, onClose, onUpdate, onUnreceive }) => {
           <dt>Recebida em</dt><dd className="mono">{nota.recebidaEm ? nota.recebidaEm.toLocaleDateString("pt-BR") : "—"}</dd>
           <dt>Nº NF</dt><dd className="mono">{nota.nfNumero || "—"}</dd>
           <dt>Valor líquido</dt><dd className="mono">{nota.valor != null ? `R$ ${formatBRL(nota.valor)}` : "—"}</dd>
-          <dt>Retenção</dt><dd>{nota.retencao ? <span className="ret-inline"><RetentionMark tip="" /> Sim — atenção contabilidade</span> : "Não"}</dd>
+          <dt>Retenção</dt>
+          <dd>
+            {nota.retencao && nota.retencoes && nota.retencoes.length > 0 ? (
+              <div className="ret-detail">
+                <span className="ret-inline"><RetentionMark tip="" /> {nota.retencoes.length} tipo{nota.retencoes.length > 1 ? "s" : ""} — atenção contabilidade</span>
+                <ul className="ret-detail-list">
+                  {retSort(nota.retencoes).map((t) => (
+                    <li key={t}><span className="ret-tag">{window.retLabel ? window.retLabel(t) : t}</span> <span className="ret-detail-nome">{retNome(t)}</span></li>
+                  ))}
+                </ul>
+              </div>
+            ) : "Não"}
+          </dd>
           {nota.obs && (<><dt>Observações</dt><dd>{nota.obs}</dd></>)}
         </dl>
 

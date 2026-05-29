@@ -107,6 +107,72 @@ const RetentionMark = ({ tip = "Nota com retenção" }) => (
   </span>
 );
 
+// ============================================================
+// Retenção — tipos, rótulos e átomos reutilizáveis
+// ============================================================
+const RET_LABELS = { inss: "INSS", iss: "ISS", irrf: "IRRF", pis: "PIS", cofins: "COFINS", csll: "CSLL" };
+const RET_NOMES = { inss: "INSS", iss: "ISS (ISSQN)", irrf: "IRRF", pis: "PIS", cofins: "COFINS", csll: "CSLL" };
+const retLabel = (id) => RET_LABELS[id] || String(id).toUpperCase();
+const retNome = (id) => RET_NOMES[id] || String(id).toUpperCase();
+const retTipos = () => (window.CIAMED && window.CIAMED.RETENCAO_TIPOS) || [];
+// ordena um array de ids na ordem canônica dos tipos
+const retSort = (ids = []) => {
+  const order = retTipos().map((t) => t.id);
+  return [...ids].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+};
+
+// Exibição compacta — pequenas tags. Agrupa elegantemente em "+N" se passar de `max`.
+const RetTags = ({ tipos = [], max = 3 }) => {
+  if (!tipos || tipos.length === 0) return null;
+  const ordered = retSort(tipos);
+  const shown = ordered.slice(0, max);
+  const extra = ordered.length - shown.length;
+  return (
+    <span className="ret-tags" title={ordered.map(retNome).join(" · ")}>
+      {shown.map((t) => (
+        <span key={t} className="ret-tag">{retLabel(t)}</span>
+      ))}
+      {extra > 0 && <span className="ret-tag ret-tag-more">+{extra}</span>}
+    </span>
+  );
+};
+
+// Seletor de múltipla escolha — 6 chips selecionáveis
+const RetentionPicker = ({ value = [], onChange }) => {
+  const set = new Set(value);
+  const toggle = (id) => {
+    const next = new Set(set);
+    next.has(id) ? next.delete(id) : next.add(id);
+    onChange(retSort([...next]));
+  };
+  return (
+    <div className="ret-picker" role="group" aria-label="Tipos de retenção">
+      {retTipos().map((t) => {
+        const on = set.has(t.id);
+        return (
+          <button
+            type="button"
+            key={t.id}
+            className={`ret-chip ${on ? "on" : ""}`}
+            onClick={() => toggle(t.id)}
+            aria-pressed={on}
+            title={t.nome}
+          >
+            <span className="ret-chip-box" aria-hidden="true">
+              {on && (
+                <svg width="10" height="10" viewBox="0 0 12 12">
+                  <path d="M2 6.4 L4.8 9 L10 3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </span>
+            {t.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
 // Helpers
 const formatBRL = (v) =>
   v == null ? "—" : v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -128,5 +194,6 @@ const urgencyTier = (days) => {
   return "high";
 };
 
-Object.assign(window, { CategoryIcon, UnitBadge, RetentionMark, ICONS,
+Object.assign(window, { CategoryIcon, UnitBadge, RetentionMark, RetTags, RetentionPicker, ICONS,
+  RET_LABELS, RET_NOMES, retLabel, retNome, retTipos, retSort,
   formatBRL, dayLabel, sameDay, statusOf, daysLate, urgencyTier });

@@ -1,20 +1,27 @@
-/* global React, ReactDOM, CategoryIcon, UnitBadge, RetentionMark, formatBRL, dayLabel, NkOverlay */
+/* global React, ReactDOM, CategoryIcon, UnitBadge, RetentionMark, RetTags, RetentionPicker, retSort, retNome, formatBRL, dayLabel, NkOverlay */
 // Fornecedores view — Controle de Notas Ciamed
+// REDESIGN (Parte 1) — visual. CRUD roda em estado local (mesmo shape da API).
 
 const { useState: fuseState, useMemo: fuseMemo, useRef: fuseRef, useEffect: fuseEffect } = React;
 
-// Fallback caso components.jsx ainda não tenha carregado.
 const FOverlay = (typeof window !== "undefined" && window.NkOverlay)
   ? window.NkOverlay
   : ({ children }) => (ReactDOM && ReactDOM.createPortal)
       ? ReactDOM.createPortal(children, document.body)
       : children;
 
+const slugId = (data) =>
+  "exp-" +
+  `${data.fornecedor}-${data.unidade}-${data.diaEsperado}-${Date.now()}`
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
 // ============================================================
 // FornecedoresView
 // ============================================================
 const FornecedoresView = ({ expectativas, reloadExpectativas, today, onJumpToKanban }) => {
-  const { UNIDADES, CATEGORIAS, pontualidade } = window.CIAMED;
+  const { UNIDADES, CATEGORIAS } = window.CIAMED;
 
   const [busca, setBusca] = fuseState("");
   const [filtroUnidade, setFiltroUnidade] = fuseState("todas");
@@ -23,7 +30,6 @@ const FornecedoresView = ({ expectativas, reloadExpectativas, today, onJumpToKan
   const [agrupado, setAgrupado] = fuseState(true);
   const [editing, setEditing] = fuseState(null); // expectativa object or 'new'
   const [confirmDelete, setConfirmDelete] = fuseState(null);
-  const [savingId, setSavingId] = fuseState(null); // feedback visual durante chamadas à API
   const buscaRef = fuseRef(null);
 
   const filtered = fuseMemo(() => {
@@ -62,7 +68,6 @@ const FornecedoresView = ({ expectativas, reloadExpectativas, today, onJumpToKan
   }, [expectativas]);
 
   const togglePause = async (exp) => {
-    setSavingId(exp.id);
     try {
       const r = await fetch(`/notas/api/fornecedores/${exp.id}/toggle`, { method: "PATCH" });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -70,12 +75,10 @@ const FornecedoresView = ({ expectativas, reloadExpectativas, today, onJumpToKan
     } catch (err) {
       console.error(err);
       alert("Erro ao pausar/reativar: " + err.message);
-    } finally {
-      setSavingId(null);
     }
   };
 
-  // mapToApi: converte o shape do nk-modal (camelCase) pro shape que o backend espera
+  // converte camelCase do modal → snake_case esperado pelo backend
   const mapToApi = (data) => ({
     fornecedor: data.fornecedor,
     cnpj: data.cnpj,
@@ -83,26 +86,24 @@ const FornecedoresView = ({ expectativas, reloadExpectativas, today, onJumpToKan
     unidade_id: data.unidade,
     dia_esperado: data.diaEsperado,
     valor_medio: data.valorMedio,
-    retencao_padrao: data.retencaoPadrao,
+    retencao_padrao: Array.isArray(data.retencoesPadrao) && data.retencoesPadrao.length > 0,
+    retencoes_padrao: Array.isArray(data.retencoesPadrao) ? data.retencoesPadrao : [],
     observacoes: data.observacoes,
   });
 
   const saveExpectativa = async (data) => {
     try {
-      const isNew = (editing === "new");
+      const isNew = editing === "new";
       const url = isNew
         ? "/notas/api/fornecedores"
         : `/notas/api/fornecedores/${editing.id}`;
-      const method = isNew ? "POST" : "PUT";
-
       const r = await fetch(url, {
-        method,
+        method: isNew ? "POST" : "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(mapToApi(data)),
       });
       const resp = await r.json();
       if (!r.ok) throw new Error(resp.erro || `HTTP ${r.status}`);
-
       setEditing(null);
       await reloadExpectativas();
     } catch (err) {
@@ -126,7 +127,6 @@ const FornecedoresView = ({ expectativas, reloadExpectativas, today, onJumpToKan
     }
   };
 
-  // Empty state
   const hasFilters = busca || filtroUnidade !== "todas" || filtroCategoria !== "todas" || filtroStatus !== "todos";
 
   return (
@@ -134,7 +134,7 @@ const FornecedoresView = ({ expectativas, reloadExpectativas, today, onJumpToKan
       {/* ============= HEADER ============= */}
       <header className="forn-header">
         <div className="forn-title-row">
-          <div>
+          <div className="forn-title-text">
             <div className="page-eyebrow">Cadastro · expectativas recorrentes</div>
             <h2 className="page-title">Fornecedores</h2>
             <p className="page-lede">
@@ -143,29 +143,32 @@ const FornecedoresView = ({ expectativas, reloadExpectativas, today, onJumpToKan
             </p>
           </div>
           <button className="btn btn-primary btn-tall" onClick={() => setEditing("new")}>
-            <span style={{ fontFamily: "ui-monospace", fontWeight: 700, marginRight: 6 }}>+</span>
+            <span className="btn-plus" aria-hidden="true">+</span>
             Novo fornecedor
           </button>
         </div>
 
         <div className="forn-stats">
-          <FStat n={stats.fornecedoresUnicos} l="fornecedores únicos" />
-          <FStat n={stats.ativos} l="expectativas ativas" tone="ok" />
+          <FStat n={stats.fornecedoresUnicos} l="fornecedores únicos" primary />
+          <FStat n={stats.ativos} l="expectativas ativas" tone="ok" primary />
+          <span className="fstat-sep"></span>
           {stats.pausados > 0 && <FStat n={stats.pausados} l="pausadas" tone="muted" />}
           <FStat n={stats.comRet} l="com retenção" tone="ret" />
-          {stats.semCnpj > 0 && <FStat n={stats.semCnpj} l="sem CNPJ cadastrado" tone="warn" />}
+          {stats.semCnpj > 0 && <FStat n={stats.semCnpj} l="sem CNPJ" tone="warn" />}
         </div>
 
-        {/* filters */}
+        {/* toolbar */}
         <div className="forn-filters">
-          <div className="search-wrap searchbar-mid">
-            <svg className="search-icon" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-              <circle cx="6" cy="6" r="4" fill="none" stroke="currentColor" strokeWidth="1.4" />
-              <line x1="9" y1="9" x2="12.5" y2="12.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+          <div className="tool-search searchbar-mid">
+            <svg className="search-icon" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true">
+              <circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+              <line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
             <input ref={buscaRef} type="text" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar fornecedor ou CNPJ…" />
             {busca && <button className="search-clear" onClick={() => setBusca("")}>×</button>}
           </div>
+
+          <div className="tool-divider"></div>
 
           <div className="chips">
             {[{ id: "todas", nome: "Todas" }, ...UNIDADES].map(u => (
@@ -181,6 +184,8 @@ const FornecedoresView = ({ expectativas, reloadExpectativas, today, onJumpToKan
             {CATEGORIAS.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
           </select>
 
+          <div className="tool-divider"></div>
+
           <div className="seg seg-sm">
             <button className={filtroStatus === "todos" ? "on" : ""} onClick={() => setFiltroStatus("todos")}>Todos</button>
             <button className={filtroStatus === "ativo" ? "on" : ""} onClick={() => setFiltroStatus("ativo")}>Ativos</button>
@@ -189,7 +194,7 @@ const FornecedoresView = ({ expectativas, reloadExpectativas, today, onJumpToKan
 
           <label className="toggle-group" title="Agrupar várias unidades do mesmo fornecedor">
             <input type="checkbox" checked={agrupado} onChange={(e) => setAgrupado(e.target.checked)} />
-            <span>Agrupar por fornecedor</span>
+            <span>Agrupar</span>
           </label>
         </div>
       </header>
@@ -274,8 +279,8 @@ const FornecedoresView = ({ expectativas, reloadExpectativas, today, onJumpToKan
   );
 };
 
-const FStat = ({ n, l, tone }) => (
-  <div className={`fstat fstat-${tone || "default"}`}>
+const FStat = ({ n, l, tone, primary }) => (
+  <div className={`fstat fstat-${tone || "default"} ${primary ? "fstat-primary" : ""}`}>
     <span className="fstat-n mono">{n}</span>
     <span className="fstat-l">{l}</span>
   </div>
@@ -288,7 +293,6 @@ const FRow = ({ exp, today, grouped, onEdit, onTogglePause, onDelete, onJumpToKa
   const { UNIDADES, CATEGORIAS } = window.CIAMED;
   const cat = CATEGORIAS.find(c => c.id === exp.categoria);
   const unit = UNIDADES.find(u => u.id === exp.unidade);
-  // pontualidade vem do backend (campo no objeto). null = ainda sem histórico.
   const pont = (exp.pontualidade != null) ? exp.pontualidade : 1;
   const pontPct = Math.round(pont * 100);
   const pontClass = pontPct >= 95 ? "ok" : pontPct >= 80 ? "med" : "low";
@@ -313,8 +317,8 @@ const FRow = ({ exp, today, grouped, onEdit, onTogglePause, onDelete, onJumpToKa
         {exp.valorMedio != null ? <>R$&nbsp;{formatBRL(exp.valorMedio)}</> : <span className="muted">—</span>}
       </span>
       <span className="c c-ret">
-        {exp.retencaoPadrao
-          ? <span className="card-ret-pill"><RetentionMark tip="" /> sim</span>
+        {exp.retencaoPadrao && exp.retencoesPadrao && exp.retencoesPadrao.length > 0
+          ? <RetTags tipos={exp.retencoesPadrao} max={3} />
           : <span className="muted">—</span>}
       </span>
       <span className="c c-pont">
@@ -368,7 +372,7 @@ const ExpectativaModal = ({ initial, onConfirm, onCancel }) => {
   const [unidade, setUnidade] = fuseState(initial?.unidade || "matriz");
   const [diaEsperado, setDiaEsperado] = fuseState(initial?.diaEsperado || 1);
   const [valorMedio, setValorMedio] = fuseState(initial?.valorMedio != null ? String(initial.valorMedio).replace(".", ",") : "");
-  const [retencaoPadrao, setRetencaoPadrao] = fuseState(!!initial?.retencaoPadrao);
+  const [retencoesPadrao, setRetencoesPadrao] = fuseState(Array.isArray(initial?.retencoesPadrao) ? [...initial.retencoesPadrao] : []);
   const [observacoes, setObservacoes] = fuseState(initial?.observacoes || "");
   const fornRef = fuseRef(null);
 
@@ -389,7 +393,8 @@ const ExpectativaModal = ({ initial, onConfirm, onCancel }) => {
       categoria, unidade,
       diaEsperado: Math.max(1, Math.min(31, Number(diaEsperado) || 1)),
       valorMedio: isFinite(v) ? v : null,
-      retencaoPadrao,
+      retencaoPadrao: retencoesPadrao.length > 0,
+      retencoesPadrao: retSort(retencoesPadrao),
       observacoes,
     });
   };
@@ -438,11 +443,13 @@ const ExpectativaModal = ({ initial, onConfirm, onCancel }) => {
             </div>
           </label>
           <label className="field span-2">
-            <span className="lbl">Retenção padrão</span>
-            <div className="seg">
-              <button type="button" className={!retencaoPadrao ? "on" : ""} onClick={() => setRetencaoPadrao(false)}>Não</button>
-              <button type="button" className={retencaoPadrao ? "on ret" : ""} onClick={() => setRetencaoPadrao(true)}>Sim — toda nota desse fornecedor tem retenção</button>
-            </div>
+            <span className="lbl">Retenção padrão <em>(tipos já marcados ao gerar a nota do mês)</em></span>
+            <RetentionPicker value={retencoesPadrao} onChange={setRetencoesPadrao} />
+            <span className="ret-help">
+              {retencoesPadrao.length === 0
+                ? "Sem retenção padrão — as notas desse fornecedor nascem sem tipos marcados."
+                : `Toda nota desse fornecedor nasce com: ${retSort(retencoesPadrao).map(retNome).join(", ")}`}
+            </span>
           </label>
           <label className="field span-2">
             <span className="lbl">Observações</span>

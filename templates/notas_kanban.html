@@ -10,33 +10,12 @@
 
 {% block content %}
   {# ============================================================
-     Cabeçalho de página padrão do Hub (botão voltar + título +
-     badge de módulo). Vive FORA do #root para manter consistência
-     visual com cadastro_fornecedor.html e demais páginas.
-     ============================================================ #}
-  <div class="page-header">
-    <div class="left">
-      <button
-        class="btn-back"
-        onclick="window.location.href = '/'"
-        title="Voltar ao Painel"
-      >
-        <i class="fa-solid fa-arrow-left" style="font-size: 13px"></i>
-      </button>
-      <div class="page-title">
-        Controle de Notas Fiscais
-        <span>Módulo Fiscal · Kanban · Fornecedores · Panorama</span>
-      </div>
-    </div>
-    <span class="badge-api">
-      <i class="fa-solid fa-layer-group me-1"></i>SPA Interna
-    </span>
-  </div>
+     Container do React app — SPA com 4 abas internas:
+     Kanban · Fornecedores · Panorama · Fechamento
 
-  {# ============================================================
-     Container do React app — SPA com 3 abas internas:
-     Kanban · Fornecedores · Panorama (navegação interna via
-     estado React, sem trocar de URL).
+     O cabeçalho com botão "voltar" + nome do módulo + abas vive
+     DENTRO do React (componente TopBar), pra evitar duplicação
+     com o header da página.
      ============================================================ #}
   <div id="root"></div>
 {% endblock %}
@@ -48,18 +27,21 @@
   <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
 
   {# ============================================================
-     Ordem de carga IMPORTA:
-       1. mock.js        → window.CIAMED (TODAY, UNIDADES, CATEGORIAS)
-       2. icons.jsx      → CategoryIcon, UnitBadge, statusOf, helpers
-       3. components.jsx → NotaCard, RegisterModal, AvulsaModal, DetailDrawer
-       4. fornecedores.jsx → FornecedoresView, ConfirmModal
-       5. panorama.jsx   → PanoramaView
-       6. app.jsx        → App principal, monta no #root
+     Ordem de carga IMPORTA — cada arquivo registra no window.CIAMED
+     ou no window os símbolos que o próximo arquivo consome:
+       1. mock.js         → constantes (UNIDADES, CATEGORIAS, RETENCAO_TIPOS, helpers)
+       2. icons.jsx       → CategoryIcon, UnitBadge, RetTags, RetentionPicker
+       3. components.jsx  → NotaCard, RegisterModal, AvulsaModal, DetailDrawer
+       4. fornecedores.jsx → FornecedoresView
+       5. panorama.jsx    → PanoramaView
+       6. fechamento.jsx  → FechamentoView   ← faltava no v3 do Claude Design!
+       7. app.jsx         → App principal, monta no #root
      ============================================================ #}
   <script src="{{ url_for('static', filename='js/notas/mock.js') }}"></script>
   <script type="text/babel" src="{{ url_for('static', filename='js/notas/icons.jsx') }}"></script>
   <script type="text/babel" src="{{ url_for('static', filename='js/notas/components.jsx') }}"></script>
   <script type="text/babel" src="{{ url_for('static', filename='js/notas/fornecedores.jsx') }}"></script>
   <script type="text/babel" src="{{ url_for('static', filename='js/notas/panorama.jsx') }}"></script>
+  <script type="text/babel" src="{{ url_for('static', filename='js/notas/fechamento.jsx') }}"></script>
   <script type="text/babel" src="{{ url_for('static', filename='js/notas/app.jsx') }}"></script>
 {% endblock %}
