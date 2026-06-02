@@ -55,14 +55,15 @@ def _submissao_to_dict(sub):
 def init_db():
     """
     Cria todas as tabelas definidas em models.py no PostgreSQL.
-    Chame isso uma vez ao subir o Flask.
 
-    NOTA: quando adotarmos Alembic (migrations), esta função será
-    substituída pelo comando 'alembic upgrade head'. Por enquanto,
-    ela garante que as tabelas existam no banco.
+    ATENÇÃO: esta função NÃO é mais chamada na subida do app. O schema
+    agora é criado e versionado pelas migrations do Alembic
+    ('alembic upgrade head'), que são a única fonte de verdade da
+    estrutura do banco. Ela fica aqui apenas como utilitário pontual
+    (ex.: testes locais rápidos); em produção, use sempre o Alembic.
     """
     db.create_all()
-    logger.info("Banco PostgreSQL inicializado (tabelas verificadas).")
+    logger.info("Banco PostgreSQL inicializado via db.create_all() (uso manual).")
 
 
 # ══════════════════════════════════════════════════════════════

@@ -18,7 +18,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from extensions import db
-import banco_cadastros
 from utils.logging_config import configurar_logging
 
 
@@ -185,11 +184,12 @@ def injetar_usuario():
 
 
 # ══════════════════════════════════════════════════════════════
-# INICIALIZAR BANCO E SUBIR SERVIDOR
+# SUBIR SERVIDOR
 # ══════════════════════════════════════════════════════════════
-
-with app.app_context():
-    banco_cadastros.init_db()
+# O schema do banco é criado/atualizado pelas migrations do Alembic
+# (`alembic upgrade head`), NÃO mais por db.create_all() na subida.
+# Assim o Alembic passa a ser a única fonte de verdade da estrutura
+# do banco — sem corrida de criação de schema entre múltiplos workers.
 
 if __name__ == '__main__':
     print("🚀 SERVIDOR ONLINE! Acesse pelo IP da sua máquina.")
