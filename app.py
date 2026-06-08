@@ -27,7 +27,20 @@ from utils.logging_config import configurar_logging
 # ══════════════════════════════════════════════════════════════
 
 app = Flask(__name__)
-app.secret_key = os.getenv('FLASK_SECRET_KEY', 'chave_reserva_caso_falhe')
+
+# Ambiente: "dev" (seu PC) ou "prod" (servidor). Controla o modo debug.
+AMBIENTE = os.getenv('AMBIENTE', 'prod').strip().lower()
+
+# Chave secreta: assina os cookies de login. É OBRIGATÓRIA e NÃO tem
+# valor de reserva no código (uma reserva pública deixaria forjar logins).
+# Se faltar no .env, o app não sobe — é melhor falhar agora do que rodar inseguro.
+app.secret_key = os.getenv('FLASK_SECRET_KEY')
+if not app.secret_key:
+    raise RuntimeError(
+        "FLASK_SECRET_KEY não definida. Crie a variável no arquivo .env "
+        "(ex.: gere uma com `python -c \"import secrets; print(secrets.token_hex(32))\"`). "
+        "O app não sobe sem ela por segurança."
+    )
 
 # Sessão expira após 8 horas de inatividade
 app.permanent_session_lifetime = timedelta(hours=1)
@@ -192,5 +205,16 @@ def injetar_usuario():
 # do banco — sem corrida de criação de schema entre múltiplos workers.
 
 if __name__ == '__main__':
-    print("🚀 SERVIDOR ONLINE! Acesse pelo IP da sua máquina.")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # ATENÇÃO (deploy): este servidor embutido do Flask é só para
+    # desenvolvimento. Em produção, NÃO use `python app.py` — sirva o app
+    # com Waitress (Windows) ou Gunicorn (Linux) atrás do Nginx com HTTPS.
+    # Ex.: waitress-serve --listen=127.0.0.1:5000 app:app
+    #
+    # O modo debug SÓ liga em desenvolvimento (AMBIENTE=dev no .env).
+    # Com debug ligado e exposto, um erro vira um console remoto no servidor.
+    debug = (AMBIENTE == 'dev')
+    if debug:
+        print("🚀 SERVIDOR ONLINE (modo DEV/debug). Acesse pelo IP da sua máquina.")
+    else:
+        print("🚀 SERVIDOR ONLINE (modo PROD, debug desligado).")
+    app.run(host='0.0.0.0', port=5000, debug=debug)
