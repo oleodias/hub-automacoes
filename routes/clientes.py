@@ -24,6 +24,7 @@ import uuid as uuid_lib
 import banco_cadastros
 from utils.cnpj_ws import consultar_cnpj_ws
 from utils.fila import cadastro_entrar, cadastro_liberar_proximo
+from utils.n8n_security import resume_url_confiavel
 from utils.auth import permissao_required
 from utils.rastreio import iniciar_execucao_robo, finalizar_execucao_robo
 from automacoes.clientes import cadastro_novo
@@ -255,6 +256,10 @@ def confirmar_acao():
 
     if not resume_url:
         return "Parâmetro resumeUrl ausente.", 400
+
+    # Anti-SSRF (V-04): só seguimos se a resume_url for do N8N oficial.
+    if not resume_url_confiavel(resume_url):
+        return "Parâmetro resumeUrl inválido.", 400
 
     try:
         if acao == 'aprovar':
@@ -525,6 +530,10 @@ def fila_cadastro_entrar():
     resume_url = dados.get('resume_url', '')
     if not resume_url:
         return jsonify({'erro': 'resume_url obrigatório'}), 400
+
+    # Anti-SSRF (V-04): a URL é guardada e depois "visitada" pelo Hub.
+    if not resume_url_confiavel(resume_url):
+        return jsonify({'erro': 'resume_url inválida'}), 400
 
     novo_id, posicao, sua_vez = cadastro_entrar(resume_url)
     return jsonify({'id': novo_id, 'posicao': posicao, 'sua_vez': sua_vez})

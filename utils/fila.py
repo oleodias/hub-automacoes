@@ -133,6 +133,12 @@ def _liberar_proximo_cadastro():
 
     def chamar_n8n():
         try:
+            # Defesa em profundidade anti-SSRF (V-04): mesmo que algo tenha
+            # entrado na fila, só "visitamos" URLs do N8N oficial.
+            from utils.n8n_security import resume_url_confiavel
+            if not resume_url_confiavel(proximo['resume_url']):
+                logger.error(f"[FILA] resume_url recusada (anti-SSRF) | ID: {proximo['id']}")
+                return
             # Espera 3 segundos para o n8n ter tempo de chegar no Wait node.
             # Sem esse delay, o Flask tenta acordar o Wait ANTES dele começar
             # a escutar (race condition entre o response do HTTP e o início do Wait).
