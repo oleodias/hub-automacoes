@@ -23,7 +23,10 @@ import uuid as uuid_lib
 
 import banco_cadastros
 from utils.cnpj_ws import consultar_cnpj_ws
-from utils.fila import cadastro_entrar, cadastro_liberar_proximo
+from utils.fila import (
+    cadastro_entrar, cadastro_liberar_proximo,
+    fila_cadastro_status_dict, fila_cadastro_reset as _fila_cadastro_reset,
+)
 from utils.n8n_security import resume_url_confiavel, exigir_token_n8n
 from utils.auth import permissao_required
 from utils.rastreio import iniciar_execucao_robo, finalizar_execucao_robo
@@ -554,15 +557,7 @@ def fila_cadastro_liberar():
 @clientes_bp.route('/fila_cadastro/status', methods=['GET'])
 def fila_cadastro_status():
     """Mostra o estado atual da fila de cadastro — útil pra debug."""
-    from utils.fila import _fila_cadastro, _cadastro_em_execucao
-    return jsonify({
-        "em_execucao": _cadastro_em_execucao,
-        "tamanho_fila": len(_fila_cadastro),
-        "itens": [
-            {"id": item["id"], "resume_url": item["resume_url"][:80] + "..."}
-            for item in _fila_cadastro
-        ]
-    })
+    return jsonify(fila_cadastro_status_dict())
 
 
 @clientes_bp.route('/fila_cadastro/reset', methods=['POST'])
@@ -573,20 +568,12 @@ def fila_cadastro_reset():
       - Tem execuções fantasma que nunca vão terminar
 
     O que faz:
-      1. Limpa toda a fila (remove todos os itens pendentes)
-      2. Reseta a flag _cadastro_em_execucao pra False
-      3. NÃO acorda nenhum Wait node do N8N (as execuções
+      1. Remove TODAS as linhas da fila de cadastro no banco
+         (pendentes e a que estava executando)
+      2. NÃO acorda nenhum Wait node do N8N (as execuções
          pendentes no N8N vão expirar sozinhas pelo timeout)
     """
-    from utils.fila import _fila_cadastro, _fila_cadastro_lock
-    import utils.fila as fila_module
-
-    with _fila_cadastro_lock:
-        qtd_removidos = len(_fila_cadastro)
-        _fila_cadastro.clear()
-        fila_module._cadastro_em_execucao = False
-
-    logger.warning(f"[FILA] ⚠️ RESET forçado! {qtd_removidos} item(ns) removido(s) da fila.")
+    qtd_removidos = _fila_cadastro_reset()
 
     return jsonify({
         "status": "ok",

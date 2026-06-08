@@ -224,7 +224,55 @@ class Execucao(db.Model):
 
     def __repr__(self):
         return f'<Execucao {self.id} | {self.robo} | {self.status}>'
-    
+
+
+# ══════════════════════════════════════════════════════════════
+# MODELO: Fila de Execução (controle "um robô por vez")
+# ══════════════════════════════════════════════════════════════
+
+class FilaExecucao(db.Model):
+    """
+    Fila persistente no banco para garantir "um robô por vez", mesmo com
+    vários workers/containers (resolve A-01).
+
+    Há duas filas, separadas pela coluna 'recurso':
+      - 'rpa'      → robôs de itens / MDF / fornecedor
+      - 'cadastro' → fluxo de cadastro de clientes (N8N)
+
+    Como a "vez" é definida no banco (e não na memória de um processo),
+    qualquer worker enxerga a mesma fila. A coluna 'iniciado_em' alimenta
+    o watchdog: uma execução parada além do tempo-limite é considerada
+    travada e liberada automaticamente.
+    """
+
+    __tablename__ = 'fila_execucao'
+
+    # id autoincrement define a ORDEM (FIFO) de chegada.
+    id = db.Column(db.BigInteger, primary_key=True)
+
+    # token: identificador público entregue a quem entra na fila.
+    token = db.Column(db.String(36), nullable=False, unique=True)
+
+    # recurso disputado: 'rpa' ou 'cadastro'
+    recurso = db.Column(db.String(30), nullable=False)
+
+    # status: 'aguardando' ou 'executando'
+    status = db.Column(db.String(20), nullable=False, default='aguardando')
+
+    # usado só pela fila de cadastro (URL que acorda o Wait node do N8N)
+    resume_url = db.Column(db.Text, nullable=True)
+
+    criado_em   = db.Column(db.DateTime, default=datetime.now, nullable=False)
+    iniciado_em = db.Column(db.DateTime, nullable=True)
+
+    # Índice para achar rápido "quem está aguardando/executando neste recurso".
+    __table_args__ = (
+        db.Index('ix_fila_execucao_recurso_status', 'recurso', 'status'),
+    )
+
+    def __repr__(self):
+        return f'<FilaExecucao {self.token} | {self.recurso} | {self.status}>'
+
 
 # ══════════════════════════════════════════════════════════════
 # MODELO: Lançamento de Nota
