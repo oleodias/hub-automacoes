@@ -24,7 +24,7 @@ import uuid as uuid_lib
 import banco_cadastros
 from utils.cnpj_ws import consultar_cnpj_ws
 from utils.fila import cadastro_entrar, cadastro_liberar_proximo
-from utils.n8n_security import resume_url_confiavel
+from utils.n8n_security import resume_url_confiavel, exigir_token_n8n
 from utils.auth import permissao_required
 from utils.rastreio import iniciar_execucao_robo, finalizar_execucao_robo
 from automacoes.clientes import cadastro_novo
@@ -525,6 +525,7 @@ def exportar_fichas():
 # ══════════════════════════════════════════════════════════════
 
 @clientes_bp.route('/fila_cadastro/entrar', methods=['POST'])
+@exigir_token_n8n
 def fila_cadastro_entrar():
     dados      = request.get_json()
     resume_url = dados.get('resume_url', '')
@@ -540,6 +541,7 @@ def fila_cadastro_entrar():
 
 
 @clientes_bp.route('/fila_cadastro/liberar_proximo', methods=['POST'])
+@exigir_token_n8n
 def fila_cadastro_liberar():
     cadastro_liberar_proximo()
     return jsonify({'status': 'ok'})
@@ -603,6 +605,7 @@ def fila_cadastro_reset():
 # ══════════════════════════════════════════════════════════════
 
 @clientes_bp.route('/n8n_iniciar_cadastro', methods=['POST'])
+@exigir_token_n8n
 def n8n_iniciar_cadastro():
     dados_n8n = request.json or {}
 
@@ -743,6 +746,7 @@ def n8n_iniciar_cadastro():
 # ══════════════════════════════════════════════════════════════
 
 @clientes_bp.route('/n8n_iniciar_reativacao', methods=['POST'])
+@exigir_token_n8n
 def n8n_iniciar_reativacao():
     dados_n8n = request.json or {}
 

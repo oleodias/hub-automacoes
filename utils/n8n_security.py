@@ -13,10 +13,56 @@
 # ══════════════════════════════════════════════════════════════
 
 import os
+import hmac
 import logging
+from functools import wraps
 from urllib.parse import urlparse
 
+from flask import request, jsonify
+
 logger = logging.getLogger(__name__)
+
+
+# ══════════════════════════════════════════════════════════════
+# AUTENTICAÇÃO DOS WEBHOOKS DO N8N (V-03) — "crachá secreto"
+# ══════════════════════════════════════════════════════════════
+# Os endpoints que SÓ o N8N chama exigem um header X-Hub-Token com
+# um segredo compartilhado (variável N8N_HUB_TOKEN no .env).
+#
+# Trava contra quebra: se N8N_HUB_TOKEN não estiver configurado, a
+# proteção fica DESLIGADA (apenas registra aviso no log). Assim o Hub
+# continua funcionando até você criar o segredo nos dois lados.
+# ══════════════════════════════════════════════════════════════
+
+HEADER_TOKEN = 'X-Hub-Token'
+
+
+def exigir_token_n8n(view):
+    """Decorator: exige o header X-Hub-Token correto (se o segredo existir)."""
+    @wraps(view)
+    def wrapper(*args, **kwargs):
+        token_esperado = os.getenv('N8N_HUB_TOKEN', '').strip()
+
+        if not token_esperado:
+            logger.warning(
+                "[AUTH N8N] N8N_HUB_TOKEN não configurado — endpoint %s está DESPROTEGIDO. "
+                "Crie o segredo no .env (e no N8N) para ligar a proteção.",
+                request.path
+            )
+            return view(*args, **kwargs)
+
+        recebido = request.headers.get(HEADER_TOKEN, '')
+        # compare_digest evita 'timing attack' (descobrir o token pelo tempo de resposta).
+        if not recebido or not hmac.compare_digest(recebido, token_esperado):
+            logger.warning(
+                "[AUTH N8N] Token inválido/ausente em %s (IP %s) — recusado.",
+                request.path, request.remote_addr
+            )
+            return jsonify({'erro': 'não autorizado'}), 401
+
+        return view(*args, **kwargs)
+
+    return wrapper
 
 
 def _netloc(url):
