@@ -117,6 +117,7 @@ def serializar_fornecedor(f, hoje=None):
         "unidade": f.unidade_id,            # React usa 'unidade'
         "diaEsperado": f.dia_esperado,
         "retencaoPadrao": f.retencao_padrao,
+        "retencoesPadrao": list(f.retencoes_padrao or []),
         "valorMedio": valor_medio,
         "observacoes": f.observacoes or "",
         "iniciadoEm": f.iniciado_em or "",
@@ -138,6 +139,7 @@ def serializar_nota(n):
         "nfNumero": n.nf_numero or "",
         "valor": float(n.valor_liquido) if n.valor_liquido is not None else None,
         "retencao": n.retencao,
+        "retencoes": list(n.retencoes or []),
         "avulsa": n.avulsa,
         "observacoes": n.observacoes or "",
         "historico": [],
@@ -154,6 +156,22 @@ def _parse_date(val):
         return datetime.fromisoformat(str(val)[:10]).date()
     except (ValueError, TypeError):
         return None
+
+
+# Conjunto fechado de tipos de retenção aceitos. Tudo que não estiver
+# aqui é silenciosamente descartado.
+_TIPOS_RETENCAO = {"inss", "iss", "irrf", "pis", "cofins", "csll"}
+
+def _retencoes_validas(raw):
+    """Normaliza e filtra a lista de tipos vinda do cliente."""
+    if not isinstance(raw, list):
+        return []
+    # preserva ordem, remove duplicatas e tipos inválidos
+    visto = []
+    for t in raw:
+        if isinstance(t, str) and t in _TIPOS_RETENCAO and t not in visto:
+            visto.append(t)
+    return visto
 
 
 def _validar_fornecedor_payload(data):
@@ -189,6 +207,16 @@ def _validar_fornecedor_payload(data):
         except (TypeError, ValueError):
             return "Valor médio inválido", None
 
+    # retencoes_padrao: lista de IDs ("inss", "iss", ...)
+    TIPOS_VALIDOS = {"inss", "iss", "irrf", "pis", "cofins", "csll"}
+    retencoes_padrao_raw = data.get('retencoes_padrao') or []
+    if not isinstance(retencoes_padrao_raw, list):
+        return "retencoes_padrao deve ser uma lista", None
+    retencoes_padrao = [t for t in retencoes_padrao_raw if t in TIPOS_VALIDOS]
+
+    # retencao_padrao (bool) = derivado da lista (mantém coerência)
+    retencao_padrao = bool(data.get('retencao_padrao', False)) or len(retencoes_padrao) > 0
+
     limpo = {
         "fornecedor": nome,
         "cnpj": (data.get('cnpj') or '').strip() or None,
@@ -196,7 +224,8 @@ def _validar_fornecedor_payload(data):
         "unidade_id": uni,
         "dia_esperado": dia,
         "valor_medio": valor_medio,
-        "retencao_padrao": bool(data.get('retencao_padrao', False)),
+        "retencao_padrao": retencao_padrao,
+        "retencoes_padrao": retencoes_padrao,
         "observacoes": (data.get('observacoes') or '').strip() or None,
     }
     return None, limpo
@@ -300,6 +329,7 @@ def api_criar_fornecedor():
         dia_esperado=limpo['dia_esperado'],
         valor_medio=limpo['valor_medio'],
         retencao_padrao=limpo['retencao_padrao'],
+        retencoes_padrao=limpo['retencoes_padrao'],
         observacoes=limpo['observacoes'],
         iniciado_em=f"{hoje.year}-{hoje.month:02d}",
         ativo=True,
@@ -329,6 +359,7 @@ def api_atualizar_fornecedor(fid):
     f.dia_esperado = limpo['dia_esperado']
     f.valor_medio = limpo['valor_medio']
     f.retencao_padrao = limpo['retencao_padrao']
+    f.retencoes_padrao = limpo['retencoes_padrao']
     f.observacoes = limpo['observacoes']
     if 'ativo' in data:
         f.ativo = bool(data['ativo'])
@@ -405,7 +436,8 @@ def _gerar_notas_do_mes(mes, ano):
             categoria_id=f.categoria_id,
             unidade_id=f.unidade_id,
             dia_esperado=f.dia_esperado,
-            retencao=f.retencao_padrao,   # herda o padrão do fornecedor
+            retencao=f.retencao_padrao,                 # herda o padrão do fornecedor
+            retencoes=list(f.retencoes_padrao or []),   # herda os TIPOS marcados
             avulsa=False,
         )
         db.session.add(nova)
@@ -473,7 +505,8 @@ def api_criar_nota():
         recebida_em=_parse_date(data.get('recebidaEm')),
         nf_numero=(data.get('nfNumero') or '').strip() or None,
         valor_liquido=data.get('valor'),
-        retencao=bool(data.get('retencao', False)),
+        retencao=bool(data.get('retencao', False)) or _retencoes_validas(data.get('retencoes')) != [],
+        retencoes=_retencoes_validas(data.get('retencoes')),
         avulsa=True,
         observacoes=(data.get('observacoes') or '').strip() or None,
     )
@@ -494,8 +527,14 @@ def api_receber_nota(nid):
     n.recebida_em = _parse_date(data.get('recebidaEm')) or date.today()
     n.nf_numero = (data.get('nfNumero') or '').strip() or None
     n.valor_liquido = data.get('valor')
-    if 'retencao' in data:
+
+    # retenções: aceita tanto a lista de tipos quanto o flag-mestre
+    if 'retencoes' in data:
+        n.retencoes = _retencoes_validas(data.get('retencoes'))
+        n.retencao = len(n.retencoes) > 0
+    elif 'retencao' in data:
         n.retencao = bool(data['retencao'])
+
     if 'observacoes' in data:
         n.observacoes = (data['observacoes'] or '').strip() or None
 

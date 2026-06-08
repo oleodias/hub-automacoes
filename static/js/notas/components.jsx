@@ -154,7 +154,14 @@ const RegisterModal = ({ nota, today, onConfirm, onCancel }) => {
             </div>
           </label>
           <label className="field span-2">
-            <span className="lbl">Retenções <em>(marque os tipos aplicáveis)</em></span>
+            <span className="lbl">
+              Retenções
+              {Array.isArray(nota.retencoes) && nota.retencoes.length > 0 ? (
+                <em> (já vêm do cadastro · ajuste se for diferente)</em>
+              ) : (
+                <em> (marque os tipos aplicáveis, se houver)</em>
+              )}
+            </span>
             <RetentionPicker value={retencoes} onChange={setRetencoes} />
             <span className="ret-help">
               {retencoes.length === 0

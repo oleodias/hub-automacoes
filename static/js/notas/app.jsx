@@ -288,12 +288,28 @@ const App = () => {
     setShowAvulsa(true);
   };
 
-  // ---- marcar recebida (API)
+  // ---- marcar recebida (otimista: UI atualiza na hora, reverte se der erro)
   const markReceived = async (nota, payload) => {
+    const recebidaEm = payload.recebidaEm instanceof Date
+      ? payload.recebidaEm
+      : new Date(payload.recebidaEm + "T12:00:00");
+    const recebidaIso = recebidaEm.toISOString().slice(0, 10);
+
+    // ━━━ optimistic: aplica imediatamente no estado local
+    const optimistic = {
+      ...nota,
+      recebidaEm,
+      nfNumero: payload.nfNumero || "",
+      valor: payload.valor,
+      retencoes: Array.isArray(payload.retencoes) ? payload.retencoes : [],
+      retencao: Array.isArray(payload.retencoes) && payload.retencoes.length > 0,
+    };
+    setCurrentNotas((prev) => prev.map((n) => n.id === nota.id ? optimistic : n));
+    setRegisterNota(null);
+    showToast(`✓ ${nota.fornecedor} registrada`);
+
+    // ━━━ confirma no servidor em background
     try {
-      const recebidaIso = payload.recebidaEm instanceof Date
-        ? payload.recebidaEm.toISOString().slice(0, 10)
-        : payload.recebidaEm;
       const r = await fetch(`/notas/api/notas/${nota.id}/receber`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -307,15 +323,22 @@ const App = () => {
         retencoes: Array.isArray(updated.retencoes) ? updated.retencoes : [],
       };
       setCurrentNotas((prev) => prev.map((n) => n.id === nota.id ? parsed : n));
-      setRegisterNota(null);
-      showToast(`✓ ${nota.fornecedor} registrada`);
     } catch (err) {
       console.error(err);
-      showToast(`Erro ao registrar: ${err.message}`);
+      // reverte: restaura o estado anterior
+      setCurrentNotas((prev) => prev.map((n) => n.id === nota.id ? nota : n));
+      showToast(`Erro ao salvar — desfeito. ${err.message}`);
     }
   };
 
   const unreceive = async (nota) => {
+    // optimistic
+    const original = nota;
+    const reverted = { ...nota, recebidaEm: null, nfNumero: "", valor: null };
+    setCurrentNotas((prev) => prev.map((n) => n.id === nota.id ? reverted : n));
+    setDetail(null);
+    showToast(`Recebimento desfeito · ${nota.fornecedor}`);
+
     try {
       const r = await fetch(`/notas/api/notas/${nota.id}/desfazer`, { method: "PATCH" });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -326,29 +349,43 @@ const App = () => {
         retencoes: Array.isArray(updated.retencoes) ? updated.retencoes : [],
       };
       setCurrentNotas((prev) => prev.map((n) => n.id === nota.id ? parsed : n));
-      setDetail(null);
-      showToast(`Recebimento desfeito · ${nota.fornecedor}`);
     } catch (err) {
       console.error(err);
-      showToast(`Erro: ${err.message}`);
+      setCurrentNotas((prev) => prev.map((n) => n.id === nota.id ? original : n));
+      showToast(`Erro — recebimento restaurado. ${err.message}`);
     }
   };
 
   const addAvulsa = async (data) => {
+    const recebidaEm = data.recebidaEm instanceof Date
+      ? data.recebidaEm
+      : new Date(data.recebidaEm + "T12:00:00");
+    const recebidaIso = recebidaEm.toISOString().slice(0, 10);
+
+    // optimistic: cria nota temporária com id provisório
+    const tempId = `tmp-${Date.now()}`;
+    const optimistic = {
+      id: tempId,
+      ...data,
+      recebidaEm,
+      retencoes: Array.isArray(data.retencoes) ? data.retencoes : [],
+      retencao: Array.isArray(data.retencoes) && data.retencoes.length > 0,
+      avulsa: true,
+    };
+    setCurrentNotas((prev) => [...prev, optimistic]);
+    setShowAvulsa(false);
+    showToast(`+ ${optimistic.fornecedor} adicionada`);
+
     try {
-      const recebidaIso = data.recebidaEm instanceof Date
-        ? data.recebidaEm.toISOString().slice(0, 10)
-        : data.recebidaEm;
-      const body = {
-        ...data,
-        mes: viewMonth.month + 1,
-        ano: viewMonth.year,
-        recebidaEm: recebidaIso,
-      };
       const r = await fetch(`/notas/api/notas`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          ...data,
+          mes: viewMonth.month + 1,
+          ano: viewMonth.year,
+          recebidaEm: recebidaIso,
+        }),
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const created = await r.json();
@@ -357,12 +394,12 @@ const App = () => {
         recebidaEm: created.recebidaEm ? new Date(created.recebidaEm + "T12:00:00") : null,
         retencoes: Array.isArray(created.retencoes) ? created.retencoes : [],
       };
-      setCurrentNotas((prev) => [...prev, parsed]);
-      setShowAvulsa(false);
-      showToast(`+ ${parsed.fornecedor} adicionada`);
+      // substitui o registro temporário pelo real (com id do banco)
+      setCurrentNotas((prev) => prev.map((n) => n.id === tempId ? parsed : n));
     } catch (err) {
       console.error(err);
-      showToast(`Erro: ${err.message}`);
+      setCurrentNotas((prev) => prev.filter((n) => n.id !== tempId));
+      showToast(`Erro — nota removida. ${err.message}`);
     }
   };
 
