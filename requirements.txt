@@ -7,6 +7,7 @@
 # ── Framework Web ─────────────────────────────────────────────
 Flask
 flask-sqlalchemy
+flask-limiter        # limite de tentativas de login (anti-força-bruta)
 
 # ── Banco de Dados ────────────────────────────────────────────
 sqlalchemy

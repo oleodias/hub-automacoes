@@ -15,7 +15,7 @@ from flask import Flask, request, session, redirect, url_for
 from dotenv import load_dotenv
 load_dotenv()
 
-from extensions import db
+from extensions import db, limiter
 from utils.logging_config import configurar_logging
 
 
@@ -53,10 +53,21 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_COOKIE_SECURE']   = (AMBIENTE == 'prod')
 
+# Em produção o app roda atrás do Nginx. Sem isso, o Flask enxerga o IP do
+# proxy (sempre o mesmo) em vez do IP real do cliente — o que faria o
+# limite de tentativas valer para TODO mundo junto. ProxyFix lê o
+# X-Forwarded-For que o Nginx envia. Em dev não há proxy, então não aplica.
+if AMBIENTE == 'prod':
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
+
 # Banco de Dados (PostgreSQL)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
+
+# Controle de taxa (anti-força-bruta no login)
+limiter.init_app(app)
 
 # Configura o sistema de logging (terminal + arquivo)
 configurar_logging()
