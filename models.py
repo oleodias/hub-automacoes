@@ -297,8 +297,21 @@ class LancamentoNota(db.Model):
 
     __tablename__ = 'lancamentos_notas'
 
+    # Índice único PARCIAL: impede duas notas ATIVAS com a mesma chave de
+    # acesso (na_fila/executando/concluida/a_rever). Notas 'cancelada' ficam
+    # de fora, então é possível reenviar uma nota depois de cancelar a antiga.
+    # O filtro é específico do PostgreSQL (postgresql_where).
+    __table_args__ = (
+        db.Index(
+            'uq_lancamentos_notas_chave_ativa',
+            'chave_acesso',
+            unique=True,
+            postgresql_where=db.text("status <> 'cancelada' AND chave_acesso IS NOT NULL"),
+        ),
+    )
+
     id              = db.Column(db.Integer, primary_key=True)
-    chave_acesso    = db.Column(db.String(44), index=True)   # SEM unique, index só para busca rápida
+    chave_acesso    = db.Column(db.String(44), index=True)   # índice de busca; unicidade via índice parcial acima
     numero_nota     = db.Column(db.String(20))
     serie           = db.Column(db.String(5))
     tipo_nota       = db.Column(db.String(20), default='danfe')
