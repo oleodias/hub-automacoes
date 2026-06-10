@@ -12,10 +12,29 @@
 
 import logging
 from datetime import datetime
+from sqlalchemy.exc import IntegrityError
 from extensions import db
 from models import LancamentoNota, CentroCusto, OperacaoNota
 
 logger = logging.getLogger(__name__)
+
+# Status que contam como "ativos" — ocupam a chave de acesso e impedem
+# um novo lançamento da mesma nota. 'cancelada' fica de fora de propósito,
+# para permitir reenviar uma nota depois de cancelar a anterior.
+STATUS_ATIVOS = ('na_fila', 'executando', 'concluida', 'a_rever')
+
+
+class LancamentoDuplicado(Exception):
+    """
+    Erro levantado ao tentar criar um lançamento de uma nota cuja chave
+    de acesso já está ATIVA no sistema. Carrega o lançamento existente
+    (dict) para que a camada de rota mostre uma mensagem clara ao usuário.
+    """
+    def __init__(self, existente):
+        self.existente = existente
+        super().__init__(
+            f"Já existe um lançamento ativo para a chave {existente.get('chave_acesso')}"
+        )
 
 
 # ══════════════════════════════════════════════════════════════
@@ -75,6 +94,15 @@ def salvar_lancamento(dados_xml, dados_complementares, xml_path,
     emitente = dados_xml.get('emitente', {})
     totais   = dados_xml.get('totais', {})
 
+    # Anti-duplicação: se a chave já tem um lançamento ATIVO, recusa.
+    # (O índice único parcial no banco é a garantia final; esta checagem
+    #  existe para dar uma mensagem amigável antes de tentar inserir.)
+    chave = dados_xml.get('chave_acesso')
+    if chave:
+        existente = buscar_ativo_por_chave(chave)
+        if existente:
+            raise LancamentoDuplicado(existente)
+
     lanc = LancamentoNota(
         chave_acesso         = dados_xml.get('chave_acesso'),
         numero_nota          = dados_xml.get('numero_nota'),
@@ -92,13 +120,37 @@ def salvar_lancamento(dados_xml, dados_complementares, xml_path,
     )
 
     db.session.add(lanc)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        # Corrida: dois envios simultâneos da mesma nota. O índice único
+        # parcial barrou o segundo. Desfaz e responde como duplicado.
+        db.session.rollback()
+        existente = buscar_ativo_por_chave(chave) if chave else None
+        if existente:
+            raise LancamentoDuplicado(existente)
+        raise
 
     logger.info(
         f"[NOTAS] Lançamento criado | ID: {lanc.id} | "
         f"NF {lanc.numero_nota} | {lanc.fornecedor_nome}"
     )
     return lanc.id
+
+
+def buscar_ativo_por_chave(chave_acesso):
+    """
+    Retorna (dict) o lançamento ATIVO existente para uma chave de acesso,
+    ou None se não houver. "Ativo" = qualquer status exceto 'cancelada'.
+    """
+    if not chave_acesso:
+        return None
+    lanc = (LancamentoNota.query
+            .filter(LancamentoNota.chave_acesso == chave_acesso)
+            .filter(LancamentoNota.status.in_(STATUS_ATIVOS))
+            .order_by(LancamentoNota.created_at.desc())
+            .first())
+    return _lancamento_to_dict(lanc) if lanc else None
 
 
 def buscar_lancamento(lanc_id):

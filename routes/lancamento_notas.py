@@ -221,6 +221,20 @@ def lancar():
             usuario_nome         = session.get('usuario_nome', 'Sistema'),
             tipo_nota            = 'danfe',
         )
+    except banco_notas.LancamentoDuplicado as dup:
+        existente = dup.existente
+        status_legivel = {
+            'na_fila':    'já está na fila',
+            'executando': 'está sendo lançada agora pelo robô',
+            'concluida':  'já foi lançada com sucesso',
+            'a_rever':    'está na aba "A Rever"',
+        }.get(existente.get('status'), 'já existe no sistema')
+        return jsonify({
+            'status': 'duplicado',
+            'msg': f'Esta nota {status_legivel}. Para reenviar, cancele o '
+                   f'lançamento anterior (nº {existente.get("numero_nota")}).',
+            'existente': existente,
+        }), 409
     except Exception as e:
         logger.exception(f"[NOTAS] Falha ao salvar lançamento: {e}")
         return jsonify({'status': 'erro', 'msg': f'Erro ao salvar: {e}'}), 500
