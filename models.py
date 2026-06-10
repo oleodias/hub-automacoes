@@ -158,6 +158,16 @@ class Submissao(db.Model):
     docs_enviados = db.Column(db.JSON, default=list)
     motivos_reprovacao = db.Column(db.JSON, default=list)
     erro_robo = db.Column(db.JSON, nullable=True)
+
+    # Controle do envio ao N8N (C2/A-05). A ficha é salva ANTES de chamar o
+    # N8N; se o webhook falha (N8N fora do ar), a ficha ficaria "órfã" — salva
+    # mas nunca processada. Estes campos deixam isso visível no Monitor para o
+    # operador reenviar com 1 clique. 'enviado' é o estado normal; 'falhou'
+    # sinaliza que precisa reenviar. n8n_payload guarda o que enviar de novo.
+    envio_n8n   = db.Column(db.String(20), default='enviado', server_default='enviado')
+    n8n_erro    = db.Column(db.Text, nullable=True)
+    n8n_payload = db.Column(db.JSON, nullable=True)
+
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 

@@ -91,6 +91,58 @@ def ficha_cliente():
 
 
 # ══════════════════════════════════════════════════════════════
+# DISPARO AO N8N (reutilizado pelo recebimento e pelo reenvio)
+# ══════════════════════════════════════════════════════════════
+
+def _disparar_para_n8n(submission_uuid, payload_str, docs_permitidos=None):
+    """
+    Envia (ou reenvia) uma ficha ao webhook do N8N, anexando os arquivos
+    salvos em uploads_fichas/<uuid>. Se 'docs_permitidos' for informado,
+    anexa só esses documentos; senão, anexa todos os da pasta.
+
+    Retorna (ok, erro):
+        ok=True  → N8N recebeu (HTTP < 400)
+        ok=False → falha (N8N fora do ar, timeout, HTTP de erro); 'erro' = msg
+    """
+    n8n_url = os.getenv('N8N_WEBHOOK_CADASTRO')
+    if not n8n_url:
+        return False, 'N8N_WEBHOOK_CADASTRO não configurado.'
+
+    arquivos_abertos = {}
+    pasta = os.path.join('uploads_fichas', submission_uuid)
+    if os.path.exists(pasta):
+        for arquivo in os.listdir(pasta):
+            nome_sem_ext = os.path.splitext(arquivo)[0]
+            if docs_permitidos is not None and nome_sem_ext not in docs_permitidos:
+                continue
+            caminho = os.path.join(pasta, arquivo)
+            arquivos_abertos[nome_sem_ext] = (
+                arquivo, open(caminho, 'rb'), 'application/octet-stream'
+            )
+
+    try:
+        resposta = req_ext.post(
+            n8n_url, data=payload_str,
+            files=arquivos_abertos if arquivos_abertos else None,
+            timeout=60,
+        )
+        if resposta.status_code >= 400:
+            logger.error(f"[N8N] HTTP {resposta.status_code} | UUID: {submission_uuid}")
+            return False, f'N8N respondeu HTTP {resposta.status_code}'
+        logger.info(f"[N8N] Status: {resposta.status_code} | UUID: {submission_uuid}")
+        return True, None
+    except Exception as e:
+        logger.error(f"[N8N] Erro ao disparar webhook: {e}")
+        return False, str(e)
+    finally:
+        for _nome, (_, fp, _) in arquivos_abertos.items():
+            try:
+                fp.close()
+            except Exception:
+                pass
+
+
+# ══════════════════════════════════════════════════════════════
 # RECEBER FICHA DO CLIENTE
 # ══════════════════════════════════════════════════════════════
 
@@ -234,39 +286,22 @@ def receber_ficha():
         'docs_adicionados':   nomes(docs_adicionados),
     }
 
-    # ── 8. Disparar para o N8N ─────────────────────────────────
-    N8N_WEBHOOK_URL = os.getenv('N8N_WEBHOOK_CADASTRO')
-    payload_str     = {k: str(v) for k, v in payload_n8n.items()}
+    # ── 8. Disparar para o N8N (com controle anti-ficha-órfã) ──
+    payload_str = {k: str(v) for k, v in payload_n8n.items()}
+    # Guarda o payload para permitir reenvio pelo Monitor se o N8N falhar.
+    banco_cadastros.salvar_payload_n8n(submission_uuid, payload_str)
 
-    arquivos_abertos = {}
-    pasta = os.path.join('uploads_fichas', submission_uuid)
+    ok, erro = _disparar_para_n8n(submission_uuid, payload_str, docs_finais)
+    if ok:
+        banco_cadastros.marcar_envio_n8n(submission_uuid, 'enviado')
+    else:
+        # A ficha JÁ está salva no banco. Marcamos o envio como falho para o
+        # operador reenviar pelo Monitor — assim a ficha não fica "órfã".
+        banco_cadastros.marcar_envio_n8n(submission_uuid, 'falhou', erro)
 
-    if os.path.exists(pasta):
-        for arquivo in os.listdir(pasta):
-            nome_sem_ext = os.path.splitext(arquivo)[0]
-            caminho      = os.path.join(pasta, arquivo)
-            if nome_sem_ext in docs_finais:
-                arquivos_abertos[nome_sem_ext] = (
-                    arquivo, open(caminho, 'rb'), 'application/octet-stream'
-                )
-
-    try:
-        resposta_n8n = req_ext.post(
-            N8N_WEBHOOK_URL, data=payload_str,
-            files=arquivos_abertos if arquivos_abertos else None,
-            timeout=60
-        )
-        logger.info(f"[N8N] Status: {resposta_n8n.status_code} | UUID: {submission_uuid}")
-        return jsonify({'status': 'ok', 'uuid': submission_uuid})
-    except Exception as e:
-        logger.error(f"[N8N] Erro ao disparar webhook: {e}")
-        return jsonify({'status': 'erro', 'mensagem': str(e)}), 500
-    finally:
-        for nome, (_, fp, _) in arquivos_abertos.items():
-            try:
-                fp.close()
-            except Exception:
-                pass
+    # Para o vendedor, a ficha foi recebida nos dois casos (ela está salva).
+    # Se o N8N estiver fora do ar, a equipe reenvia internamente pelo Monitor.
+    return jsonify({'status': 'ok', 'uuid': submission_uuid})
 
 
 # ══════════════════════════════════════════════════════════════
@@ -286,6 +321,37 @@ def api_ficha(submission_uuid):
         'razao_social':       sub['razao_social'],
         'cnpj':               sub['cnpj'],
     })
+
+
+# ══════════════════════════════════════════════════════════════
+# REENVIAR FICHA AO N8N (anti-ficha-órfã — operador no Monitor)
+# ══════════════════════════════════════════════════════════════
+
+@clientes_bp.route('/api/reenviar_ficha/<uuid>', methods=['POST'])
+@permissao_required('monitor')
+def reenviar_ficha(uuid):
+    """
+    Reenvia ao N8N uma ficha cujo envio falhou. Usa o payload guardado e
+    reanexa os documentos da pasta. Atualiza o status do envio.
+    """
+    if not eh_uuid_valido(uuid):
+        return jsonify({'erro': 'UUID inválido.'}), 400
+
+    sub = banco_cadastros.buscar_submissao(uuid)
+    if not sub:
+        return jsonify({'erro': 'Submissão não encontrada.'}), 404
+
+    payload = banco_cadastros.buscar_payload_n8n(uuid)
+    if not payload:
+        return jsonify({'erro': 'Não há dados de envio guardados para esta ficha.'}), 400
+
+    ok, erro = _disparar_para_n8n(uuid, payload, sub.get('docs_enviados'))
+    if ok:
+        banco_cadastros.marcar_envio_n8n(uuid, 'enviado')
+        return jsonify({'status': 'ok'})
+
+    banco_cadastros.marcar_envio_n8n(uuid, 'falhou', erro)
+    return jsonify({'status': 'erro', 'mensagem': erro or 'Falha ao reenviar.'}), 502
 
 
 # ══════════════════════════════════════════════════════════════
