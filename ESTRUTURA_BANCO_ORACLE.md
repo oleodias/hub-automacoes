@@ -18,45 +18,45 @@ PostgreSQL → Oracle e (3) o **DDL pronto para rodar no Oracle**.
 
 | # | Tabela | Função |
 |---|--------|--------|
-| 1 | `usuarios` | Usuários do Hub (login, cargo, permissões por módulo) |
-| 2 | `submissoes` | Fichas cadastrais de clientes enviadas para análise |
-| 3 | `execucoes` | Histórico de execução dos robôs (RPA) |
-| 4 | `lancamentos_notas` | Lançamento de notas fiscais (XML + dados complementares) |
-| 5 | `centros_custo` | Centros de custo selecionáveis no lançamento de notas |
-| 6 | `operacoes_nota` | Operações disponíveis no NLWeb |
-| 7 | `notas_categorias` | Categorias de despesa (energia, água, etc.) |
-| 8 | `notas_unidades` | Unidades da empresa (Matriz, filiais) |
-| 9 | `notas_fornecedores` | Fornecedores recorrentes (notas mensais) |
-| 10 | `notas` | Lançamento mensal de notas (Kanban) |
-| 11 | `chamados` | Tickets de suporte abertos pelos usuários |
-| 12 | `chamados_anexos` | Arquivos anexados a um chamado |
-| 13 | `chamados_historico` | Timeline de eventos de um chamado |
-| 14 | `notificacoes` | Avisos para o usuário (sininho) |
-| 15 | `faq_perguntas` | Perguntas frequentes por módulo |
-| 16 | `links_ficha` | Links de ficha gerados (rastreio: quem gerou, p/ qual cliente, validade e uso) |
+| 1 | `cm_hub_aut_usuarios` | Usuários do Hub (login, cargo, permissões por módulo) |
+| 2 | `cm_hub_aut_submissoes` | Fichas cadastrais de clientes enviadas para análise |
+| 3 | `cm_hub_aut_execucoes` | Histórico de execução dos robôs (RPA) |
+| 4 | `cm_hub_aut_lancamentos_notas` | Lançamento de notas fiscais (XML + dados complementares) |
+| 5 | `cm_hub_aut_centros_custo` | Centros de custo selecionáveis no lançamento de notas |
+| 6 | `cm_hub_aut_operacoes_nota` | Operações disponíveis no NLWeb |
+| 7 | `cm_hub_aut_notas_categorias` | Categorias de despesa (energia, água, etc.) |
+| 8 | `cm_hub_aut_notas_unidades` | Unidades da empresa (Matriz, filiais) |
+| 9 | `cm_hub_aut_notas_fornecedores` | Fornecedores recorrentes (notas mensais) |
+| 10 | `cm_hub_aut_notas` | Lançamento mensal de notas (Kanban) |
+| 11 | `cm_hub_aut_chamados` | Tickets de suporte abertos pelos usuários |
+| 12 | `cm_hub_aut_chamados_anexos` | Arquivos anexados a um chamado |
+| 13 | `cm_hub_aut_chamados_historico` | Timeline de eventos de um chamado |
+| 14 | `cm_hub_aut_notificacoes` | Avisos para o usuário (sininho) |
+| 15 | `cm_hub_aut_faq_perguntas` | Perguntas frequentes por módulo |
+| 16 | `cm_hub_aut_links_ficha` | Links de ficha gerados (rastreio: quem gerou, p/ qual cliente, validade e uso) |
 
 ### Relacionamentos (chaves estrangeiras)
 
 ```
-usuarios ──┬─< execucoes (usuario_id)
-           ├─< chamados (usuario_id)
-           ├─< chamados_historico (usuario_id)
-           └─< notificacoes (usuario_id)
+cm_hub_aut_usuarios ──┬─< cm_hub_aut_execucoes (usuario_id)
+           ├─< cm_hub_aut_chamados (usuario_id)
+           ├─< cm_hub_aut_chamados_historico (usuario_id)
+           └─< cm_hub_aut_notificacoes (usuario_id)
 
-chamados ──┬─< chamados_anexos (chamado_id)
-           ├─< chamados_historico (chamado_id)
-           └─< notificacoes (chamado_id)
+cm_hub_aut_chamados ──┬─< cm_hub_aut_chamados_anexos (chamado_id)
+           ├─< cm_hub_aut_chamados_historico (chamado_id)
+           └─< cm_hub_aut_notificacoes (chamado_id)
 
-notas_categorias ──┬─< notas_fornecedores (categoria_id)
-                   └─< notas (categoria_id)
+cm_hub_aut_notas_categorias ──┬─< cm_hub_aut_notas_fornecedores (categoria_id)
+                   └─< cm_hub_aut_notas (categoria_id)
 
-notas_unidades ────┬─< notas_fornecedores (unidade_id)
-                   └─< notas (unidade_id)
+cm_hub_aut_notas_unidades ────┬─< cm_hub_aut_notas_fornecedores (unidade_id)
+                   └─< cm_hub_aut_notas (unidade_id)
 
-notas_fornecedores ──< notas (fornecedor_recorrente_id)
+cm_hub_aut_notas_fornecedores ──< cm_hub_aut_notas (fornecedor_recorrente_id)
 
-usuarios   ··< links_ficha (gerado_por_id)    -- referência lógica, sem FK
-submissoes ··< links_ficha (submission_uuid)  -- referência lógica, sem FK
+cm_hub_aut_usuarios   ··< cm_hub_aut_links_ficha (gerado_por_id)    -- referência lógica, sem FK
+cm_hub_aut_submissoes ··< cm_hub_aut_links_ficha (submission_uuid)  -- referência lógica, sem FK
 ```
 
 > **Ordem de criação:** as tabelas-pai precisam existir antes das tabelas-filho.
@@ -82,8 +82,8 @@ submissoes ··< links_ficha (submission_uuid)  -- referência lógica, sem FK
 > dados do XML da nota, detalhes da execução do robô, etc.). No Oracle, o jeito
 > mais compatível é **`CLOB` com a constraint `IS JSON`**. Se o ambiente for
 > Oracle 21c+, pode usar o tipo nativo `JSON`. Os campos JSON são:
-> `usuarios.permissoes`, `submissoes.dados_json/docs_enviados/motivos_reprovacao/erro_robo/n8n_payload`,
-> `execucoes.detalhes`, `lancamentos_notas.dados_xml/dados_complementares`.
+> `cm_hub_aut_usuarios.permissoes`, `cm_hub_aut_submissoes.dados_json/docs_enviados/motivos_reprovacao/erro_robo/n8n_payload`,
+> `cm_hub_aut_execucoes.detalhes`, `cm_hub_aut_lancamentos_notas.dados_xml/dados_complementares`.
 
 > **Sobre o auto-incremento:** no PostgreSQL os IDs são `SERIAL`. No Oracle 12c+
 > usei `GENERATED BY DEFAULT AS IDENTITY`. Em Oracle 11g ou anterior, troque por
@@ -103,7 +103,7 @@ submissoes ··< links_ficha (submission_uuid)  -- referência lógica, sem FK
 -- ════════════════════════════════════════════════════════════════
 
 -- ── 1. usuarios ─────────────────────────────────────────────────
-CREATE TABLE usuarios (
+CREATE TABLE cm_hub_aut_usuarios (
     id          NUMBER(10)     GENERATED BY DEFAULT AS IDENTITY,
     nome        VARCHAR2(150 CHAR)  NOT NULL,
     email       VARCHAR2(150 CHAR)  NOT NULL,
@@ -113,14 +113,14 @@ CREATE TABLE usuarios (
     ativo       NUMBER(1)      DEFAULT 1,
     created_at  TIMESTAMP,
     updated_at  TIMESTAMP,
-    CONSTRAINT pk_usuarios       PRIMARY KEY (id),
-    CONSTRAINT uq_usuarios_email UNIQUE (email),
-    CONSTRAINT ck_usuarios_ativo CHECK (ativo IN (0,1)),
-    CONSTRAINT ck_usuarios_perm  CHECK (permissoes IS JSON)
+    CONSTRAINT pk_cm_hub_aut_usuarios       PRIMARY KEY (id),
+    CONSTRAINT uq_cm_hub_aut_usuarios_email UNIQUE (email),
+    CONSTRAINT ck_cm_hub_aut_usuarios_ativo CHECK (ativo IN (0,1)),
+    CONSTRAINT ck_cm_hub_aut_usuarios_perm  CHECK (permissoes IS JSON)
 );
 
 -- ── 2. submissoes ───────────────────────────────────────────────
-CREATE TABLE submissoes (
+CREATE TABLE cm_hub_aut_submissoes (
     uuid               VARCHAR2(36 CHAR)  NOT NULL,
     cnpj               VARCHAR2(20 CHAR)  NOT NULL,
     razao_social       VARCHAR2(255 CHAR),
@@ -135,16 +135,16 @@ CREATE TABLE submissoes (
     n8n_payload        CLOB,                                  -- dados p/ reenvio (JSON)
     created_at         TIMESTAMP,
     updated_at         TIMESTAMP,
-    CONSTRAINT pk_submissoes PRIMARY KEY (uuid),
-    CONSTRAINT ck_subm_dados    CHECK (dados_json IS JSON),
-    CONSTRAINT ck_subm_docs     CHECK (docs_enviados IS JSON),
-    CONSTRAINT ck_subm_motivos  CHECK (motivos_reprovacao IS JSON),
-    CONSTRAINT ck_subm_erro     CHECK (erro_robo IS JSON),
-    CONSTRAINT ck_subm_payload  CHECK (n8n_payload IS JSON)
+    CONSTRAINT pk_cm_hub_aut_submissoes PRIMARY KEY (uuid),
+    CONSTRAINT ck_cm_hub_aut_subm_dados    CHECK (dados_json IS JSON),
+    CONSTRAINT ck_cm_hub_aut_subm_docs     CHECK (docs_enviados IS JSON),
+    CONSTRAINT ck_cm_hub_aut_subm_motivos  CHECK (motivos_reprovacao IS JSON),
+    CONSTRAINT ck_cm_hub_aut_subm_erro     CHECK (erro_robo IS JSON),
+    CONSTRAINT ck_cm_hub_aut_subm_payload  CHECK (n8n_payload IS JSON)
 );
 
 -- ── 3. execucoes ────────────────────────────────────────────────
-CREATE TABLE execucoes (
+CREATE TABLE cm_hub_aut_execucoes (
     id           NUMBER(10)     GENERATED BY DEFAULT AS IDENTITY,
     usuario_id   NUMBER(10),
     usuario_nome VARCHAR2(150 CHAR)  DEFAULT 'Sistema',
@@ -155,13 +155,13 @@ CREATE TABLE execucoes (
     duracao_seg  NUMBER(10),
     detalhes     CLOB,
     created_at   TIMESTAMP,
-    CONSTRAINT pk_execucoes       PRIMARY KEY (id),
-    CONSTRAINT fk_execucoes_user  FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
-    CONSTRAINT ck_execucoes_det   CHECK (detalhes IS JSON)
+    CONSTRAINT pk_cm_hub_aut_execucoes       PRIMARY KEY (id),
+    CONSTRAINT fk_cm_hub_aut_execucoes_user  FOREIGN KEY (usuario_id) REFERENCES cm_hub_aut_usuarios(id),
+    CONSTRAINT ck_cm_hub_aut_execucoes_det   CHECK (detalhes IS JSON)
 );
 
 -- ── 4. lancamentos_notas ────────────────────────────────────────
-CREATE TABLE lancamentos_notas (
+CREATE TABLE cm_hub_aut_lancamentos_notas (
     id                   NUMBER(10)     GENERATED BY DEFAULT AS IDENTITY,
     chave_acesso         VARCHAR2(44 CHAR),
     numero_nota          VARCHAR2(20 CHAR),
@@ -180,56 +180,56 @@ CREATE TABLE lancamentos_notas (
     usuario_nome         VARCHAR2(150 CHAR),
     created_at           TIMESTAMP,
     updated_at           TIMESTAMP,
-    CONSTRAINT pk_lancamentos_notas PRIMARY KEY (id),
-    CONSTRAINT ck_lanc_dadosxml  CHECK (dados_xml IS JSON),
-    CONSTRAINT ck_lanc_dadoscomp CHECK (dados_complementares IS JSON)
+    CONSTRAINT pk_cm_hub_aut_lancamentos_notas PRIMARY KEY (id),
+    CONSTRAINT ck_cm_hub_aut_lanc_dadosxml  CHECK (dados_xml IS JSON),
+    CONSTRAINT ck_cm_hub_aut_lanc_dadoscomp CHECK (dados_complementares IS JSON)
 );
-CREATE INDEX ix_lancamentos_notas_chave_acesso ON lancamentos_notas (chave_acesso);
+CREATE INDEX ix_cm_hub_aut_lancamentos_notas_chave_acesso ON cm_hub_aut_lancamentos_notas (chave_acesso);
 -- Impede duas notas ATIVAS com a mesma chave (ignora 'cancelada').
 -- Equivalente Oracle do índice PARCIAL do PostgreSQL (índice baseado em função).
-CREATE UNIQUE INDEX uq_lancamentos_notas_chave_ativa
-    ON lancamentos_notas (
+CREATE UNIQUE INDEX uq_cm_hub_aut_lancamentos_notas_chave_ativa
+    ON cm_hub_aut_lancamentos_notas (
         CASE WHEN status <> 'cancelada' AND chave_acesso IS NOT NULL
              THEN chave_acesso END
     );
 
 -- ── 5. centros_custo ────────────────────────────────────────────
-CREATE TABLE centros_custo (
+CREATE TABLE cm_hub_aut_centros_custo (
     id        NUMBER(10)     GENERATED BY DEFAULT AS IDENTITY,
     codigo    VARCHAR2(20 CHAR)   NOT NULL,
     descricao VARCHAR2(255 CHAR)  NOT NULL,
     empresa   VARCHAR2(50 CHAR),
     ativo     NUMBER(1)      DEFAULT 1,
-    CONSTRAINT pk_centros_custo PRIMARY KEY (id),
-    CONSTRAINT ck_cc_ativo CHECK (ativo IN (0,1))
+    CONSTRAINT pk_cm_hub_aut_centros_custo PRIMARY KEY (id),
+    CONSTRAINT ck_cm_hub_aut_cc_ativo CHECK (ativo IN (0,1))
 );
-CREATE UNIQUE INDEX ix_centros_custo_codigo ON centros_custo (codigo);
+CREATE UNIQUE INDEX ix_cm_hub_aut_centros_custo_codigo ON cm_hub_aut_centros_custo (codigo);
 
 -- ── 6. operacoes_nota ───────────────────────────────────────────
-CREATE TABLE operacoes_nota (
+CREATE TABLE cm_hub_aut_operacoes_nota (
     id        NUMBER(10)     GENERATED BY DEFAULT AS IDENTITY,
     codigo    VARCHAR2(20 CHAR)   NOT NULL,
     descricao VARCHAR2(500 CHAR)  NOT NULL,
     ativo     NUMBER(1)      DEFAULT 1,
-    CONSTRAINT pk_operacoes_nota PRIMARY KEY (id),
-    CONSTRAINT ck_op_ativo CHECK (ativo IN (0,1))
+    CONSTRAINT pk_cm_hub_aut_operacoes_nota PRIMARY KEY (id),
+    CONSTRAINT ck_cm_hub_aut_op_ativo CHECK (ativo IN (0,1))
 );
-CREATE UNIQUE INDEX ix_operacoes_nota_codigo ON operacoes_nota (codigo);
+CREATE UNIQUE INDEX ix_cm_hub_aut_operacoes_nota_codigo ON cm_hub_aut_operacoes_nota (codigo);
 
 -- ── 7. notas_categorias ─────────────────────────────────────────
-CREATE TABLE notas_categorias (
+CREATE TABLE cm_hub_aut_notas_categorias (
     id         VARCHAR2(50 CHAR)   NOT NULL,
     nome       VARCHAR2(100 CHAR)  NOT NULL,
     ordem      NUMBER(10)     DEFAULT 0,
     ativa      NUMBER(1)      DEFAULT 1,
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
-    CONSTRAINT pk_notas_categorias PRIMARY KEY (id),
-    CONSTRAINT ck_ncat_ativa CHECK (ativa IN (0,1))
+    CONSTRAINT pk_cm_hub_aut_notas_categorias PRIMARY KEY (id),
+    CONSTRAINT ck_cm_hub_aut_ncat_ativa CHECK (ativa IN (0,1))
 );
 
 -- ── 8. notas_unidades ───────────────────────────────────────────
-CREATE TABLE notas_unidades (
+CREATE TABLE cm_hub_aut_notas_unidades (
     id         VARCHAR2(20 CHAR)   NOT NULL,
     nome       VARCHAR2(100 CHAR)  NOT NULL,
     short      VARCHAR2(10 CHAR)   NOT NULL,
@@ -237,12 +237,12 @@ CREATE TABLE notas_unidades (
     ativa      NUMBER(1)      DEFAULT 1,
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
-    CONSTRAINT pk_notas_unidades PRIMARY KEY (id),
-    CONSTRAINT ck_nuni_ativa CHECK (ativa IN (0,1))
+    CONSTRAINT pk_cm_hub_aut_notas_unidades PRIMARY KEY (id),
+    CONSTRAINT ck_cm_hub_aut_nuni_ativa CHECK (ativa IN (0,1))
 );
 
 -- ── 9. notas_fornecedores ───────────────────────────────────────
-CREATE TABLE notas_fornecedores (
+CREATE TABLE cm_hub_aut_notas_fornecedores (
     id              NUMBER(10)     GENERATED BY DEFAULT AS IDENTITY,
     fornecedor      VARCHAR2(200 CHAR)  NOT NULL,
     cnpj            VARCHAR2(20 CHAR),
@@ -256,15 +256,15 @@ CREATE TABLE notas_fornecedores (
     ativo           NUMBER(1)      DEFAULT 1,
     created_at      TIMESTAMP,
     updated_at      TIMESTAMP,
-    CONSTRAINT pk_notas_fornecedores  PRIMARY KEY (id),
-    CONSTRAINT fk_nforn_categoria FOREIGN KEY (categoria_id) REFERENCES notas_categorias(id),
-    CONSTRAINT fk_nforn_unidade   FOREIGN KEY (unidade_id)   REFERENCES notas_unidades(id),
-    CONSTRAINT ck_nforn_ret   CHECK (retencao_padrao IN (0,1)),
-    CONSTRAINT ck_nforn_ativo CHECK (ativo IN (0,1))
+    CONSTRAINT pk_cm_hub_aut_notas_fornecedores  PRIMARY KEY (id),
+    CONSTRAINT fk_cm_hub_aut_nforn_categoria FOREIGN KEY (categoria_id) REFERENCES cm_hub_aut_notas_categorias(id),
+    CONSTRAINT fk_cm_hub_aut_nforn_unidade   FOREIGN KEY (unidade_id)   REFERENCES cm_hub_aut_notas_unidades(id),
+    CONSTRAINT ck_cm_hub_aut_nforn_ret   CHECK (retencao_padrao IN (0,1)),
+    CONSTRAINT ck_cm_hub_aut_nforn_ativo CHECK (ativo IN (0,1))
 );
 
 -- ── 10. notas ───────────────────────────────────────────────────
-CREATE TABLE notas (
+CREATE TABLE cm_hub_aut_notas (
     id                       NUMBER(10)     GENERATED BY DEFAULT AS IDENTITY,
     mes                      NUMBER(10)     NOT NULL,
     ano                      NUMBER(10)     NOT NULL,
@@ -282,18 +282,18 @@ CREATE TABLE notas (
     avulsa                   NUMBER(1)      DEFAULT 0,
     created_at               TIMESTAMP,
     updated_at               TIMESTAMP,
-    CONSTRAINT pk_notas PRIMARY KEY (id),
-    CONSTRAINT fk_notas_categoria  FOREIGN KEY (categoria_id) REFERENCES notas_categorias(id),
-    CONSTRAINT fk_notas_unidade    FOREIGN KEY (unidade_id)   REFERENCES notas_unidades(id),
-    CONSTRAINT fk_notas_forn_rec   FOREIGN KEY (fornecedor_recorrente_id) REFERENCES notas_fornecedores(id),
-    CONSTRAINT ck_notas_retencao CHECK (retencao IN (0,1)),
-    CONSTRAINT ck_notas_avulsa   CHECK (avulsa IN (0,1))
+    CONSTRAINT pk_cm_hub_aut_notas PRIMARY KEY (id),
+    CONSTRAINT fk_cm_hub_aut_notas_categoria  FOREIGN KEY (categoria_id) REFERENCES cm_hub_aut_notas_categorias(id),
+    CONSTRAINT fk_cm_hub_aut_notas_unidade    FOREIGN KEY (unidade_id)   REFERENCES cm_hub_aut_notas_unidades(id),
+    CONSTRAINT fk_cm_hub_aut_notas_forn_rec   FOREIGN KEY (fornecedor_recorrente_id) REFERENCES cm_hub_aut_notas_fornecedores(id),
+    CONSTRAINT ck_cm_hub_aut_notas_retencao CHECK (retencao IN (0,1)),
+    CONSTRAINT ck_cm_hub_aut_notas_avulsa   CHECK (avulsa IN (0,1))
 );
-CREATE INDEX ix_notas_mes_ano         ON notas (mes, ano);
-CREATE INDEX ix_notas_unidade_mes_ano ON notas (unidade_id, mes, ano);
+CREATE INDEX ix_cm_hub_aut_notas_mes_ano         ON cm_hub_aut_notas (mes, ano);
+CREATE INDEX ix_cm_hub_aut_notas_unidade_mes_ano ON cm_hub_aut_notas (unidade_id, mes, ano);
 
 -- ── 11. chamados ────────────────────────────────────────────────
-CREATE TABLE chamados (
+CREATE TABLE cm_hub_aut_chamados (
     id         NUMBER(10)     GENERATED BY DEFAULT AS IDENTITY,
     protocolo  VARCHAR2(20 CHAR)   NOT NULL,
     usuario_id NUMBER(10)     NOT NULL,
@@ -304,13 +304,13 @@ CREATE TABLE chamados (
     status     VARCHAR2(20 CHAR)   DEFAULT 'pendente',
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
-    CONSTRAINT pk_chamados      PRIMARY KEY (id),
-    CONSTRAINT fk_chamados_user FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+    CONSTRAINT pk_cm_hub_aut_chamados      PRIMARY KEY (id),
+    CONSTRAINT fk_cm_hub_aut_chamados_user FOREIGN KEY (usuario_id) REFERENCES cm_hub_aut_usuarios(id)
 );
-CREATE UNIQUE INDEX ix_chamados_protocolo ON chamados (protocolo);
+CREATE UNIQUE INDEX ix_cm_hub_aut_chamados_protocolo ON cm_hub_aut_chamados (protocolo);
 
 -- ── 12. chamados_anexos ─────────────────────────────────────────
-CREATE TABLE chamados_anexos (
+CREATE TABLE cm_hub_aut_chamados_anexos (
     id            NUMBER(10)     GENERATED BY DEFAULT AS IDENTITY,
     chamado_id    NUMBER(10)     NOT NULL,
     nome_arquivo  VARCHAR2(255 CHAR)  NOT NULL,
@@ -318,12 +318,12 @@ CREATE TABLE chamados_anexos (
     tipo_mime     VARCHAR2(100 CHAR),
     tamanho_bytes NUMBER(10),
     created_at    TIMESTAMP,
-    CONSTRAINT pk_chamados_anexos     PRIMARY KEY (id),
-    CONSTRAINT fk_chanexos_chamado    FOREIGN KEY (chamado_id) REFERENCES chamados(id)
+    CONSTRAINT pk_cm_hub_aut_chamados_anexos     PRIMARY KEY (id),
+    CONSTRAINT fk_cm_hub_aut_chanexos_chamado    FOREIGN KEY (chamado_id) REFERENCES cm_hub_aut_chamados(id)
 );
 
 -- ── 13. chamados_historico ──────────────────────────────────────
-CREATE TABLE chamados_historico (
+CREATE TABLE cm_hub_aut_chamados_historico (
     id              NUMBER(10)     GENERATED BY DEFAULT AS IDENTITY,
     chamado_id      NUMBER(10)     NOT NULL,
     usuario_id      NUMBER(10),
@@ -332,13 +332,13 @@ CREATE TABLE chamados_historico (
     status_novo     VARCHAR2(20 CHAR),
     mensagem        CLOB,
     created_at      TIMESTAMP,
-    CONSTRAINT pk_chamados_historico  PRIMARY KEY (id),
-    CONSTRAINT fk_chhist_chamado FOREIGN KEY (chamado_id) REFERENCES chamados(id),
-    CONSTRAINT fk_chhist_user    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+    CONSTRAINT pk_cm_hub_aut_chamados_historico  PRIMARY KEY (id),
+    CONSTRAINT fk_cm_hub_aut_chhist_chamado FOREIGN KEY (chamado_id) REFERENCES cm_hub_aut_chamados(id),
+    CONSTRAINT fk_cm_hub_aut_chhist_user    FOREIGN KEY (usuario_id) REFERENCES cm_hub_aut_usuarios(id)
 );
 
 -- ── 14. notificacoes ────────────────────────────────────────────
-CREATE TABLE notificacoes (
+CREATE TABLE cm_hub_aut_notificacoes (
     id         NUMBER(10)     GENERATED BY DEFAULT AS IDENTITY,
     usuario_id NUMBER(10)     NOT NULL,
     chamado_id NUMBER(10),
@@ -346,14 +346,14 @@ CREATE TABLE notificacoes (
     titulo     VARCHAR2(255 CHAR)  NOT NULL,
     lida       NUMBER(1)      DEFAULT 0,
     created_at TIMESTAMP,
-    CONSTRAINT pk_notificacoes      PRIMARY KEY (id),
-    CONSTRAINT fk_notif_user    FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
-    CONSTRAINT fk_notif_chamado FOREIGN KEY (chamado_id) REFERENCES chamados(id),
-    CONSTRAINT ck_notif_lida CHECK (lida IN (0,1))
+    CONSTRAINT pk_cm_hub_aut_notificacoes      PRIMARY KEY (id),
+    CONSTRAINT fk_cm_hub_aut_notif_user    FOREIGN KEY (usuario_id) REFERENCES cm_hub_aut_usuarios(id),
+    CONSTRAINT fk_cm_hub_aut_notif_chamado FOREIGN KEY (chamado_id) REFERENCES cm_hub_aut_chamados(id),
+    CONSTRAINT ck_cm_hub_aut_notif_lida CHECK (lida IN (0,1))
 );
 
 -- ── 15. faq_perguntas ───────────────────────────────────────────
-CREATE TABLE faq_perguntas (
+CREATE TABLE cm_hub_aut_faq_perguntas (
     id         NUMBER(10)     GENERATED BY DEFAULT AS IDENTITY,
     modulo     VARCHAR2(50 CHAR)   NOT NULL,
     pergunta   VARCHAR2(500 CHAR)  NOT NULL,
@@ -362,13 +362,13 @@ CREATE TABLE faq_perguntas (
     ativo      NUMBER(1)      DEFAULT 1,
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
-    CONSTRAINT pk_faq_perguntas PRIMARY KEY (id),
-    CONSTRAINT ck_faq_ativo CHECK (ativo IN (0,1))
+    CONSTRAINT pk_cm_hub_aut_faq_perguntas PRIMARY KEY (id),
+    CONSTRAINT ck_cm_hub_aut_faq_ativo CHECK (ativo IN (0,1))
 );
-CREATE INDEX ix_faq_perguntas_modulo ON faq_perguntas (modulo);
+CREATE INDEX ix_cm_hub_aut_faq_perguntas_modulo ON cm_hub_aut_faq_perguntas (modulo);
 
 -- ── 16. links_ficha ─────────────────────────────────────────────
-CREATE TABLE links_ficha (
+CREATE TABLE cm_hub_aut_links_ficha (
     id              NUMBER(10)     GENERATED BY DEFAULT AS IDENTITY,
     token           VARCHAR2(64 CHAR)   NOT NULL,   -- segredo que vai na URL (?t=)
     cnpj_cliente    VARCHAR2(14 CHAR)   NOT NULL,   -- CNPJ do cliente (só dígitos)
@@ -382,11 +382,11 @@ CREATE TABLE links_ficha (
     created_at      TIMESTAMP,
     expira_em       TIMESTAMP      NOT NULL,        -- created_at + 7 dias
     usado_em        TIMESTAMP,                      -- quando uma ficha foi enviada pelo link
-    submission_uuid VARCHAR2(36 CHAR),             -- ficha gerada (ref. lógica → submissoes.uuid)
+    submission_uuid VARCHAR2(36 CHAR),             -- ficha gerada (ref. lógica → cm_hub_aut_submissoes.uuid)
     cnpj_divergente NUMBER(1)      DEFAULT 0,
-    CONSTRAINT pk_links_ficha       PRIMARY KEY (id),
-    CONSTRAINT uq_links_ficha_token UNIQUE (token),
-    CONSTRAINT ck_links_ficha_div   CHECK (cnpj_divergente IN (0,1))
+    CONSTRAINT pk_cm_hub_aut_links_ficha       PRIMARY KEY (id),
+    CONSTRAINT uq_cm_hub_aut_links_ficha_token UNIQUE (token),
+    CONSTRAINT ck_cm_hub_aut_links_ficha_div   CHECK (cnpj_divergente IN (0,1))
 );
 ```
 
@@ -419,8 +419,8 @@ CREATE TABLE links_ficha (
    `DEFAULT SYSTIMESTAMP`.
 
 6. **Dados de configuração (seeds):** além da estrutura, o Hub precisa de dados
-   iniciais em `notas_unidades`, `notas_categorias`, `centros_custo`,
-   `operacoes_nota` e `faq_perguntas` (gerados pelos scripts em `scripts/`).
+   iniciais em `cm_hub_aut_notas_unidades`, `cm_hub_aut_notas_categorias`, `cm_hub_aut_centros_custo`,
+   `cm_hub_aut_operacoes_nota` e `cm_hub_aut_faq_perguntas` (gerados pelos scripts em `scripts/`).
    Posso exportar esses registros em `INSERT`s Oracle se a TI quiser já popular.
 
 ---
@@ -432,41 +432,41 @@ CREATE TABLE links_ficha (
 > DDL da Seção 3 já contempla estas mudanças para instalações **do zero**.
 >
 > Origem das mudanças (migrations Alembic):
-> `c3d4e5f6a7b8` (colunas de envio ao N8N em `submissoes`),
-> `b2c3d4e5f6a7` (índice de nota única em `lancamentos_notas`) e
-> `d4e5f6a7b8c9` (tabela nova `links_ficha`).
+> `c3d4e5f6a7b8` (colunas de envio ao N8N em `cm_hub_aut_submissoes`),
+> `b2c3d4e5f6a7` (índice de nota única em `cm_hub_aut_lancamentos_notas`) e
+> `d4e5f6a7b8c9` (tabela nova `cm_hub_aut_links_ficha`).
 
-### 5.1. Novas colunas em `submissoes` (controle de envio ao N8N)
+### 5.1. Novas colunas em `cm_hub_aut_submissoes` (controle de envio ao N8N)
 
 Evitam que uma ficha fique "órfã" quando o N8N está fora: o envio passa a ser
 sinalizado e pode ser reenviado pelo Monitor.
 
 ```sql
-ALTER TABLE submissoes ADD (
+ALTER TABLE cm_hub_aut_submissoes ADD (
     envio_n8n   VARCHAR2(20 CHAR) DEFAULT 'enviado',  -- 'enviado' | 'falhou'
     n8n_erro    CLOB,                                  -- erro do último envio
     n8n_payload CLOB                                   -- dados p/ reenvio (JSON)
 );
-ALTER TABLE submissoes ADD CONSTRAINT ck_subm_payload CHECK (n8n_payload IS JSON);
+ALTER TABLE cm_hub_aut_submissoes ADD CONSTRAINT ck_cm_hub_aut_subm_payload CHECK (n8n_payload IS JSON);
 ```
 
-### 5.2. Índice único de nota ativa em `lancamentos_notas`
+### 5.2. Índice único de nota ativa em `cm_hub_aut_lancamentos_notas`
 
 Impede lançar a **mesma nota** (mesma chave) duas vezes enquanto ativa.
 É o equivalente Oracle do índice **parcial** do PostgreSQL (índice baseado em função).
 
 ```sql
-CREATE UNIQUE INDEX uq_lancamentos_notas_chave_ativa
-    ON lancamentos_notas (
+CREATE UNIQUE INDEX uq_cm_hub_aut_lancamentos_notas_chave_ativa
+    ON cm_hub_aut_lancamentos_notas (
         CASE WHEN status <> 'cancelada' AND chave_acesso IS NOT NULL
              THEN chave_acesso END
     );
 ```
 
-### 5.3. Tabela nova `links_ficha` (controle dos links gerados)
+### 5.3. Tabela nova `cm_hub_aut_links_ficha` (controle dos links gerados)
 
 ```sql
-CREATE TABLE links_ficha (
+CREATE TABLE cm_hub_aut_links_ficha (
     id              NUMBER(10)     GENERATED BY DEFAULT AS IDENTITY,
     token           VARCHAR2(64 CHAR)   NOT NULL,   -- segredo que vai na URL (?t=)
     cnpj_cliente    VARCHAR2(14 CHAR)   NOT NULL,   -- CNPJ do cliente (só dígitos)
@@ -480,10 +480,10 @@ CREATE TABLE links_ficha (
     created_at      TIMESTAMP,
     expira_em       TIMESTAMP      NOT NULL,        -- created_at + 7 dias
     usado_em        TIMESTAMP,                      -- quando uma ficha foi enviada pelo link
-    submission_uuid VARCHAR2(36 CHAR),             -- ficha gerada (ref. lógica → submissoes.uuid)
+    submission_uuid VARCHAR2(36 CHAR),             -- ficha gerada (ref. lógica → cm_hub_aut_submissoes.uuid)
     cnpj_divergente NUMBER(1)      DEFAULT 0,
-    CONSTRAINT pk_links_ficha       PRIMARY KEY (id),
-    CONSTRAINT uq_links_ficha_token UNIQUE (token),
-    CONSTRAINT ck_links_ficha_div   CHECK (cnpj_divergente IN (0,1))
+    CONSTRAINT pk_cm_hub_aut_links_ficha       PRIMARY KEY (id),
+    CONSTRAINT uq_cm_hub_aut_links_ficha_token UNIQUE (token),
+    CONSTRAINT ck_cm_hub_aut_links_ficha_div   CHECK (cnpj_divergente IN (0,1))
 );
 ```
