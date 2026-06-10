@@ -29,6 +29,7 @@ from utils.fila import (
 )
 from utils.n8n_security import resume_url_confiavel, exigir_token_n8n
 from utils.auth import permissao_required
+from utils.validacao import eh_uuid_valido
 from utils.rastreio import iniciar_execucao_robo, finalizar_execucao_robo
 from automacoes.clientes import cadastro_novo
 from automacoes.clientes import cadastro_reativacao
@@ -361,8 +362,20 @@ def api_monitor_cadastros():
 @clientes_bp.route('/download_doc/<uuid>/<doc_nome>')
 @permissao_required('monitor')
 def download_doc(uuid, doc_nome):
-    pasta_cliente = os.path.join(os.getcwd(), 'uploads_fichas', uuid)
-    if os.path.exists(pasta_cliente):
+    # O 'uuid' vem da URL e é usado para montar um caminho de pasta.
+    # Sem validar, alguém poderia passar algo como "../../etc" e escapar
+    # da pasta de uploads (path traversal). Exigimos um UUID bem-formado.
+    if not eh_uuid_valido(uuid):
+        return "❌ Documento não encontrado.", 404
+
+    base = os.path.join(os.getcwd(), 'uploads_fichas')
+    pasta_cliente = os.path.join(base, uuid)
+    # Defesa extra: garante que o caminho final está realmente dentro da
+    # pasta de uploads, mesmo que algo escape da validação acima.
+    if os.path.commonpath([os.path.realpath(pasta_cliente), os.path.realpath(base)]) != os.path.realpath(base):
+        return "❌ Documento não encontrado.", 404
+
+    if os.path.isdir(pasta_cliente):
         for arquivo in os.listdir(pasta_cliente):
             nome_sem_extensao = os.path.splitext(arquivo)[0]
             if nome_sem_extensao == doc_nome:

@@ -5,6 +5,7 @@
 import logging
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from models import Usuario
+from utils.validacao import eh_destino_seguro
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +51,12 @@ def login():
 
         logger.info(f"Login realizado: {usuario.nome} ({usuario.cargo})")
 
-        # Redireciona para a página que tentou acessar antes (se houver)
-        proximo = request.args.get('next', url_for('main.home'))
+        # Redireciona para a página que tentou acessar antes (se houver).
+        # Só aceitamos caminhos internos: um 'next' apontando para outro site
+        # seria um open redirect (golpe de phishing), então cai na home.
+        proximo = request.args.get('next', '')
+        if not eh_destino_seguro(proximo):
+            proximo = url_for('main.home')
         return redirect(proximo)
 
     return render_template('login.html')
