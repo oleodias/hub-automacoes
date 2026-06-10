@@ -2,27 +2,32 @@
 # requirements.txt — Hub de Automações Ciamed
 # ══════════════════════════════════════════════════════════════
 # Instalar tudo: pip install -r requirements.txt
+#
+# As versões estão FIXADAS (==) de propósito: garante que uma
+# reinstalação futura traga exatamente as mesmas versões que já
+# funcionam hoje, sem surpresas de atualização (builds reproduzíveis).
+# Versões capturadas com `pip freeze` da máquina de produção.
 # ══════════════════════════════════════════════════════════════
 
 # ── Framework Web ─────────────────────────────────────────────
-Flask
-flask-sqlalchemy
-flask-limiter        # limite de tentativas de login (anti-força-bruta)
+Flask==3.1.3
+flask-sqlalchemy==3.1.1
+flask-limiter==4.1.1        # limite de tentativas de login (anti-força-bruta)
 
 # ── Banco de Dados ────────────────────────────────────────────
-sqlalchemy
-psycopg2-binary
-alembic
+sqlalchemy==2.0.50
+psycopg2-binary==2.9.12
+alembic==1.18.4
 
 # ── Automação (RPA) ──────────────────────────────────────────
-selenium
-webdriver-manager
+selenium==4.44.0
+webdriver-manager==4.1.1
 
 # ── Processamento de Dados ───────────────────────────────────
-pandas
-openpyxl
+pandas==3.0.3
+openpyxl==3.1.5
 
 # ── Utilitários ──────────────────────────────────────────────
-python-dotenv
-requests
-beautifulsoup4
+python-dotenv==1.2.2
+requests==2.34.2
+beautifulsoup4==4.14.3
