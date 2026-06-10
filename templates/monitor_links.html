@@ -14,7 +14,7 @@
   }
   #tela-links h2 { margin: 0; font-family: 'Syne', sans-serif; }
   #tela-links .stats-row {
-    display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 18px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px;
   }
   #tela-links .stat-item {
     background: #0f172a; border: 1px solid #1e293b; border-radius: 10px;
@@ -71,10 +71,6 @@
       <div class="stat-value" id="stExpirado" style="color:#94a3b8">—</div>
       <div class="stat-label">Expirados</div>
     </div>
-    <div class="stat-item">
-      <div class="stat-value" id="stDiverg" style="color:#ef4444">—</div>
-      <div class="stat-label">CNPJ divergente</div>
-    </div>
   </div>
 
   <div class="filtros">
@@ -112,6 +108,9 @@
 
 {% block scripts %}
 <script>
+  // Só o admin do Hub pode excluir links de fato (operador vê o botão,
+  // mas recebe orientação para contatar o admin).
+  window.IS_ADMIN = {{ is_admin | tojson }};
   let TODOS = [];
 
   const BADGE = {
@@ -155,7 +154,6 @@
     document.getElementById("stAtivo").textContent = s.ativo || 0;
     document.getElementById("stUsado").textContent = s.usado || 0;
     document.getElementById("stExpirado").textContent = s.expirado || 0;
-    document.getElementById("stDiverg").textContent = s.divergentes || 0;
   }
 
   function renderizar(lista) {
@@ -169,20 +167,19 @@
       .map((l) => {
         const b = BADGE[l.status] || BADGE.expirado;
         const tipo = l.tipo === "REATIVACAO" ? "🔄 Reativação" : "🆕 Novo";
-        const diverg = l.cnpj_divergente
-          ? ` <i class="fa-solid fa-triangle-exclamation" title="CNPJ da ficha diferente do link" style="color:#ef4444"></i>`
-          : "";
-        let acoes = "—";
+        let acoes = "";
         if (l.status === "ativo") {
-          acoes = `<button class="btn-mini" onclick="copiarLink('${l.token}')"><i class="fa-solid fa-copy"></i> Copiar link</button>`;
+          acoes = `<button class="btn-mini" onclick="copiarLink('${l.token}')"><i class="fa-solid fa-copy"></i> Copiar link</button> `;
         } else if (l.status === "usado") {
-          acoes = `<span style="color:#60a5fa">Ficha enviada</span>`;
+          acoes = `<span style="color:#60a5fa;margin-right:6px">Ficha enviada</span>`;
         }
+        // Botão Excluir aparece para todos; só admin exclui de fato.
+        acoes += `<button class="btn-mini" title="Excluir link" style="color:#ef4444" onclick="excluirLink(${l.id})"><i class="fa-solid fa-trash"></i></button>`;
         return `
       <tr>
         <td>${l.created_at || "—"}</td>
         <td>${l.gerado_por_nome || "—"}</td>
-        <td>${fmtCnpj(l.cnpj_cliente)}${diverg}</td>
+        <td>${fmtCnpj(l.cnpj_cliente)}</td>
         <td>${l.vendedor || "—"}</td>
         <td>${tipo}</td>
         <td>${l.expira_em || "—"}</td>
@@ -191,6 +188,27 @@
       </tr>`;
       })
       .join("");
+  }
+
+  async function excluirLink(id) {
+    if (!window.IS_ADMIN) {
+      alert(
+        "🔒 Apenas um administrador do Hub pode excluir links.\n" +
+          "Contate o administrador para remover este link.",
+      );
+      return;
+    }
+    if (!confirm("Excluir definitivamente este link? Esta ação não pode ser desfeita.")) return;
+    try {
+      const res = await fetch("/api/links/" + id, { method: "DELETE" });
+      if (res.ok) {
+        carregarLinks();
+      } else {
+        alert("❌ Não foi possível excluir o link.");
+      }
+    } catch (e) {
+      alert("❌ Erro de conexão ao excluir.");
+    }
   }
 
   function copiarLink(token) {

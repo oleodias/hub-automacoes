@@ -28,7 +28,7 @@ from utils.fila import (
     fila_cadastro_status_dict, fila_cadastro_reset as _fila_cadastro_reset,
 )
 from utils.n8n_security import resume_url_confiavel, exigir_token_n8n
-from utils.auth import permissao_required
+from utils.auth import permissao_required, admin_required
 from utils.validacao import eh_uuid_valido
 import banco_links
 from utils.rastreio import iniciar_execucao_robo, finalizar_execucao_robo
@@ -235,13 +235,19 @@ def receber_ficha():
 
     # ── 2.1. Enriquecimento via CNPJ.ws ───────────────────────
     cnpj_limpo = re.sub(r'\D', '', campos['cnpj'])
-    dados_cnpj_ws = consultar_cnpj_ws(cnpj_limpo)
 
-    # Alerta de divergência: o CNPJ preenchido na ficha bate com o do link?
-    cnpj_divergente = bool(
-        not is_correcao and link_ficha and link_ficha.cnpj_cliente
-        and link_ficha.cnpj_cliente != cnpj_limpo
-    )
+    # O CNPJ preenchido na ficha PRECISA bater com o CNPJ do link.
+    # Se não bater, recusa de imediato (não salva, não consome o link)
+    # e orienta a pedir um novo link ao vendedor.
+    if (not is_correcao and link_ficha and link_ficha.cnpj_cliente
+            and link_ficha.cnpj_cliente != cnpj_limpo):
+        return jsonify({
+            'status': 'erro',
+            'mensagem': 'O CNPJ preenchido não corresponde ao CNPJ deste link. '
+                        'Verifique o número ou solicite um novo link ao seu vendedor.'
+        }), 403
+
+    dados_cnpj_ws = consultar_cnpj_ws(cnpj_limpo)
 
     campos['cnpj_limpo']               = cnpj_limpo
     campos['nome_fantasia']            = dados_cnpj_ws['nome_fantasia']
@@ -296,9 +302,9 @@ def receber_ficha():
             submission_uuid, campos['cnpj'], campos['razao_social'],
             campos, docs_finais
         )
-        # Marca o link como usado e registra a divergência de CNPJ (se houve).
+        # Marca o link como usado (o CNPJ já foi validado contra o do link).
         if link_ficha:
-            banco_links.marcar_usado(ficha_token, submission_uuid, cnpj_divergente)
+            banco_links.marcar_usado(ficha_token, submission_uuid, False)
 
     # ── 6. Nomes legíveis dos docs ─────────────────────────────
     nomes_legiveis = {
@@ -414,6 +420,15 @@ def api_monitor_links():
     )
     stats = banco_links.estatisticas()
     return jsonify({'links': links, 'stats': stats})
+
+
+@clientes_bp.route('/api/links/<int:link_id>', methods=['DELETE'])
+@admin_required
+def excluir_link(link_id):
+    """Exclui um link gerado. Apenas administradores do Hub (admin_required)."""
+    if banco_links.excluir_link(link_id):
+        return jsonify({'status': 'ok'})
+    return jsonify({'erro': 'Link não encontrado.'}), 404
 
 
 # ══════════════════════════════════════════════════════════════

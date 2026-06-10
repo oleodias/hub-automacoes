@@ -113,9 +113,61 @@ document.addEventListener("DOMContentLoaded", async () => {
       v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
       v = v.replace(/(\d{4})(\d)/, "$1-$2");
       e.target.value = v;
+
+      // Quando completar 14 dígitos, consulta a Receita (cnpj.ws).
+      const digits = v.replace(/\D/g, "");
+      const info = document.getElementById("linkCnpjInfo");
+      if (digits.length === 14) {
+        if (digits !== cnpjLinkUltimo) {
+          cnpjLinkUltimo = digits;
+          consultarCnpjLink(digits);
+        }
+      } else {
+        cnpjLinkUltimo = "";
+        cnpjLinkState = "idle";
+        if (info) info.style.display = "none";
+      }
     });
   }
 });
+
+// ════════════════════════════════════════════════════════════════════
+// CONSULTA AUTOMÁTICA DO CNPJ (na geração do link)
+// ════════════════════════════════════════════════════════════════════
+let cnpjLinkState = "idle"; // idle | consultando | ok | notfound | erro
+let cnpjLinkUltimo = "";
+
+async function consultarCnpjLink(digits) {
+  const info = document.getElementById("linkCnpjInfo");
+  if (!info) return;
+  cnpjLinkState = "consultando";
+  info.style.display = "block";
+  info.style.color = "#94a3b8";
+  info.textContent = "🔎 Consultando CNPJ na Receita...";
+  try {
+    const res = await fetch("/consulta_cnpj/" + digits);
+    const data = await res.json();
+    if (res.ok && !data.erro) {
+      cnpjLinkState = "ok";
+      info.style.color = "#10b981";
+      info.textContent = "✓ " + (data.razao_social || "CNPJ encontrado");
+    } else if (res.status === 429 || res.status >= 500) {
+      // API instável/limite: não bloqueia a geração do link
+      cnpjLinkState = "erro";
+      info.style.color = "#f59e0b";
+      info.textContent =
+        "⚠️ " + (data.message || "Não foi possível consultar agora.");
+    } else {
+      cnpjLinkState = "notfound";
+      info.style.color = "#ef4444";
+      info.textContent = "✗ CNPJ não encontrado. Verifique os números.";
+    }
+  } catch (e) {
+    cnpjLinkState = "erro";
+    info.style.color = "#f59e0b";
+    info.textContent = "⚠️ Não foi possível consultar o CNPJ agora.";
+  }
+}
 
 // ════════════════════════════════════════════════════════════════════
 // MODAL DE SELEÇÃO
@@ -220,6 +272,13 @@ async function gerarLinkCliente() {
   // ── CNPJ do cliente é obrigatório e deve ter 14 dígitos ──
   if (cnpjCliente.length !== 14) {
     alert("⚠️ Informe um CNPJ válido do cliente (14 dígitos).");
+    document.getElementById("linkCnpjCliente").focus();
+    return;
+  }
+
+  // ── Se a Receita não encontrou o CNPJ, não gera o link ──
+  if (cnpjLinkState === "notfound") {
+    alert("⚠️ O CNPJ informado não foi encontrado na Receita. Verifique os números.");
     document.getElementById("linkCnpjCliente").focus();
     return;
   }

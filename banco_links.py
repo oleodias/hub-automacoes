@@ -111,6 +111,18 @@ def marcar_usado(token, submission_uuid, cnpj_divergente):
     return True
 
 
+def excluir_link(link_id):
+    """Exclui um link gerado pelo seu id. Retorna True se existia."""
+    link = db.session.get(LinkFicha, link_id)
+    if not link:
+        return False
+    cnpj = link.cnpj_cliente
+    db.session.delete(link)
+    db.session.commit()
+    logger.info(f"[LINK] Excluido | id {link_id} | CNPJ {cnpj}")
+    return True
+
+
 def listar_links(busca=None, status=None, data_de=None, data_ate=None):
     """Lista os links gerados (mais recentes primeiro) com filtros opcionais."""
     query = LinkFicha.query.order_by(LinkFicha.created_at.desc())
