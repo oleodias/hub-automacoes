@@ -25,7 +25,9 @@ uploads_fichas/
 
 # ── LOGS: gerados em runtime, não são código ─────────────────
 Logs/
+logs/
 *.log
+*.log.*
 
 # ── SELENIUM: perfil do Chrome gerado pelo robô ─────────────
 # (essa pasta sozinha tem centenas de MB de lixo)
