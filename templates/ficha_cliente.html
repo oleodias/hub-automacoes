@@ -1316,6 +1316,13 @@
       </form>
     </div>
 
+    <script>
+      // Dados do link (vendedor/representante/etc) e o token assinado
+      // chegam do servidor já validados. Em modo correção, ficam vazios
+      // e o JS cai no fallback de ler a query string da URL.
+      window.FICHA_PARAMS = {{ (ficha_params or {}) | tojson }};
+      window.FICHA_TOKEN  = {{ (ficha_token or '') | tojson }};
+    </script>
     <script src="{{ url_for('static', filename='js/ficha_cliente.js') }}"></script>
   </body>
 </html>

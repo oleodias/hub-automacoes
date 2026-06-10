@@ -30,6 +30,7 @@ from utils.fila import (
 from utils.n8n_security import resume_url_confiavel, exigir_token_n8n
 from utils.auth import permissao_required
 from utils.validacao import eh_uuid_valido
+from utils.ficha_token import gerar_token_ficha, validar_token_ficha
 from utils.rastreio import iniciar_execucao_robo, finalizar_execucao_robo
 from automacoes.clientes import cadastro_novo
 from automacoes.clientes import cadastro_reativacao
@@ -49,9 +50,44 @@ def cadastro_clientes():
     return render_template('cadastro_clientes.html')
 
 
+@clientes_bp.route('/api/gerar_link_ficha', methods=['POST'])
+@permissao_required('clientes')
+def gerar_link_ficha():
+    """
+    Gera o token assinado do link da ficha (V-05). Só operadores logados
+    com permissão 'clientes' podem gerar links. O front monta a URL final
+    com origin + /ficha_cliente?t=<token>.
+    """
+    dados = request.get_json(silent=True) or {}
+    payload = {
+        'vendedor':   (dados.get('vendedor')   or '').strip(),
+        'rep':        (dados.get('rep')         or '').strip(),
+        'cap':        (dados.get('cap')         or '').strip(),
+        'tipo':       (dados.get('tipo')        or '').strip(),
+        'codigo_nl':  (dados.get('codigo_nl')   or '').strip(),
+    }
+    if not payload['vendedor'] or not payload['rep'] or not payload['cap'] or not payload['tipo']:
+        return jsonify({'erro': 'Preencha vendedor, representante, captação e tipo.'}), 400
+
+    token = gerar_token_ficha(payload)
+    return jsonify({'token': token})
+
+
 @clientes_bp.route('/ficha_cliente')
 def ficha_cliente():
-    return render_template('ficha_cliente.html')
+    # Modo correção: o link vem do e-mail de reprovação (N8N) com
+    # ?correcao=<uuid>. Continua protegido pelo conhecimento do UUID,
+    # como antes — não exige token.
+    if request.args.get('correcao'):
+        return render_template('ficha_cliente.html', ficha_params=None, ficha_token='')
+
+    # Nova ficha: exige o token assinado e dentro da validade.
+    token = request.args.get('t', '')
+    dados, motivo = validar_token_ficha(token)
+    if motivo:
+        return render_template('ficha_link_invalido.html', motivo=motivo), 403
+
+    return render_template('ficha_cliente.html', ficha_params=dados, ficha_token=token)
 
 
 # ══════════════════════════════════════════════════════════════
@@ -72,6 +108,14 @@ def receber_ficha():
         submission_uuid = uuid_existente
         docs_originais  = sub_original['docs_enviados']
     else:
+        # Ficha nova: exige o token assinado do link (V-05). Sem token
+        # válido, ninguém envia ficha por um link forjado ou expirado.
+        _dados_token, motivo = validar_token_ficha(request.form.get('ficha_token', ''))
+        if motivo:
+            return jsonify({
+                'status': 'erro',
+                'mensagem': 'Este link é inválido ou expirou. Solicite um novo link ao seu vendedor.'
+            }), 403
         submission_uuid = str(uuid_lib.uuid4())
         docs_originais  = []
 

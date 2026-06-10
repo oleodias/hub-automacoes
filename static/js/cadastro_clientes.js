@@ -186,7 +186,7 @@ function filtrarListaModal(filtro) {
 // ════════════════════════════════════════════════════════════════════
 // GERAÇÃO DO LINK MÁGICO
 // ════════════════════════════════════════════════════════════════════
-function gerarLinkCliente() {
+async function gerarLinkCliente() {
   const vendedor = document.getElementById("linkVendedor").value.trim();
   const representante = document
     .getElementById("linkRepresentante")
@@ -216,17 +216,34 @@ function gerarLinkCliente() {
     return;
   }
 
-  // ── Monta a URL ──
-  const baseUrl = window.location.origin + "/ficha_cliente";
-  let urlCompleta =
-    `${baseUrl}?vendedor=${encodeURIComponent(vendedor)}` +
-    `&rep=${encodeURIComponent(representante)}` +
-    `&cap=${encodeURIComponent(captacao)}` +
-    `&tipo=${encodeURIComponent(tipo)}`;
-
-  if (tipo === "REATIVACAO") {
-    urlCompleta += `&codigo_nl=${encodeURIComponent(codigoNl)}`;
+  // ── Pede ao servidor um token assinado e monta a URL ──
+  // O link agora carrega um "selo" assinado pelo Hub, válido por 7 dias.
+  let token;
+  try {
+    const resp = await fetch("/api/gerar_link_ficha", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        vendedor,
+        rep: representante,
+        cap: captacao,
+        tipo,
+        codigo_nl: tipo === "REATIVACAO" ? codigoNl : "",
+      }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      alert("⚠️ " + (data.erro || "Não foi possível gerar o link."));
+      return;
+    }
+    token = data.token;
+  } catch (e) {
+    alert("❌ Erro de conexão ao gerar o link. Tente novamente.");
+    return;
   }
+
+  const urlCompleta =
+    window.location.origin + "/ficha_cliente?t=" + encodeURIComponent(token);
 
   // Mostra o link na tela
   document.getElementById("urlMágica").value = urlCompleta;
