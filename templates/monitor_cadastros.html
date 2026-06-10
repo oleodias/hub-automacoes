@@ -32,6 +32,31 @@ content %}
     </div>
   </div>
 
+    <!-- ALERTA: fichas que falharam ao enviar ao N8N (anti-ficha-órfã) -->
+    <div
+      id="bannerN8nFalhou"
+      onclick="reenviarTodasFalhas()"
+      style="
+        display: none;
+        cursor: pointer;
+        margin: 0 0 14px;
+        padding: 12px 16px;
+        background: rgba(239, 68, 68, 0.12);
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        border-radius: 8px;
+        color: #ef4444;
+        font-weight: 600;
+        align-items: center;
+        gap: 10px;
+      "
+    >
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <span id="bannerN8nTexto"></span>
+      <span style="margin-left: auto; text-decoration: underline"
+        >Reenviar todas</span
+      >
+    </div>
+
     <!-- STATS ROW -->
     <div class="stats-row" id="statsRow">
       <div class="stat-item">
@@ -528,6 +553,61 @@ content %}
       document.getElementById("statCadastrado").textContent =
         stats.cadastrado || 0;
         document.getElementById("statErroRobo").textContent = stats.erro_robo || 0;
+
+      // Alerta de fichas que falharam no envio ao N8N (anti-ficha-órfã)
+      const falhas = stats.envio_falhou || 0;
+      const banner = document.getElementById("bannerN8nFalhou");
+      if (falhas > 0) {
+        document.getElementById("bannerN8nTexto").textContent =
+          falhas === 1
+            ? "1 ficha não foi enviada ao N8N e está aguardando reenvio."
+            : `${falhas} fichas não foram enviadas ao N8N e estão aguardando reenvio.`;
+        banner.style.display = "flex";
+      } else {
+        banner.style.display = "none";
+      }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // REENVIO AO N8N (anti-ficha-órfã)
+    // ══════════════════════════════════════════════════════════════
+    async function reenviarFicha(uuid) {
+      try {
+        const res = await fetch("/api/reenviar_ficha/" + uuid, {
+          method: "POST",
+        });
+        const data = await res.json();
+        if (res.ok && data.status === "ok") {
+          await carregarDados();
+        } else {
+          alert(
+            "❌ Não foi possível reenviar: " +
+              (data.mensagem || data.erro || "erro desconhecido"),
+          );
+        }
+      } catch (e) {
+        alert("❌ Erro de conexão ao reenviar.");
+      }
+    }
+
+    async function reenviarTodasFalhas() {
+      const falhas = todosOsCadastros.filter((c) => c.envio_n8n === "falhou");
+      if (!falhas.length) return;
+      if (!confirm(`Reenviar ${falhas.length} ficha(s) ao N8N?`)) return;
+      let okCount = 0;
+      for (const c of falhas) {
+        try {
+          const res = await fetch("/api/reenviar_ficha/" + c.uuid, {
+            method: "POST",
+          });
+          const data = await res.json();
+          if (res.ok && data.status === "ok") okCount++;
+        } catch (e) {}
+      }
+      await carregarDados();
+      alert(
+        `Reenvio concluído: ${okCount} de ${falhas.length} enviada(s) com sucesso.`,
+      );
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -596,6 +676,7 @@ content %}
           const codErp = d.codigo_nl || "—";
           const tipo =
             d.tipo_cadastro === "REATIVACAO" ? "🔄 Reativação" : "🆕 Novo";
+          const falhou = c.envio_n8n === "falhou";
 
           return `
       <tr onclick="abrirModal('${c.uuid}')" style="cursor:pointer">
@@ -609,9 +690,19 @@ content %}
           <span class="badge-status-monitor" style="color:${st.cor};background:${st.bg}">
             ${st.label}
           </span>
+          ${
+            falhou
+              ? `<span title="Falha no envio ao N8N — clique no avião para reenviar" style="color:#ef4444;margin-left:6px"><i class="fa-solid fa-triangle-exclamation"></i></span>`
+              : ""
+          }
         </td>
         <td class="td-center td-erp">${codErp}</td>
         <td class="td-center">
+          ${
+            falhou
+              ? `<button class="btn-detalhe" title="Reenviar ao N8N" style="color:#ef4444" onclick="event.stopPropagation();reenviarFicha('${c.uuid}')"><i class="fa-solid fa-paper-plane"></i></button>`
+              : ""
+          }
           <button class="btn-detalhe" onclick="event.stopPropagation();abrirModal('${c.uuid}')">
             <i class="fa-solid fa-eye"></i>
           </button>

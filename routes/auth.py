@@ -5,13 +5,22 @@
 import logging
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from models import Usuario
+from extensions import limiter
+from utils.validacao import eh_destino_seguro
 
 logger = logging.getLogger(__name__)
 
 auth_bp = Blueprint('auth', __name__)
 
+# Mensagem mostrada quando o limite de tentativas é estourado.
+ERRO_RATE_LIMIT = ("Muitas tentativas de login. Aguarde um minuto e "
+                   "tente novamente.")
+
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
+# Anti-força-bruta: limita só os POST (envios do formulário) por IP.
+# O GET (abrir a tela) não é limitado, então a página sempre carrega.
+@limiter.limit("10 per minute; 100 per hour", methods=["POST"])
 def login():
     """
     Tela de login do Hub.
@@ -50,11 +59,25 @@ def login():
 
         logger.info(f"Login realizado: {usuario.nome} ({usuario.cargo})")
 
-        # Redireciona para a página que tentou acessar antes (se houver)
-        proximo = request.args.get('next', url_for('main.home'))
+        # Redireciona para a página que tentou acessar antes (se houver).
+        # Só aceitamos caminhos internos: um 'next' apontando para outro site
+        # seria um open redirect (golpe de phishing), então cai na home.
+        proximo = request.args.get('next', '')
+        if not eh_destino_seguro(proximo):
+            proximo = url_for('main.home')
         return redirect(proximo)
 
     return render_template('login.html')
+
+
+@auth_bp.app_errorhandler(429)
+def muitas_tentativas(e):
+    """
+    Quando o limite de tentativas é estourado (login), mostra a própria
+    tela de login com um aviso claro, em vez da página de erro genérica.
+    O status 429 é mantido na resposta.
+    """
+    return render_template('login.html', erro=ERRO_RATE_LIMIT), 429
 
 
 @auth_bp.route('/logout')

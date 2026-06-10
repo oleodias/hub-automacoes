@@ -14,11 +14,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 1. LER PARÂMETROS DA URL
   // ──────────────────────────────────────────────────────────────────────────
   const params = new URLSearchParams(window.location.search);
-  const vendedor = params.get("vendedor");
-  const representante = params.get("rep");
-  const captacao = params.get("cap");
-  const tipo = params.get("tipo");
-  const codigoNl = params.get("codigo_nl"); // presente só quando tipo=REATIVACAO
+  // Em ficha nova, os dados vêm do token assinado (window.FICHA_PARAMS),
+  // já validado pelo servidor. Em modo correção, FICHA_PARAMS é vazio e
+  // caímos no fallback da query string da URL.
+  const fp =
+    window.FICHA_PARAMS && Object.keys(window.FICHA_PARAMS).length
+      ? window.FICHA_PARAMS
+      : null;
+  const getParam = (chave) => (fp ? fp[chave] || null : params.get(chave));
+
+  const vendedor = getParam("vendedor");
+  const representante = getParam("rep");
+  const captacao = getParam("cap");
+  const tipo = getParam("tipo");
+  const codigoNl = getParam("codigo_nl"); // presente só quando tipo=REATIVACAO
   const correcaoUuid = params.get("correcao"); // presente só em modo correção
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -453,6 +462,8 @@ async function enviarParaN8N() {
 
   // ── Monta o FormData ─────────────────────────────────────────────────────
   const formData = new FormData();
+  // Token assinado do link (exigido pelo servidor em ficha nova; vazio em correção)
+  if (window.FICHA_TOKEN) formData.append("ficha_token", window.FICHA_TOKEN);
   // Rastreadores
   formData.append("vendedor", vendedor);
   formData.append(

@@ -75,6 +75,6 @@ def run_fornecedor():
             yield f"data: ❌ Erro interno: {str(e)}\n\n"
             yield "data: [FIM_DO_PROCESSO]\n\n"
         finally:
-            finalizar_execucao()
+            finalizar_execucao(meu_id)
 
     return Response(generate(), mimetype='text/event-stream')

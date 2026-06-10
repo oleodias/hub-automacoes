@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Link inválido</title>
+    <style>
+      body {
+        background-color: #263238;
+        color: #fff;
+        font-family: "Segoe UI", sans-serif;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        text-align: center;
+        padding: 0 20px;
+      }
+      h1 { color: #05776c; margin-bottom: 10px; }
+      p { font-size: 1.15rem; color: #b0bec5; max-width: 520px; }
+      .caixa {
+        margin-top: 20px;
+        padding: 18px 32px;
+        border: 1px solid #05776c;
+        border-radius: 8px;
+        background-color: rgba(5, 119, 108, 0.1);
+        color: #b0bec5;
+      }
+    </style>
+  </head>
+  <body>
+    {% if motivo == 'expirado' %}
+      <h1>⏳ Link expirado</h1>
+      <p>O prazo de validade deste link de cadastro já passou.</p>
+    {% elif motivo == 'usado' %}
+      <h1>✅ Link já utilizado</h1>
+      <p>Este link já foi usado para enviar uma ficha de cadastro.</p>
+    {% else %}
+      <h1>🔒 Link inválido</h1>
+      <p>Este link de cadastro não é válido.</p>
+    {% endif %}
+    <div class="caixa">
+      Solicite um novo link ao seu vendedor para preencher a ficha.
+    </div>
+  </body>
+</html>

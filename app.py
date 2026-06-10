@@ -1,23 +1,21 @@
 # ══════════════════════════════════════════════════════════════
 # app.py — Hub de Automações Ciamed (Ponto de Entrada)
 # ══════════════════════════════════════════════════════════════
-# Este arquivo faz 5 coisas:
+# Este arquivo faz 4 coisas:
 #   1. Cria o Flask e configura o banco
 #   2. Registra todos os blueprints
 #   3. Exige login em TODAS as rotas (exceto as públicas)
-#   4. Define o porteiro digital (controle de horário)
-#   5. Inicia o servidor
+#   4. Inicia o servidor
 # ══════════════════════════════════════════════════════════════
 
 import os
-from datetime import datetime, time, timedelta
+from datetime import timedelta
 from flask import Flask, request, session, redirect, url_for
-import urllib3
 
 from dotenv import load_dotenv
 load_dotenv()
 
-from extensions import db
+from extensions import db, limiter
 from utils.logging_config import configurar_logging
 
 
@@ -27,21 +25,70 @@ from utils.logging_config import configurar_logging
 # ══════════════════════════════════════════════════════════════
 
 app = Flask(__name__)
-app.secret_key = os.getenv('FLASK_SECRET_KEY', 'chave_reserva_caso_falhe')
 
-# Sessão expira após 8 horas de inatividade
+# Ambiente: "dev" (seu PC) ou "prod" (servidor). Controla o modo debug.
+AMBIENTE = os.getenv('AMBIENTE', 'prod').strip().lower()
+
+# Chave secreta: assina os cookies de login. É OBRIGATÓRIA e NÃO tem
+# valor de reserva no código (uma reserva pública deixaria forjar logins).
+# Se faltar no .env, o app não sobe — é melhor falhar agora do que rodar inseguro.
+app.secret_key = os.getenv('FLASK_SECRET_KEY')
+if not app.secret_key:
+    raise RuntimeError(
+        "FLASK_SECRET_KEY não definida. Crie a variável no arquivo .env "
+        "(ex.: gere uma com `python -c \"import secrets; print(secrets.token_hex(32))\"`). "
+        "O app não sobe sem ela por segurança."
+    )
+
+# Sessão expira após 1 hora de inatividade
 app.permanent_session_lifetime = timedelta(hours=1)
+
+# ── Segurança dos cookies de sessão ───────────────────────────
+# HttpOnly: o cookie não fica acessível via JavaScript (mitiga roubo por XSS).
+# SameSite=Lax: o navegador não envia o cookie em requisições cross-site
+#   (mitiga a maior parte dos ataques CSRF).
+# Secure: o cookie só trafega por HTTPS. Ligado apenas em produção, pois o
+#   ambiente local roda em HTTP — em dev, Secure quebraria o login.
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE']   = (AMBIENTE == 'prod')
+
+# Em produção o app roda atrás do Nginx. Sem isso, o Flask enxerga o IP do
+# proxy (sempre o mesmo) em vez do IP real do cliente — o que faria o
+# limite de tentativas valer para TODO mundo junto. ProxyFix lê o
+# X-Forwarded-For que o Nginx envia. Em dev não há proxy, então não aplica.
+if AMBIENTE == 'prod':
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
 # Banco de Dados (PostgreSQL)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
-# Desliga avisos de SSL do Selenium
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+# Controle de taxa (anti-força-bruta no login)
+limiter.init_app(app)
 
 # Configura o sistema de logging (terminal + arquivo)
 configurar_logging()
+
+
+# ══════════════════════════════════════════════════════════════
+# CABEÇALHOS DE SEGURANÇA (aplicados a TODA resposta)
+# ══════════════════════════════════════════════════════════════
+
+@app.after_request
+def aplicar_cabecalhos_seguranca(resposta):
+    # Impede o navegador de "adivinhar" o tipo do arquivo (anti-MIME-sniffing).
+    resposta.headers['X-Content-Type-Options'] = 'nosniff'
+    # Impede que o Hub seja embutido em <iframe> de outro site (anti-clickjacking).
+    resposta.headers['X-Frame-Options'] = 'DENY'
+    # Não vaza a URL interna ao navegar para fora do site.
+    resposta.headers['Referrer-Policy'] = 'same-origin'
+    # HSTS: força HTTPS. Só em produção, onde de fato há HTTPS.
+    if AMBIENTE == 'prod':
+        resposta.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    return resposta
 
 
 # ══════════════════════════════════════════════════════════════
@@ -121,46 +168,6 @@ def exigir_login():
 
 
 # ══════════════════════════════════════════════════════════════
-# PORTEIRO DIGITAL (CONTROLE DE HORÁRIO)
-# ══════════════════════════════════════════════════════════════
-
-HORA_INICIO = time(00, 00)
-HORA_FIM    = time(23, 59)
-DIAS_UTEIS  = [0, 1, 2, 3, 4, 5, 6]
-
-@app.before_request
-def verificar_horario():
-    # Não aplica para rotas públicas ou login
-    if request.endpoint in ROTAS_PUBLICAS:
-        return None
-    if request.endpoint and 'static' in request.endpoint:
-        return None
-
-    if request.args.get('bypass') == 'leo_admin':
-        session['acesso_noturno'] = True
-        return redirect(url_for('main.home'))
-
-    if session.get('acesso_noturno'):
-        return None
-
-    agora = datetime.now()
-    if agora.weekday() not in DIAS_UTEIS or not (HORA_INICIO <= agora.time() < HORA_FIM):
-        return """
-        <body style="background-color: #263238; color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; margin: 0;">
-            <img src="/static/img/ciamedia.png" style="height: 60px; margin-bottom: 20px;">
-            <h1 style="color: #05776c; margin-bottom: 10px;">🌙 Sistema em Repouso</h1>
-            <p style="font-size: 1.2rem; color: #b0bec5; margin-bottom: 30px; text-align: center; max-width: 500px;">
-                A Central de Automação Fiscal da Ciamed opera exclusivamente em horário comercial.
-            </p>
-            <div style="padding: 20px 40px; border: 1px solid #05776c; border-radius: 8px; background-color: rgba(5, 119, 108, 0.1); text-align: center;">
-                <strong style="color: white;">Horário de Funcionamento:</strong><br>
-                <span style="color: #b0bec5;">Segunda a Sexta: 08:00 às 18:00</span>
-            </div>
-        </body>
-        """, 403
-
-
-# ══════════════════════════════════════════════════════════════
 # CONTEXT PROCESSOR: dados do usuário disponíveis em TODOS os templates
 # ══════════════════════════════════════════════════════════════
 
@@ -192,5 +199,16 @@ def injetar_usuario():
 # do banco — sem corrida de criação de schema entre múltiplos workers.
 
 if __name__ == '__main__':
-    print("🚀 SERVIDOR ONLINE! Acesse pelo IP da sua máquina.")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # ATENÇÃO (deploy): este servidor embutido do Flask é só para
+    # desenvolvimento. Em produção, NÃO use `python app.py` — sirva o app
+    # com Waitress (Windows) ou Gunicorn (Linux) atrás do Nginx com HTTPS.
+    # Ex.: waitress-serve --listen=127.0.0.1:5000 app:app
+    #
+    # O modo debug SÓ liga em desenvolvimento (AMBIENTE=dev no .env).
+    # Com debug ligado e exposto, um erro vira um console remoto no servidor.
+    debug = (AMBIENTE == 'dev')
+    if debug:
+        print("🚀 SERVIDOR ONLINE (modo DEV/debug). Acesse pelo IP da sua máquina.")
+    else:
+        print("🚀 SERVIDOR ONLINE (modo PROD, debug desligado).")
+    app.run(host='0.0.0.0', port=5000, debug=debug)
