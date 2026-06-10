@@ -34,6 +34,9 @@
     {% if motivo == 'expirado' %}
       <h1>⏳ Link expirado</h1>
       <p>O prazo de validade deste link de cadastro já passou.</p>
+    {% elif motivo == 'usado' %}
+      <h1>✅ Link já utilizado</h1>
+      <p>Este link já foi usado para enviar uma ficha de cadastro.</p>
     {% else %}
       <h1>🔒 Link inválido</h1>
       <p>Este link de cadastro não é válido.</p>

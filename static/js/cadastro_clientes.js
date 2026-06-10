@@ -102,6 +102,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     });
   }
+
+  // ── Máscara de CNPJ no campo do cliente ──
+  const inputCnpjCliente = document.getElementById("linkCnpjCliente");
+  if (inputCnpjCliente) {
+    inputCnpjCliente.addEventListener("input", (e) => {
+      let v = e.target.value.replace(/\D/g, "").substring(0, 14);
+      v = v.replace(/^(\d{2})(\d)/, "$1.$2");
+      v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+      v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
+      v = v.replace(/(\d{4})(\d)/, "$1-$2");
+      e.target.value = v;
+    });
+  }
 });
 
 // ════════════════════════════════════════════════════════════════════
@@ -194,10 +207,20 @@ async function gerarLinkCliente() {
   const captacao = document.getElementById("linkCaptacao").value;
   const tipo = document.getElementById("linkTipoCadastro").value;
   const codigoNl = document.getElementById("linkCodigoNl").value.trim();
+  const cnpjCliente = document
+    .getElementById("linkCnpjCliente")
+    .value.replace(/\D/g, "");
 
   // ── Validação básica ──
   if (!vendedor || !representante || !captacao || !tipo) {
     alert("⚠️ Preencha todos os campos antes de gerar o link!");
+    return;
+  }
+
+  // ── CNPJ do cliente é obrigatório e deve ter 14 dígitos ──
+  if (cnpjCliente.length !== 14) {
+    alert("⚠️ Informe um CNPJ válido do cliente (14 dígitos).");
+    document.getElementById("linkCnpjCliente").focus();
     return;
   }
 
@@ -229,6 +252,7 @@ async function gerarLinkCliente() {
         cap: captacao,
         tipo,
         codigo_nl: tipo === "REATIVACAO" ? codigoNl : "",
+        cnpj_cliente: cnpjCliente,
       }),
     });
     const data = await resp.json();

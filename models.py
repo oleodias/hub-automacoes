@@ -173,6 +173,53 @@ class Submissao(db.Model):
 
     def __repr__(self):
         return f'<Submissao {self.uuid[:8]}... | {self.razao_social} | {self.status}>'
+
+
+# ══════════════════════════════════════════════════════════════
+# MODELO: Link de Ficha gerado (controle/rastreio de links)
+# ══════════════════════════════════════════════════════════════
+
+class LinkFicha(db.Model):
+    """
+    Registra cada link de ficha gerado no Hub, para controle e auditoria.
+
+    Permite responder: quem gerou o link, para qual cliente (CNPJ), quando,
+    qual a validade e se já foi usado. O 'token' é o segredo que vai na URL
+    (?t=token) — sem ele não dá para abrir nem enviar uma ficha nova.
+
+    Status (derivado): 'ativo' | 'usado' | 'expirado'.
+    """
+
+    __tablename__ = 'links_ficha'
+
+    id    = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.String(64), unique=True, nullable=False, index=True)
+
+    # Cliente para quem o link foi gerado (CNPJ só com dígitos)
+    cnpj_cliente = db.Column(db.String(14), nullable=False)
+
+    # Quem gerou (operador logado) — pode ser diferente do vendedor
+    gerado_por_id   = db.Column(db.Integer)
+    gerado_por_nome = db.Column(db.String(150))
+
+    # Dados de rastreio que o link carrega
+    vendedor      = db.Column(db.String(255))
+    representante = db.Column(db.String(255))
+    captacao      = db.Column(db.String(50))
+    tipo          = db.Column(db.String(20))   # 'NOVO' | 'REATIVACAO'
+    codigo_nl     = db.Column(db.String(50))
+
+    # Validade e uso
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    expira_em  = db.Column(db.DateTime, nullable=False)
+    usado_em   = db.Column(db.DateTime, nullable=True)
+    submission_uuid = db.Column(db.String(36), nullable=True)
+
+    # Alerta: o CNPJ preenchido na ficha não bateu com o do link
+    cnpj_divergente = db.Column(db.Boolean, default=False)
+
+    def __repr__(self):
+        return f'<LinkFicha {self.token[:8]}... | {self.cnpj_cliente} | por {self.gerado_por_nome}>'
     
 
 # ══════════════════════════════════════════════════════════════

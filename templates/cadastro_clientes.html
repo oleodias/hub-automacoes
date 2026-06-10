@@ -88,6 +88,25 @@ content %}
       </div>
     </div>
 
+    <!-- CNPJ do cliente: obrigatório, vincula o link ao cliente -->
+    <div class="form-row" style="margin-top: 16px">
+      <div class="form-field" style="width: 50%">
+        <label>CNPJ do Cliente</label>
+        <input
+          type="text"
+          id="linkCnpjCliente"
+          class="input-dark"
+          placeholder="00.000.000/0000-00"
+          inputmode="numeric"
+          autocomplete="off"
+          required
+        />
+        <small style="display: block; margin-top: 6px; color: var(--text-secondary)">
+          Identifica o cliente deste link no controle de Links Gerados.
+        </small>
+      </div>
+    </div>
+
     <!-- ══════════════════════════════════════════════════════════ -->
     <!--  CAMPO CONDICIONAL — CÓDIGO NL DO CLIENTE                   -->
     <!--  Aparece APENAS quando o vendedor seleciona "Reativação".   -->

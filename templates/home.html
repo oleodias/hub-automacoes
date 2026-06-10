@@ -204,6 +204,26 @@ content %}
     </div>
     <div
       class="auto-card clickable"
+      onclick="window.location.href='{{ url_for('clientes.monitor_links') }}'"
+    >
+      <div class="card-accent-line" style="background: #38bdf8"></div>
+      <div
+        class="card-icon-wrap"
+        style="background: rgba(56, 189, 248, 0.1); color: #38bdf8"
+      >
+        <i class="fa-solid fa-link"></i>
+      </div>
+      <div class="card-title">Links Gerados</div>
+      <div class="card-desc">
+        Controle dos links de ficha gerados: quem gerou, para qual cliente
+        (CNPJ), validade e se já foram usados.
+      </div>
+      <div class="badge-status badge-operational">
+        <span class="dot"></span> Operacional
+      </div>
+    </div>
+    <div
+      class="auto-card clickable"
       onclick="window.location.href='{{ url_for('main.meu_historico') }}'"
     >
       <div class="card-accent-line" style="background: #a78bfa"></div>

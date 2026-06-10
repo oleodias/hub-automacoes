@@ -16,7 +16,7 @@ import re
 import json
 from io import BytesIO
 from datetime import datetime
-from flask import Blueprint, render_template, request, jsonify, send_file
+from flask import Blueprint, render_template, request, jsonify, send_file, session
 from werkzeug.utils import secure_filename
 import requests as req_ext
 import uuid as uuid_lib
@@ -30,7 +30,7 @@ from utils.fila import (
 from utils.n8n_security import resume_url_confiavel, exigir_token_n8n
 from utils.auth import permissao_required
 from utils.validacao import eh_uuid_valido
-from utils.ficha_token import gerar_token_ficha, validar_token_ficha
+import banco_links
 from utils.rastreio import iniciar_execucao_robo, finalizar_execucao_robo
 from automacoes.clientes import cadastro_novo
 from automacoes.clientes import cadastro_reativacao
@@ -54,22 +54,30 @@ def cadastro_clientes():
 @permissao_required('clientes')
 def gerar_link_ficha():
     """
-    Gera o token assinado do link da ficha (V-05). Só operadores logados
-    com permissão 'clientes' podem gerar links. O front monta a URL final
-    com origin + /ficha_cliente?t=<token>.
+    Gera o link da ficha (V-05) e o registra no banco para controle.
+    Só operadores logados com permissão 'clientes' geram links. O front
+    monta a URL final com origin + /ficha_cliente?t=<token>.
     """
     dados = request.get_json(silent=True) or {}
-    payload = {
-        'vendedor':   (dados.get('vendedor')   or '').strip(),
-        'rep':        (dados.get('rep')         or '').strip(),
-        'cap':        (dados.get('cap')         or '').strip(),
-        'tipo':       (dados.get('tipo')        or '').strip(),
-        'codigo_nl':  (dados.get('codigo_nl')   or '').strip(),
-    }
-    if not payload['vendedor'] or not payload['rep'] or not payload['cap'] or not payload['tipo']:
-        return jsonify({'erro': 'Preencha vendedor, representante, captação e tipo.'}), 400
+    vendedor   = (dados.get('vendedor')  or '').strip()
+    rep        = (dados.get('rep')       or '').strip()
+    cap        = (dados.get('cap')       or '').strip()
+    tipo       = (dados.get('tipo')      or '').strip()
+    codigo_nl  = (dados.get('codigo_nl') or '').strip()
+    cnpj_cliente = re.sub(r'\D', '', dados.get('cnpj_cliente') or '')
 
-    token = gerar_token_ficha(payload)
+    if not vendedor or not rep or not cap or not tipo:
+        return jsonify({'erro': 'Preencha vendedor, representante, captação e tipo.'}), 400
+    if len(cnpj_cliente) != 14:
+        return jsonify({'erro': 'Informe um CNPJ válido (14 dígitos) do cliente.'}), 400
+
+    token = banco_links.criar_link(
+        cnpj_cliente=cnpj_cliente,
+        vendedor=vendedor, representante=rep, captacao=cap,
+        tipo=tipo, codigo_nl=codigo_nl,
+        gerado_por_id=session.get('usuario_id'),
+        gerado_por_nome=session.get('usuario_nome', 'Sistema'),
+    )
     return jsonify({'token': token})
 
 
@@ -81,13 +89,21 @@ def ficha_cliente():
     if request.args.get('correcao'):
         return render_template('ficha_cliente.html', ficha_params=None, ficha_token='')
 
-    # Nova ficha: exige o token assinado e dentro da validade.
+    # Nova ficha: exige um token de link válido, dentro da validade e
+    # ainda não utilizado.
     token = request.args.get('t', '')
-    dados, motivo = validar_token_ficha(token)
+    link, motivo = banco_links.validar_link(token)
     if motivo:
         return render_template('ficha_link_invalido.html', motivo=motivo), 403
 
-    return render_template('ficha_cliente.html', ficha_params=dados, ficha_token=token)
+    ficha_params = {
+        'vendedor':  link.vendedor or '',
+        'rep':       link.representante or '',
+        'cap':       link.captacao or '',
+        'tipo':      link.tipo or '',
+        'codigo_nl': link.codigo_nl or '',
+    }
+    return render_template('ficha_cliente.html', ficha_params=ficha_params, ficha_token=token)
 
 
 # ══════════════════════════════════════════════════════════════
@@ -152,6 +168,8 @@ def receber_ficha():
     # ── 1. Verificar se é correção ─────────────────────────────
     uuid_existente = request.form.get('uuid', '').strip()
     is_correcao    = bool(uuid_existente)
+    link_ficha     = None
+    ficha_token    = ''
 
     if is_correcao:
         sub_original = banco_cadastros.buscar_submissao(uuid_existente)
@@ -160,14 +178,17 @@ def receber_ficha():
         submission_uuid = uuid_existente
         docs_originais  = sub_original['docs_enviados']
     else:
-        # Ficha nova: exige o token assinado do link (V-05). Sem token
-        # válido, ninguém envia ficha por um link forjado ou expirado.
-        _dados_token, motivo = validar_token_ficha(request.form.get('ficha_token', ''))
+        # Ficha nova: exige um token de link válido (V-05), dentro da
+        # validade e ainda não utilizado.
+        ficha_token = request.form.get('ficha_token', '')
+        link_ficha, motivo = banco_links.validar_link(ficha_token)
         if motivo:
-            return jsonify({
-                'status': 'erro',
-                'mensagem': 'Este link é inválido ou expirou. Solicite um novo link ao seu vendedor.'
-            }), 403
+            msg = (
+                'Este link já foi utilizado para enviar uma ficha.'
+                if motivo == 'usado'
+                else 'Este link é inválido ou expirou. Solicite um novo link ao seu vendedor.'
+            )
+            return jsonify({'status': 'erro', 'mensagem': msg}), 403
         submission_uuid = str(uuid_lib.uuid4())
         docs_originais  = []
 
@@ -203,9 +224,24 @@ def receber_ficha():
         'farma_email':            request.form.get('farma_email',             ''),
     }
 
+    # Em ficha nova, os dados de rastreio vêm do LINK (fonte confiável),
+    # não do formulário — assim ninguém adultera vendedor/tipo/etc.
+    if not is_correcao and link_ficha:
+        campos['vendedor']      = link_ficha.vendedor or campos['vendedor']
+        campos['representante'] = link_ficha.representante or campos['representante']
+        campos['captacao']      = link_ficha.captacao or campos['captacao']
+        campos['tipo_cadastro'] = link_ficha.tipo or campos['tipo_cadastro']
+        campos['codigo_nl']     = link_ficha.codigo_nl or campos['codigo_nl']
+
     # ── 2.1. Enriquecimento via CNPJ.ws ───────────────────────
     cnpj_limpo = re.sub(r'\D', '', campos['cnpj'])
     dados_cnpj_ws = consultar_cnpj_ws(cnpj_limpo)
+
+    # Alerta de divergência: o CNPJ preenchido na ficha bate com o do link?
+    cnpj_divergente = bool(
+        not is_correcao and link_ficha and link_ficha.cnpj_cliente
+        and link_ficha.cnpj_cliente != cnpj_limpo
+    )
 
     campos['cnpj_limpo']               = cnpj_limpo
     campos['nome_fantasia']            = dados_cnpj_ws['nome_fantasia']
@@ -260,6 +296,9 @@ def receber_ficha():
             submission_uuid, campos['cnpj'], campos['razao_social'],
             campos, docs_finais
         )
+        # Marca o link como usado e registra a divergência de CNPJ (se houve).
+        if link_ficha:
+            banco_links.marcar_usado(ficha_token, submission_uuid, cnpj_divergente)
 
     # ── 6. Nomes legíveis dos docs ─────────────────────────────
     nomes_legiveis = {
@@ -352,6 +391,29 @@ def reenviar_ficha(uuid):
 
     banco_cadastros.marcar_envio_n8n(uuid, 'falhou', erro)
     return jsonify({'status': 'erro', 'mensagem': erro or 'Falha ao reenviar.'}), 502
+
+
+# ══════════════════════════════════════════════════════════════
+# MONITOR DE LINKS GERADOS (controle/rastreio)
+# ══════════════════════════════════════════════════════════════
+
+@clientes_bp.route('/monitor_links')
+@permissao_required('monitor')
+def monitor_links():
+    return render_template('monitor_links.html')
+
+
+@clientes_bp.route('/api/monitor_links')
+@permissao_required('monitor')
+def api_monitor_links():
+    links = banco_links.listar_links(
+        busca    = request.args.get('busca'),
+        status   = request.args.get('status'),
+        data_de  = request.args.get('data_de'),
+        data_ate = request.args.get('data_ate'),
+    )
+    stats = banco_links.estatisticas()
+    return jsonify({'links': links, 'stats': stats})
 
 
 # ══════════════════════════════════════════════════════════════

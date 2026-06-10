@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}Links Gerados — Hub Ciamed{% endblock %}
+{% block navbar_title %}Hub de Automações{% endblock %}
+
+{% block css %}
+<style>
+  #tela-links { padding: 8px 4px; }
+  #tela-links .page-header {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 18px;
+  }
+  #tela-links .btn-back {
+    background: #1e293b; color: #cbd5e1; border: none; border-radius: 8px;
+    padding: 9px 14px; cursor: pointer; font-size: 14px;
+  }
+  #tela-links h2 { margin: 0; font-family: 'Syne', sans-serif; }
+  #tela-links .stats-row {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 18px;
+  }
+  #tela-links .stat-item {
+    background: #0f172a; border: 1px solid #1e293b; border-radius: 10px;
+    padding: 14px 16px;
+  }
+  #tela-links .stat-value { font-size: 26px; font-weight: 700; font-family: 'Syne', sans-serif; }
+  #tela-links .stat-label { font-size: 12px; color: #94a3b8; }
+  #tela-links .filtros {
+    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px;
+  }
+  #tela-links .filtros input, #tela-links .filtros select {
+    background: #0f172a; border: 1px solid #1e293b; color: #e2e8f0;
+    border-radius: 8px; padding: 9px 12px; font-size: 14px;
+  }
+  #tela-links table { width: 100%; border-collapse: collapse; }
+  #tela-links th, #tela-links td {
+    padding: 11px 12px; text-align: left; font-size: 13px;
+    border-bottom: 1px solid #1e293b;
+  }
+  #tela-links th { color: #94a3b8; font-weight: 600; }
+  #tela-links .badge {
+    padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  }
+  #tela-links .btn-mini {
+    background: #1e293b; color: #cbd5e1; border: none; border-radius: 7px;
+    padding: 6px 10px; cursor: pointer; font-size: 12px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="tela-links">
+  <div class="page-header">
+    <button class="btn-back" onclick="window.location.href='/'">
+      <i class="fa-solid fa-arrow-left"></i>
+    </button>
+    <h2><i class="fa-solid fa-link"></i> Links Gerados</h2>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-item">
+      <div class="stat-value" id="stTotal">—</div>
+      <div class="stat-label">Total</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="stAtivo" style="color:#10b981">—</div>
+      <div class="stat-label">Ativos</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="stUsado" style="color:#60a5fa">—</div>
+      <div class="stat-label">Usados</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="stExpirado" style="color:#94a3b8">—</div>
+      <div class="stat-label">Expirados</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="stDiverg" style="color:#ef4444">—</div>
+      <div class="stat-label">CNPJ divergente</div>
+    </div>
+  </div>
+
+  <div class="filtros">
+    <input id="fBusca" type="text" placeholder="🔎 CNPJ, vendedor ou quem gerou" style="flex:1;min-width:220px" />
+    <select id="fStatus">
+      <option value="">Todos os status</option>
+      <option value="ativo">Ativos</option>
+      <option value="usado">Usados</option>
+      <option value="expirado">Expirados</option>
+    </select>
+    <input id="fDataDe" type="date" />
+    <input id="fDataAte" type="date" />
+    <button class="btn-mini" onclick="carregarLinks()">Filtrar</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Gerado em</th>
+        <th>Gerado por</th>
+        <th>CNPJ Cliente</th>
+        <th>Vendedor</th>
+        <th>Tipo</th>
+        <th>Validade</th>
+        <th>Status</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="linksBody">
+      <tr><td colspan="8" style="color:#94a3b8;text-align:center;padding:24px">Carregando…</td></tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let TODOS = [];
+
+  const BADGE = {
+    ativo:    { txt: "Ativo",    cor: "#10b981", bg: "rgba(16,185,129,.12)" },
+    usado:    { txt: "Usado",    cor: "#60a5fa", bg: "rgba(96,165,250,.12)" },
+    expirado: { txt: "Expirado", cor: "#94a3b8", bg: "rgba(148,163,184,.12)" },
+  };
+
+  function fmtCnpj(c) {
+    if (!c) return "—";
+    return c.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
+  }
+
+  async function carregarLinks() {
+    const p = new URLSearchParams();
+    const busca = document.getElementById("fBusca").value.trim();
+    const status = document.getElementById("fStatus").value;
+    const de = document.getElementById("fDataDe").value;
+    const ate = document.getElementById("fDataAte").value;
+    if (busca) p.set("busca", busca);
+    if (status) p.set("status", status);
+    if (de) p.set("data_de", de);
+    if (ate) p.set("data_ate", ate);
+
+    document.getElementById("linksBody").innerHTML =
+      `<tr><td colspan="8" style="color:#94a3b8;text-align:center;padding:24px">Carregando…</td></tr>`;
+    try {
+      const res = await fetch("/api/monitor_links?" + p.toString());
+      const data = await res.json();
+      TODOS = data.links || [];
+      atualizarStats(data.stats || {});
+      renderizar(TODOS);
+    } catch (e) {
+      document.getElementById("linksBody").innerHTML =
+        `<tr><td colspan="8" style="color:#ef4444;text-align:center;padding:24px">Erro ao carregar.</td></tr>`;
+    }
+  }
+
+  function atualizarStats(s) {
+    document.getElementById("stTotal").textContent = s.total || 0;
+    document.getElementById("stAtivo").textContent = s.ativo || 0;
+    document.getElementById("stUsado").textContent = s.usado || 0;
+    document.getElementById("stExpirado").textContent = s.expirado || 0;
+    document.getElementById("stDiverg").textContent = s.divergentes || 0;
+  }
+
+  function renderizar(lista) {
+    const body = document.getElementById("linksBody");
+    if (!lista.length) {
+      body.innerHTML =
+        `<tr><td colspan="8" style="color:#94a3b8;text-align:center;padding:24px">Nenhum link encontrado.</td></tr>`;
+      return;
+    }
+    body.innerHTML = lista
+      .map((l) => {
+        const b = BADGE[l.status] || BADGE.expirado;
+        const tipo = l.tipo === "REATIVACAO" ? "🔄 Reativação" : "🆕 Novo";
+        const diverg = l.cnpj_divergente
+          ? ` <i class="fa-solid fa-triangle-exclamation" title="CNPJ da ficha diferente do link" style="color:#ef4444"></i>`
+          : "";
+        let acoes = "—";
+        if (l.status === "ativo") {
+          acoes = `<button class="btn-mini" onclick="copiarLink('${l.token}')"><i class="fa-solid fa-copy"></i> Copiar link</button>`;
+        } else if (l.status === "usado") {
+          acoes = `<span style="color:#60a5fa">Ficha enviada</span>`;
+        }
+        return `
+      <tr>
+        <td>${l.created_at || "—"}</td>
+        <td>${l.gerado_por_nome || "—"}</td>
+        <td>${fmtCnpj(l.cnpj_cliente)}${diverg}</td>
+        <td>${l.vendedor || "—"}</td>
+        <td>${tipo}</td>
+        <td>${l.expira_em || "—"}</td>
+        <td><span class="badge" style="color:${b.cor};background:${b.bg}">${b.txt}</span></td>
+        <td>${acoes}</td>
+      </tr>`;
+      })
+      .join("");
+  }
+
+  function copiarLink(token) {
+    const url = window.location.origin + "/ficha_cliente?t=" + encodeURIComponent(token);
+    const ta = document.createElement("textarea");
+    ta.value = url;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); alert("✅ Link copiado!"); }
+    catch (e) { prompt("Copie o link:", url); }
+    document.body.removeChild(ta);
+  }
+
+  document.addEventListener("DOMContentLoaded", carregarLinks);
+</script>
+{% endblock %}
