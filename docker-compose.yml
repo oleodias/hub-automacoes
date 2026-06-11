@@ -1,46 +1,48 @@
 # ══════════════════════════════════════════════════════════════
-# docker-compose.yml — Hub de Automações Ciamed
+# docker-compose.yml — Ambiente de DESENVOLVIMENTO (seu PC)
 # ══════════════════════════════════════════════════════════════
-# Este arquivo descreve dois "containers" (caixas isoladas):
-#   1. postgres  → banco de dados do Hub
-#   2. n8n       → motor de workflows (substituto local do cloud)
+# Sobe os apoios locais para você desenvolver:
+#   1. postgres → banco de dados do Hub (no seu PC)
+#   2. n8n      → motor de workflows local (testes seguros)
+#   3. hub      → o Hub em container (OPCIONAL — veja abaixo)
 #
-# Comandos principais:
-#   Subir tudo:     docker compose up -d
+# FLUXO RECOMENDADO NO DEV:
+#   - Suba só o apoio:   docker compose up -d           (postgres + n8n)
+#   - Rode o Hub e os robôs DIRETO no Windows (python app.py), porque
+#     os robôs abrem o navegador com JANELA VISÍVEL no seu PC.
+#
+# Se quiser testar o Hub DENTRO do container (igual ao servidor):
+#   docker compose --profile app up -d --build          (sobe também o hub)
+#   Acesse em http://localhost:5000
+#
+# Comandos úteis:
 #   Parar tudo:     docker compose down
-#   Ver status:     docker compose ps
-#   Ver logs:       docker compose logs -f
+#   Apagar dados:   docker compose down -v   (-v deleta os volumes)
 # ══════════════════════════════════════════════════════════════
 
 services:
 
-  # ── POSTGRESQL ──────────────────────────────────────────────
-  # Banco de dados relacional que vai substituir o SQLite.
-  # Os dados ficam salvos no volume "postgres_data", então mesmo
-  # se você parar o container, nada se perde.
+  # ── POSTGRESQL (banco local do dev) ─────────────────────────
   postgres:
-    image: postgres:16           # Versão 16 (estável e atual)
+    image: postgres:16
     container_name: hub_postgres
-    restart: unless-stopped      # Reinicia sozinho se cair (exceto se VOCÊ parar)
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: hub_user           # Usuário do banco
-      POSTGRES_PASSWORD: hub_local_2026 # Senha (só vale no seu PC, não é produção)
-      POSTGRES_DB: hub_automacoes       # Nome do banco criado automaticamente
+      POSTGRES_USER: hub_user
+      POSTGRES_PASSWORD: hub_local_2026   # só vale no seu PC, não é produção
+      POSTGRES_DB: hub_automacoes
     ports:
-      - "5432:5432"              # Porta padrão do Postgres
+      - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data   # Onde os dados ficam salvos
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U hub_user -d hub_automacoes"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # ── N8N (ambiente local de dev) ─────────────────────────────
-  # Instância local do N8N para testes seguros.
-  # Acesse em: http://localhost:5678
-  # Primeira vez que abrir, ele vai pedir para criar uma conta
-  # (é local, só no seu PC, pode colocar qualquer email/senha).
+  # ── N8N (workflows local) ───────────────────────────────────
+  # Acesse em http://localhost:5678 (crie uma conta local qualquer).
   n8n:
     image: n8nio/n8n
     container_name: hub_n8n
@@ -54,16 +56,29 @@ services:
     ports:
       - "5678:5678"
     volumes:
-      - n8n_data:/home/node/.n8n       # Dados do N8N (workflows, credenciais)
+      - n8n_data:/home/node/.n8n
     depends_on:
       postgres:
-        condition: service_healthy      # Só sobe depois que o Postgres estiver OK
+        condition: service_healthy
 
-# ── VOLUMES ───────────────────────────────────────────────────
-# Volumes são "HDs virtuais" que o Docker cria para guardar dados.
-# Mesmo que você pare os containers, os dados continuam aqui.
-# Para apagar TUDO e recomeçar do zero:
-#   docker compose down -v    (o -v deleta os volumes)
+  # ── HUB (container — OPCIONAL no dev) ───────────────────────
+  # Só sobe com:  docker compose --profile app up -d --build
+  # No dia a dia do dev você roda o Hub no Windows; este serviço é
+  # para testar a imagem igual à do servidor.
+  hub:
+    build: .
+    container_name: hub_app
+    restart: unless-stopped
+    profiles: ["app"]            # não sobe no "up" normal
+    env_file:
+      - .env                     # copie de .env.dev.example
+    ports:
+      - "5000:8000"              # http://localhost:5000 -> Gunicorn:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+# ── VOLUMES (HDs virtuais que guardam os dados) ───────────────
 volumes:
   postgres_data:
   n8n_data:

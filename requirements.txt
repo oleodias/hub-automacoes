@@ -16,7 +16,9 @@ flask-limiter==4.1.1        # limite de tentativas de login (anti-força-bruta)
 
 # ── Banco de Dados ────────────────────────────────────────────
 sqlalchemy==2.0.50
-psycopg2-binary==2.9.12
+psycopg2-binary==2.9.12     # driver do PostgreSQL (dev e homolog inicial)
+oracledb==2.5.1             # driver do Oracle (homolog/prod). Modo "thin":
+                            # NÃO exige instalar o Oracle Client na máquina.
 alembic==1.18.4
 
 # ── Automação (RPA) ──────────────────────────────────────────

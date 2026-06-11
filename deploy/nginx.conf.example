@@ -1,0 +1,77 @@
+# ══════════════════════════════════════════════════════════════
+# nginx.conf.example — Proxy reverso do Hub (MODELO)
+# ══════════════════════════════════════════════════════════════
+# O Nginx fica "na frente" do Hub: recebe o acesso da rede (HTTPS) e
+# repassa para o Gunicorn (que escuta só no localhost do servidor).
+# Ele também serve os arquivos estáticos direto (mais rápido).
+#
+# Como usar:
+#   1) Copie para /etc/nginx/sites-available/hub e ajuste os domínios
+#      e os caminhos dos certificados.
+#   2) Habilite: ln -s /etc/nginx/sites-available/hub /etc/nginx/sites-enabled/
+#   3) Teste e recarregue: nginx -t && systemctl reload nginx
+#
+# Este exemplo mostra os DOIS ambientes no mesmo servidor:
+#   homologacao.SEU-DOMINIO  -> Hub de homologação (porta 8010)
+#   hub.SEU-DOMINIO          -> Hub de produção   (porta 8000)
+# ══════════════════════════════════════════════════════════════
+
+# ── PRODUÇÃO ──────────────────────────────────────────────────
+server {
+    listen 443 ssl;
+    server_name hub.SEU-DOMINIO.com.br;
+
+    ssl_certificate     /etc/letsencrypt/live/hub.SEU-DOMINIO.com.br/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/hub.SEU-DOMINIO.com.br/privkey.pem;
+
+    # Uploads de XML/planilha podem ser grandes.
+    client_max_body_size 50M;
+
+    # Arquivos estáticos servidos direto pelo Nginx (CSS, JS, imagens).
+    location /static/ {
+        alias /opt/hub-automacoes/static/;
+        expires 7d;
+    }
+
+    # Todo o resto vai para o Hub (Gunicorn em 127.0.0.1:8000).
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+    }
+}
+
+# ── HOMOLOGAÇÃO ───────────────────────────────────────────────
+server {
+    listen 443 ssl;
+    server_name homologacao.SEU-DOMINIO.com.br;
+
+    ssl_certificate     /etc/letsencrypt/live/homologacao.SEU-DOMINIO.com.br/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/homologacao.SEU-DOMINIO.com.br/privkey.pem;
+
+    client_max_body_size 50M;
+
+    location /static/ {
+        alias /opt/hub-automacoes-homolog/static/;
+        expires 7d;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:8010;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+    }
+}
+
+# ── Redireciona HTTP -> HTTPS ─────────────────────────────────
+server {
+    listen 80;
+    server_name hub.SEU-DOMINIO.com.br homologacao.SEU-DOMINIO.com.br;
+    return 301 https://$host$request_uri;
+}

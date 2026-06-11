@@ -1,0 +1,26 @@
+# ══════════════════════════════════════════════════════════════
+# docker-compose.homolog.yml — Ambiente de HOMOLOGAÇÃO (servidor)
+# ══════════════════════════════════════════════════════════════
+# Sobe SÓ o Hub em container. O banco é EXTERNO (Oracle da empresa,
+# schema HUB_HOMOLOG) — definido pelo DATABASE_URL no .env.homologacao.
+# Não há Postgres nem N8N aqui: homologação usa os serviços da empresa.
+#
+# Subir/atualizar:
+#   docker compose -f docker-compose.homolog.yml up -d --build
+# (ou rode: ./deploy/atualizar.sh homolog)
+#
+# O Hub fica exposto em 127.0.0.1:8010 e o Nginx faz a ponte para fora.
+# ══════════════════════════════════════════════════════════════
+
+services:
+
+  hub:
+    build: .
+    image: hub-automacoes:homolog
+    container_name: hub_app_homolog
+    restart: always
+    env_file:
+      - .env.homologacao         # copie de .env.homolog.example e preencha
+    ports:
+      # Só no localhost do servidor: quem expõe para a rede é o Nginx.
+      - "127.0.0.1:8010:8000"

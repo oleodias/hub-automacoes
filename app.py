@@ -26,8 +26,13 @@ from utils.logging_config import configurar_logging
 
 app = Flask(__name__)
 
-# Ambiente: "dev" (seu PC) ou "prod" (servidor). Controla o modo debug.
+# Ambiente: "dev" (seu PC), "homolog" ou "prod" (servidor).
 AMBIENTE = os.getenv('AMBIENTE', 'prod').strip().lower()
+
+# "Está num servidor?" — homologação e produção rodam atrás do Nginx com
+# HTTPS; só o "dev" roda no PC em HTTP. Usamos isto para ligar as travas de
+# segurança (cookies seguros, HSTS, ProxyFix) em homolog E prod, mas não no dev.
+EH_SERVIDOR = (AMBIENTE != 'dev')
 
 # Chave secreta: assina os cookies de login. É OBRIGATÓRIA e NÃO tem
 # valor de reserva no código (uma reserva pública deixaria forjar logins).
@@ -51,13 +56,13 @@ app.permanent_session_lifetime = timedelta(hours=1)
 #   ambiente local roda em HTTP — em dev, Secure quebraria o login.
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE']   = (AMBIENTE == 'prod')
+app.config['SESSION_COOKIE_SECURE']   = EH_SERVIDOR
 
 # Em produção o app roda atrás do Nginx. Sem isso, o Flask enxerga o IP do
 # proxy (sempre o mesmo) em vez do IP real do cliente — o que faria o
 # limite de tentativas valer para TODO mundo junto. ProxyFix lê o
 # X-Forwarded-For que o Nginx envia. Em dev não há proxy, então não aplica.
-if AMBIENTE == 'prod':
+if EH_SERVIDOR:
     from werkzeug.middleware.proxy_fix import ProxyFix
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
@@ -85,8 +90,8 @@ def aplicar_cabecalhos_seguranca(resposta):
     resposta.headers['X-Frame-Options'] = 'DENY'
     # Não vaza a URL interna ao navegar para fora do site.
     resposta.headers['Referrer-Policy'] = 'same-origin'
-    # HSTS: força HTTPS. Só em produção, onde de fato há HTTPS.
-    if AMBIENTE == 'prod':
+    # HSTS: força HTTPS. Liga em homolog e prod (servidor), onde há HTTPS.
+    if EH_SERVIDOR:
         resposta.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
     return resposta
 
@@ -210,5 +215,5 @@ if __name__ == '__main__':
     if debug:
         print("🚀 SERVIDOR ONLINE (modo DEV/debug). Acesse pelo IP da sua máquina.")
     else:
-        print("🚀 SERVIDOR ONLINE (modo PROD, debug desligado).")
+        print(f"🚀 SERVIDOR ONLINE (modo {AMBIENTE.upper()}, debug desligado).")
     app.run(host='0.0.0.0', port=5000, debug=debug)

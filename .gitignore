@@ -3,7 +3,11 @@
 # ══════════════════════════════════════════════════════════════
 
 # ── SEGURANÇA: nunca mandar senhas pro Git ────────────────────
+# Ignora o .env e QUALQUER .env.<ambiente> real (ex.: .env.producao,
+# .env.homologacao), mas MANTÉM os modelos .env.*.example no Git.
 .env
+.env.*
+!.env.*.example
 
 # ── PYTHON: arquivos gerados automaticamente ──────────────────
 __pycache__/

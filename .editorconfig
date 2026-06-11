@@ -1,0 +1,36 @@
+# ══════════════════════════════════════════════════════════════
+# .editorconfig — Padrão de formatação dos arquivos
+# ══════════════════════════════════════════════════════════════
+# Garante consistência entre editores e, principalmente, entre
+# Windows e Linux. A maioria dos editores respeita isto sozinho.
+# ══════════════════════════════════════════════════════════════
+root = true
+
+[*]
+charset = utf-8
+# Fim de linha LF (estilo Unix). Evita o clássico problema de
+# arquivos editados no Windows quebrarem scripts no servidor Linux.
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.py]
+indent_style = space
+indent_size = 4
+
+[*.{js,html,css,yml,yaml,json}]
+indent_style = space
+indent_size = 2
+
+[*.sh]
+indent_style = space
+indent_size = 4
+
+# Scripts .sh e o entrypoint precisam de LF mesmo se editados no Windows.
+[{*.sh,entrypoint.sh}]
+end_of_line = lf
+
+# Não mexer em planilhas/binários.
+[*.{xlsx,wav,png,jpg,jpeg,rar,exe}]
+trim_trailing_whitespace = false
+insert_final_newline = false

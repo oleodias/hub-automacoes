@@ -1,0 +1,48 @@
+# ══════════════════════════════════════════════════════════════
+# .dockerignore — o que NÃO entra na imagem Docker
+# ══════════════════════════════════════════════════════════════
+# Mantém a imagem leve e evita copiar segredos ou lixo para dentro.
+# ══════════════════════════════════════════════════════════════
+
+# Git e metadados
+.git
+.gitignore
+.editorconfig
+
+# Segredos: NUNCA copiar .env para a imagem (vão pelo env_file/-e)
+.env
+.env.*
+!.env.*.example
+
+# Python gerado
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+venv/
+.venv/
+
+# Logs e dados de runtime
+Logs/
+logs/
+*.log
+*.log.*
+chrome_perfil/
+XML_Entrada/*.xml
+XML_Entrada/*.json
+uploads/
+uploads_fichas/
+
+# Documentação e auxiliares (não são necessários para rodar)
+docs/
+deploy/
+*.md
+
+# Vídeos pesados de tutorial (não precisam estar na imagem)
+static/videos/
+
+# Sistema operacional / editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
