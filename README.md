@@ -45,6 +45,7 @@ Toda a documentação detalhada está na pasta [`docs/`](docs/):
 |-----------|----------|
 | [docs/AMBIENTES.md](docs/AMBIENTES.md) | Como funcionam Dev, Homologação e Produção |
 | [docs/DEPLOY_LINUX.md](docs/DEPLOY_LINUX.md) | Subir e atualizar o Hub no servidor (Docker) |
+| [deploy/README.md](deploy/README.md) | **Comece por aqui (TI):** resumo prático do deploy |
 | [docs/BANCO_DE_DADOS.md](docs/BANCO_DE_DADOS.md) | Postgres, Oracle, schemas e migrations |
 | [docs/BANCO_DE_DADOS_ORACLE.md](docs/BANCO_DE_DADOS_ORACLE.md) | DDL e mapeamento de tipos para o Oracle |
 | [docs/VARIAVEIS_AMBIENTE.md](docs/VARIAVEIS_AMBIENTE.md) | O que cada variável do `.env` faz |

@@ -4,6 +4,8 @@ Guia para subir e atualizar o Hub no **servidor Linux** da empresa, rodando em
 **Docker**. Vale para **homologação** e **produção** — a diferença é só qual
 arquivo `.env` e qual `docker-compose` cada um usa.
 
+> Quer só o resumo prático (uma página)? Veja [`deploy/README.md`](../deploy/README.md).
+
 > O **banco não roda no container**. O Hub se conecta ao Oracle da empresa pela
 > rede, pelo `DATABASE_URL`. O container leva só a aplicação (Flask), os robôs e
 > o Chromium.
