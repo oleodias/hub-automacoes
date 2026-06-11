@@ -5,12 +5,22 @@ Documento de referência para a equipe de TI migrar o banco do Hub para o
 
 - **Banco atual:** PostgreSQL 16
 - **Banco de destino:** Oracle Database 19c Standard Edition 2 (Release 19.0.0.0.0)
-- **Total de tabelas:** 16
+- **Total de tabelas:** 16 descritas aqui (+1 pendente — veja a nota abaixo)
 - **Origem do schema:** SQLAlchemy (`models.py`) + migration Alembic baseline
   (`migrations/versions/fdeee52be543_baseline_schema_completo.py`)
 
 Abaixo vai (1) o resumo de cada tabela, (2) o mapeamento de tipos
 PostgreSQL → Oracle e (3) o **DDL pronto para rodar no Oracle**.
+
+> **⚠️ Tabela pendente (17ª):** `cm_hub_aut_fila_execucao` (a fila dos robôs)
+> ainda **não** está descrita neste documento. Ela depende da adaptação da fila
+> para o Oracle (hoje usa recursos exclusivos do PostgreSQL). Será incluída
+> quando essa adaptação for feita, em homologação, junto com a TI. Detalhes em
+> [BANCO_DE_DADOS.md](BANCO_DE_DADOS.md), seção 2.3.
+>
+> **Isolamento de ambientes:** este DDL deve ser executado **uma vez em cada
+> schema** — `HUB_HOMOLOG` (teste) e `HUB_PROD` (produção). Veja
+> [`deploy/oracle/criar_schemas.sql`](../deploy/oracle/criar_schemas.sql).
 
 ---
 

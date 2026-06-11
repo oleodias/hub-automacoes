@@ -1,19 +1,57 @@
-# Hub de Automações - Ciamed
+# Hub de Automações — Ciamed
 
-Projeto desenvolvido para centralizar e orquestrar as automações (RPA) utilizadas nos setores administrativo e fiscal da Ciamed.
+Aplicação web que centraliza e aciona as automações (robôs/RPA) dos setores
+administrativo e fiscal da Ciamed. Em vez de rodar scripts soltos no terminal,
+os colaboradores autorizados disparam e acompanham as rotinas por uma interface
+web — cadastro de itens/NCM, MDF, fornecedores, lançamento de notas, fichas de
+clientes e uma central de suporte.
 
-O objetivo principal deste sistema é democratizar o uso de robôs dentro da empresa. Em vez de depender de desenvolvedores rodando scripts isolados via terminal, o Hub oferece uma interface web intuitiva onde os próprios colaboradores podem acionar rotinas complexas de integração e preenchimento de dados no ERP.
+## Stack
 
-## 🧠 Inovação e Desenvolvimento
-Este projeto foi inteiramente concebido e desenvolvido utilizando o poder da **Inteligência Artificial Generativa**. Toda a lógica dos robôs, a estrutura do servidor e o design da interface foram criados e refinados através da colaboração estratégica entre o desenvolvedor e a IA, demonstrando como essa tecnologia pode ser aplicada para construir soluções corporativas robustas e eficientes em tempo recorde.
+- **Backend:** Python 3.11 + Flask (blueprints)
+- **Banco:** PostgreSQL (dev) / Oracle (homologação e produção), via SQLAlchemy + Alembic
+- **Automação (RPA):** Selenium WebDriver (Chromium)
+- **Workflows:** N8N
+- **Servidor (produção):** Docker + Gunicorn atrás do Nginx
+- **Frontend:** HTML, CSS, JavaScript, Bootstrap
 
-Com essa arquitetura, o projeto visa reduzir drasticamente o tempo gasto em tarefas operacionais e repetitivas, minimizar falhas humanas em cadastros e processos fiscais, e fornecer um ambiente centralizado onde a execução dos robôs pode ser monitorada em tempo real por qualquer pessoa autorizada.
+## Começo rápido (desenvolvimento)
 
-## Stack Tecnológica
-* **Backend:** Python, Flask
-* **Automação (RPA):** Selenium WebDriver
-* **Processamento de Dados:** Pandas
-* **Frontend:** HTML, CSS, JavaScript (Vanilla), Bootstrap
+```bash
+# 1) Suba os apoios locais (banco Postgres + N8N)
+docker compose up -d
+
+# 2) Crie e preencha o .env
+cp .env.dev.example .env        # gere a FLASK_SECRET_KEY indicada no arquivo
+
+# 3) Instale as dependências
+python -m venv venv && source venv/bin/activate   # no Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+# 4) Crie a estrutura do banco e os dados-base
+alembic upgrade head
+python scripts/seed_tudo.py
+python criar_admin.py
+
+# 5) Rode o Hub
+python app.py                   # http://localhost:5000
+```
+
+## Documentação
+
+Toda a documentação detalhada está na pasta [`docs/`](docs/):
+
+| Documento | Para quê |
+|-----------|----------|
+| [docs/AMBIENTES.md](docs/AMBIENTES.md) | Como funcionam Dev, Homologação e Produção |
+| [docs/DEPLOY_LINUX.md](docs/DEPLOY_LINUX.md) | Subir e atualizar o Hub no servidor (Docker) |
+| [docs/BANCO_DE_DADOS.md](docs/BANCO_DE_DADOS.md) | Postgres, Oracle, schemas e migrations |
+| [docs/BANCO_DE_DADOS_ORACLE.md](docs/BANCO_DE_DADOS_ORACLE.md) | DDL e mapeamento de tipos para o Oracle |
+| [docs/VARIAVEIS_AMBIENTE.md](docs/VARIAVEIS_AMBIENTE.md) | O que cada variável do `.env` faz |
+| [docs/ARQUITETURA.md](docs/ARQUITETURA.md) | Como as peças se conectam |
+| [docs/CONTRIBUINDO.md](docs/CONTRIBUINDO.md) | Padrões, branches e como mexer no projeto |
+
+Histórico de mudanças em [CHANGELOG.md](CHANGELOG.md).
 
 ---
-*Desenvolvido por Leonardo Dias.*
+*Mantido pela equipe da Ciamed.*
