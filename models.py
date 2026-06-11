@@ -65,7 +65,7 @@ class Usuario(db.Model):
         Quando cargo = 'admin', as permissões são ignoradas (tudo liberado).
     """
 
-    __tablename__ = 'usuarios'
+    __tablename__ = 'cm_hub_aut_usuarios'
 
     # Identificador único auto-incrementado
     id = db.Column(db.Integer, primary_key=True)
@@ -147,7 +147,7 @@ class Submissao(db.Model):
         'erro_robo'  → robô falhou, aguardando reprocessamento manual
     """
 
-    __tablename__ = 'submissoes'
+    __tablename__ = 'cm_hub_aut_submissoes'
 
     uuid = db.Column(db.String(36), primary_key=True)
     cnpj = db.Column(db.String(20), nullable=False)
@@ -190,7 +190,7 @@ class LinkFicha(db.Model):
     Status (derivado): 'ativo' | 'usado' | 'expirado'.
     """
 
-    __tablename__ = 'links_ficha'
+    __tablename__ = 'cm_hub_aut_links_ficha'
 
     id    = db.Column(db.Integer, primary_key=True)
     token = db.Column(db.String(64), unique=True, nullable=False, index=True)
@@ -255,12 +255,12 @@ class Execucao(db.Model):
         - Qualquer dado relevante do robô
     """
 
-    __tablename__ = 'execucoes'
+    __tablename__ = 'cm_hub_aut_execucoes'
 
     id = db.Column(db.Integer, primary_key=True)
 
     # Quem disparou
-    usuario_id   = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True)
+    usuario_id   = db.Column(db.Integer, db.ForeignKey('cm_hub_aut_usuarios.id'), nullable=True)
     usuario_nome = db.Column(db.String(150), default='Sistema')
 
     # Qual robô
@@ -302,7 +302,7 @@ class FilaExecucao(db.Model):
     travada e liberada automaticamente.
     """
 
-    __tablename__ = 'fila_execucao'
+    __tablename__ = 'cm_hub_aut_fila_execucao'
 
     # id autoincrement define a ORDEM (FIFO) de chegada.
     id = db.Column(db.BigInteger, primary_key=True)
@@ -352,7 +352,7 @@ class LancamentoNota(db.Model):
         'cupom'   → cupom fiscal
     """
 
-    __tablename__ = 'lancamentos_notas'
+    __tablename__ = 'cm_hub_aut_lancamentos_notas'
 
     # Índice único PARCIAL: impede duas notas ATIVAS com a mesma chave de
     # acesso (na_fila/executando/concluida/a_rever). Notas 'cancelada' ficam
@@ -418,7 +418,7 @@ class CentroCusto(db.Model):
     Campo 'empresa' é usado para agrupar no <optgroup> do dropdown.
     """
 
-    __tablename__ = 'centros_custo'
+    __tablename__ = 'cm_hub_aut_centros_custo'
 
     id        = db.Column(db.Integer, primary_key=True)
     # String, não Integer: o código tem zero à esquerda (ex: '01100001')
@@ -443,7 +443,7 @@ class OperacaoNota(db.Model):
     Usada no autocomplete do campo "Operação" da aba 4.
     """
 
-    __tablename__ = 'operacoes_nota'
+    __tablename__ = 'cm_hub_aut_operacoes_nota'
 
     id        = db.Column(db.Integer, primary_key=True)
     # String para preservar formatos como "1.000", "9.999"
@@ -480,7 +480,7 @@ class NotasCategoria(db.Model):
     de cadastro novo, mas continuam visíveis em registros antigos.
     """
 
-    __tablename__ = 'notas_categorias'
+    __tablename__ = 'cm_hub_aut_notas_categorias'
 
     id    = db.Column(db.String(50),  primary_key=True)   # slug: "energia"
     nome  = db.Column(db.String(100), nullable=False)      # "Energia elétrica"
@@ -503,7 +503,7 @@ class NotasUnidade(db.Model):
     nos cards do Kanban (MTZ, F2, F3 SC, F4).
     """
 
-    __tablename__ = 'notas_unidades'
+    __tablename__ = 'cm_hub_aut_notas_unidades'
 
     id    = db.Column(db.String(20),  primary_key=True)   # slug: "matriz", "f2"
     nome  = db.Column(db.String(100), nullable=False)      # "Matriz (1)"
@@ -529,14 +529,14 @@ class NotasFornecedor(db.Model):
     e gere uma Nota distinta no Kanban mensal.
     """
 
-    __tablename__ = 'notas_fornecedores'
+    __tablename__ = 'cm_hub_aut_notas_fornecedores'
 
     id           = db.Column(db.Integer, primary_key=True)
     fornecedor   = db.Column(db.String(200), nullable=False)
     cnpj         = db.Column(db.String(20),  nullable=True)
 
-    categoria_id = db.Column(db.String(50), db.ForeignKey('notas_categorias.id'), nullable=False)
-    unidade_id   = db.Column(db.String(20), db.ForeignKey('notas_unidades.id'),   nullable=False)
+    categoria_id = db.Column(db.String(50), db.ForeignKey('cm_hub_aut_notas_categorias.id'), nullable=False)
+    unidade_id   = db.Column(db.String(20), db.ForeignKey('cm_hub_aut_notas_unidades.id'),   nullable=False)
 
     dia_esperado = db.Column(db.Integer, nullable=False)   # 1 a 31
 
@@ -560,7 +560,7 @@ class NotasFornecedor(db.Model):
     
 class Nota(db.Model):
     """Lançamento mensal de uma nota fiscal — usado pelo Kanban."""
-    __tablename__ = 'notas'
+    __tablename__ = 'cm_hub_aut_notas'
 
     id = db.Column(db.Integer, primary_key=True)
 
@@ -568,14 +568,14 @@ class Nota(db.Model):
     ano = db.Column(db.Integer, nullable=False)
 
     fornecedor_recorrente_id = db.Column(
-        db.Integer, db.ForeignKey('notas_fornecedores.id'), nullable=True
+        db.Integer, db.ForeignKey('cm_hub_aut_notas_fornecedores.id'), nullable=True
     )
 
     # Dados denormalizados (preservam histórico mesmo se fornecedor é editado)
     fornecedor   = db.Column(db.String(200), nullable=False)
     cnpj         = db.Column(db.String(20),  nullable=True)
-    categoria_id = db.Column(db.String(50), db.ForeignKey('notas_categorias.id'), nullable=False)
-    unidade_id   = db.Column(db.String(20), db.ForeignKey('notas_unidades.id'),   nullable=False)
+    categoria_id = db.Column(db.String(50), db.ForeignKey('cm_hub_aut_notas_categorias.id'), nullable=False)
+    unidade_id   = db.Column(db.String(20), db.ForeignKey('cm_hub_aut_notas_unidades.id'),   nullable=False)
     dia_esperado = db.Column(db.Integer, nullable=False)
 
     # Recebimento
@@ -637,13 +637,13 @@ class Chamado(db.Model):
         Visível para o usuário e usado para referência rápida.
     """
  
-    __tablename__ = 'chamados'
+    __tablename__ = 'cm_hub_aut_chamados'
  
     id         = db.Column(db.Integer, primary_key=True)
     protocolo  = db.Column(db.String(20), unique=True, nullable=False, index=True)
  
     # Quem abriu (puxado da sessão, não digitado)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('cm_hub_aut_usuarios.id'), nullable=False)
  
     # Módulo relacionado (chave de MODULOS_HUB ou 'geral')
     modulo     = db.Column(db.String(50), default='geral')
@@ -679,10 +679,10 @@ class ChamadoAnexo(db.Model):
     Tamanho máximo: 10MB por arquivo, 5 arquivos por chamado.
     """
  
-    __tablename__ = 'chamados_anexos'
+    __tablename__ = 'cm_hub_aut_chamados_anexos'
  
     id             = db.Column(db.Integer, primary_key=True)
-    chamado_id     = db.Column(db.Integer, db.ForeignKey('chamados.id'), nullable=False)
+    chamado_id     = db.Column(db.Integer, db.ForeignKey('cm_hub_aut_chamados.id'), nullable=False)
     nome_arquivo   = db.Column(db.String(255), nullable=False)
     caminho        = db.Column(db.String(500), nullable=False)
     tipo_mime      = db.Column(db.String(100))
@@ -706,11 +706,11 @@ class ChamadoHistorico(db.Model):
     A timeline é montada ordenando por created_at.
     """
  
-    __tablename__ = 'chamados_historico'
+    __tablename__ = 'cm_hub_aut_chamados_historico'
  
     id              = db.Column(db.Integer, primary_key=True)
-    chamado_id      = db.Column(db.Integer, db.ForeignKey('chamados.id'), nullable=False)
-    usuario_id      = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True)
+    chamado_id      = db.Column(db.Integer, db.ForeignKey('cm_hub_aut_chamados.id'), nullable=False)
+    usuario_id      = db.Column(db.Integer, db.ForeignKey('cm_hub_aut_usuarios.id'), nullable=True)
     tipo            = db.Column(db.String(30), nullable=False)
     status_anterior = db.Column(db.String(20), nullable=True)
     status_novo     = db.Column(db.String(20), nullable=True)
@@ -736,11 +736,11 @@ class Notificacao(db.Model):
     para atualizar o badge do sininho.
     """
  
-    __tablename__ = 'notificacoes'
+    __tablename__ = 'cm_hub_aut_notificacoes'
  
     id          = db.Column(db.Integer, primary_key=True)
-    usuario_id  = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
-    chamado_id  = db.Column(db.Integer, db.ForeignKey('chamados.id'), nullable=True)
+    usuario_id  = db.Column(db.Integer, db.ForeignKey('cm_hub_aut_usuarios.id'), nullable=False)
+    chamado_id  = db.Column(db.Integer, db.ForeignKey('cm_hub_aut_chamados.id'), nullable=True)
     tipo        = db.Column(db.String(30), nullable=False)
     titulo      = db.Column(db.String(255), nullable=False)
     lida        = db.Column(db.Boolean, default=False)
@@ -764,7 +764,7 @@ class FaqPergunta(db.Model):
     Soft-delete via 'ativo'.
     """
  
-    __tablename__ = 'faq_perguntas'
+    __tablename__ = 'cm_hub_aut_faq_perguntas'
  
     id         = db.Column(db.Integer, primary_key=True)
     modulo     = db.Column(db.String(50), nullable=False, index=True)

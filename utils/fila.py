@@ -37,6 +37,11 @@ from utils.n8n_security import resume_url_confiavel
 RECURSO_RPA      = 'rpa'
 RECURSO_CADASTRO = 'cadastro'
 
+# Nome da tabela da fila no banco. O prefixo 'cm_hub_aut_' é o padrão da
+# empresa e vale em TODOS os ambientes (Postgres no dev, Oracle em
+# homolog/prod). Mantido num único lugar para não repetir o nome em cada SQL.
+TABELA_FILA = "cm_hub_aut_fila_execucao"
+
 
 def _timeout_min():
     """Minutos até considerar uma execução 'travada' (ajustável no .env)."""
@@ -70,8 +75,8 @@ def _get_engine():
 def _expirar_travadas(conn, recurso):
     """Watchdog: remove execuções 'executando' paradas além do tempo-limite."""
     limite = datetime.now() - timedelta(minutes=_timeout_min())
-    res = conn.execute(text("""
-        DELETE FROM fila_execucao
+    res = conn.execute(text(f"""
+        DELETE FROM {TABELA_FILA}
         WHERE recurso = :r AND status = 'executando' AND iniciado_em < :limite
     """), {"r": recurso, "limite": limite})
     if res.rowcount:
@@ -84,7 +89,7 @@ def _expirar_travadas(conn, recurso):
 def _recurso_do_token(token):
     with _get_engine().connect() as conn:
         return conn.execute(
-            text("SELECT recurso FROM fila_execucao WHERE token = :t"),
+            text(f"SELECT recurso FROM {TABELA_FILA} WHERE token = :t"),
             {"t": token}
         ).scalar()
 
@@ -97,8 +102,8 @@ def entrar_na_fila(recurso=RECURSO_RPA):
     """Entra na fila e retorna um token (id) para acompanhar a vez."""
     token = uuid_lib.uuid4().hex
     with _get_engine().begin() as conn:
-        conn.execute(text("""
-            INSERT INTO fila_execucao (token, recurso, status, criado_em)
+        conn.execute(text(f"""
+            INSERT INTO {TABELA_FILA} (token, recurso, status, criado_em)
             VALUES (:t, :r, 'aguardando', :agora)
         """), {"t": token, "r": recurso, "agora": datetime.now()})
     return token
@@ -119,29 +124,29 @@ def _tentar_assumir(token):
         _expirar_travadas(conn, recurso)
 
         atual = conn.execute(
-            text("SELECT status FROM fila_execucao WHERE token = :t"), {"t": token}
+            text(f"SELECT status FROM {TABELA_FILA} WHERE token = :t"), {"t": token}
         ).scalar()
         if atual is None:
             return False
         if atual == 'executando':
             return True
 
-        ja_executando = conn.execute(text("""
-            SELECT 1 FROM fila_execucao
+        ja_executando = conn.execute(text(f"""
+            SELECT 1 FROM {TABELA_FILA}
             WHERE recurso = :r AND status = 'executando' LIMIT 1
         """), {"r": recurso}).first()
         if ja_executando:
             return False
 
-        mais_antigo = conn.execute(text("""
-            SELECT token FROM fila_execucao
+        mais_antigo = conn.execute(text(f"""
+            SELECT token FROM {TABELA_FILA}
             WHERE recurso = :r AND status = 'aguardando'
             ORDER BY id LIMIT 1
         """), {"r": recurso}).scalar()
 
         if mais_antigo == token:
-            conn.execute(text("""
-                UPDATE fila_execucao
+            conn.execute(text(f"""
+                UPDATE {TABELA_FILA}
                 SET status = 'executando', iniciado_em = :agora
                 WHERE token = :t
             """), {"t": token, "agora": datetime.now()})
@@ -168,10 +173,10 @@ def finalizar_execucao(token=None, recurso=RECURSO_RPA):
     """Encerra a execução atual, liberando a vez para o próximo da fila."""
     with _get_engine().begin() as conn:
         if token:
-            conn.execute(text("DELETE FROM fila_execucao WHERE token = :t"), {"t": token})
+            conn.execute(text(f"DELETE FROM {TABELA_FILA} WHERE token = :t"), {"t": token})
         else:
-            conn.execute(text("""
-                DELETE FROM fila_execucao
+            conn.execute(text(f"""
+                DELETE FROM {TABELA_FILA}
                 WHERE recurso = :r AND status = 'executando'
             """), {"r": recurso})
 
@@ -179,7 +184,7 @@ def finalizar_execucao(token=None, recurso=RECURSO_RPA):
 def sair_da_fila(token):
     """Remove o token da fila (desistência / timeout no front)."""
     with _get_engine().begin() as conn:
-        conn.execute(text("DELETE FROM fila_execucao WHERE token = :t"), {"t": token})
+        conn.execute(text(f"DELETE FROM {TABELA_FILA} WHERE token = :t"), {"t": token})
 
 
 def posicao_na_fila(token):
@@ -189,7 +194,7 @@ def posicao_na_fila(token):
         return -1
     with _get_engine().connect() as conn:
         info = conn.execute(
-            text("SELECT id, status FROM fila_execucao WHERE token = :t"), {"t": token}
+            text(f"SELECT id, status FROM {TABELA_FILA} WHERE token = :t"), {"t": token}
         ).first()
         if info is None:
             return -1
@@ -197,8 +202,8 @@ def posicao_na_fila(token):
             return 0
         # Posição = quantos itens há na frente (inclui quem está executando)
         # + ele mesmo. Itens já finalizados são removidos da tabela.
-        return conn.execute(text("""
-            SELECT COUNT(*) FROM fila_execucao
+        return conn.execute(text(f"""
+            SELECT COUNT(*) FROM {TABELA_FILA}
             WHERE recurso = :r AND id <= :id
         """), {"r": recurso, "id": info.id}).scalar()
 
@@ -207,8 +212,8 @@ def recurso_em_execucao(recurso=RECURSO_RPA):
     """True se há algum robô executando neste recurso (após o watchdog)."""
     with _get_engine().begin() as conn:
         _expirar_travadas(conn, recurso)
-        return conn.execute(text("""
-            SELECT 1 FROM fila_execucao
+        return conn.execute(text(f"""
+            SELECT 1 FROM {TABELA_FILA}
             WHERE recurso = :r AND status = 'executando' LIMIT 1
         """), {"r": recurso}).first() is not None
 
@@ -221,8 +226,8 @@ def cadastro_entrar(resume_url):
     """Adiciona uma execução na fila de cadastro. Retorna (token, posicao, sua_vez)."""
     token = uuid_lib.uuid4().hex
     with _get_engine().begin() as conn:
-        conn.execute(text("""
-            INSERT INTO fila_execucao (token, recurso, status, resume_url, criado_em)
+        conn.execute(text(f"""
+            INSERT INTO {TABELA_FILA} (token, recurso, status, resume_url, criado_em)
             VALUES (:t, :r, 'aguardando', :url, :agora)
         """), {"t": token, "r": RECURSO_CADASTRO, "url": resume_url, "agora": datetime.now()})
 
@@ -238,8 +243,8 @@ def cadastro_liberar_proximo():
     """Remove o atual da fila de cadastro e acorda o próximo Wait node do N8N."""
     with _get_engine().begin() as conn:
         conn.execute(text("SELECT pg_advisory_xact_lock(hashtext(:r))"), {"r": RECURSO_CADASTRO})
-        res = conn.execute(text("""
-            DELETE FROM fila_execucao
+        res = conn.execute(text(f"""
+            DELETE FROM {TABELA_FILA}
             WHERE recurso = :r AND status = 'executando'
         """), {"r": RECURSO_CADASTRO})
         if res.rowcount:
@@ -257,22 +262,22 @@ def _liberar_proximo_cadastro():
         conn.execute(text("SELECT pg_advisory_xact_lock(hashtext(:r))"), {"r": RECURSO_CADASTRO})
         _expirar_travadas(conn, RECURSO_CADASTRO)
 
-        if conn.execute(text("""
-            SELECT 1 FROM fila_execucao
+        if conn.execute(text(f"""
+            SELECT 1 FROM {TABELA_FILA}
             WHERE recurso = :r AND status = 'executando' LIMIT 1
         """), {"r": RECURSO_CADASTRO}).first():
             return None
 
-        proximo = conn.execute(text("""
-            SELECT id, token, resume_url FROM fila_execucao
+        proximo = conn.execute(text(f"""
+            SELECT id, token, resume_url FROM {TABELA_FILA}
             WHERE recurso = :r AND status = 'aguardando'
             ORDER BY id LIMIT 1
         """), {"r": RECURSO_CADASTRO}).first()
         if proximo is None:
             return None
 
-        conn.execute(text("""
-            UPDATE fila_execucao
+        conn.execute(text(f"""
+            UPDATE {TABELA_FILA}
             SET status = 'executando', iniciado_em = :agora
             WHERE id = :id
         """), {"id": proximo.id, "agora": datetime.now()})
@@ -307,12 +312,12 @@ def fila_cadastro_status_dict():
     """Estado atual da fila de cadastro — usado no endpoint de status/debug."""
     with _get_engine().begin() as conn:
         _expirar_travadas(conn, RECURSO_CADASTRO)
-        em_exec = conn.execute(text("""
-            SELECT 1 FROM fila_execucao
+        em_exec = conn.execute(text(f"""
+            SELECT 1 FROM {TABELA_FILA}
             WHERE recurso = :r AND status = 'executando' LIMIT 1
         """), {"r": RECURSO_CADASTRO}).first() is not None
-        pendentes = conn.execute(text("""
-            SELECT token, resume_url FROM fila_execucao
+        pendentes = conn.execute(text(f"""
+            SELECT token, resume_url FROM {TABELA_FILA}
             WHERE recurso = :r AND status = 'aguardando'
             ORDER BY id
         """), {"r": RECURSO_CADASTRO}).fetchall()
@@ -331,9 +336,9 @@ def fila_cadastro_reset():
     """Destrava a fila de cadastro à força. Retorna a quantidade removida."""
     with _get_engine().begin() as conn:
         conn.execute(text("SELECT pg_advisory_xact_lock(hashtext(:r))"), {"r": RECURSO_CADASTRO})
-        qtd = conn.execute(text("""
-            SELECT COUNT(*) FROM fila_execucao WHERE recurso = :r
+        qtd = conn.execute(text(f"""
+            SELECT COUNT(*) FROM {TABELA_FILA} WHERE recurso = :r
         """), {"r": RECURSO_CADASTRO}).scalar()
-        conn.execute(text("DELETE FROM fila_execucao WHERE recurso = :r"), {"r": RECURSO_CADASTRO})
+        conn.execute(text(f"DELETE FROM {TABELA_FILA} WHERE recurso = :r"), {"r": RECURSO_CADASTRO})
     logger.warning(f"[FILA] ⚠️ RESET forçado da fila de cadastro! {qtd} item(ns) removido(s).")
     return qtd
