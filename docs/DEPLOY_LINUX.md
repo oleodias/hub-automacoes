@@ -20,7 +20,7 @@ arquivo `.env` e qual `docker-compose` cada um usa.
   - o **Oracle** da empresa (host/porta do banco);
   - o **ERP NLWEB** (endereço configurado em `NLWEB_URL`; internamente costuma
     ser algo como `192.168.200.252:8585` — confirme com a TI);
-  - o **N8N** (se usado).
+  - o **N8N**.
 - [ ] **Nginx** na frente, com **HTTPS** (ver `deploy/nginx.conf.example`).
 
 ---
