@@ -5,6 +5,23 @@ Todas as mudanças relevantes do Hub. Formato baseado em
 
 ## [Não publicado]
 
+### Link da ficha acessível para clientes externos
+
+#### Adicionado
+- **`PUBLIC_BASE_URL`:** domínio público usado para montar os links de ficha
+  enviados a clientes fora da rede (antes o link herdava o IP interno do
+  operador e não abria de fora). Documentada em `docs/VARIAVEIS_AMBIENTE.md` e
+  nos `.env.*.example`.
+- **Bloco Nginx de fichas** em `deploy/nginx.conf.example`: domínio público
+  (`fichas.SEU-DOMINIO`) que expõe **apenas** as rotas da ficha
+  (`/ficha_cliente`, `/receber_ficha`, `/api/ficha/`, `/api/cnpj_completo/`) e
+  os estáticos — o resto do Hub responde 404 e segue só na rede interna.
+
+#### Alterado
+- **Geração do link** (`/api/gerar_link_ficha`) agora devolve a URL completa
+  montada com a base pública; o front (`cadastro_clientes.js`) usa essa URL e só
+  cai no `origin` do navegador quando a base não está configurada (dev).
+
 ### Profissionalização da infraestrutura (Windows → servidor Linux/Docker)
 
 #### Adicionado

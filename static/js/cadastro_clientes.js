@@ -325,7 +325,12 @@ async function gerarLinkCliente() {
     return;
   }
 
+  // Preferimos a URL pública que o servidor monta (PUBLIC_BASE_URL): assim o
+  // link funciona FORA da rede da empresa, mesmo que o operador tenha acessado
+  // o Hub pelo IP interno. Sem base pública configurada (dev), o servidor
+  // devolve url vazia e caímos no origin do próprio navegador.
   const urlCompleta =
+    (data && data.url) ||
     window.location.origin + "/ficha_cliente?t=" + encodeURIComponent(token);
 
   // Mostra o link na tela

@@ -69,9 +69,53 @@ server {
     }
 }
 
+# ── FICHAS (domínio PÚBLICO para clientes externos) ───────────
+# Este domínio fica exposto na INTERNET para o cliente fora da rede abrir o
+# link da ficha. Por segurança, ele NÃO dá acesso ao Hub inteiro: liberamos
+# APENAS as rotas que a ficha precisa (preencher, enviar, consultar CNPJ) e
+# os arquivos estáticos. Qualquer outra rota (login, admin, monitor, APIs do
+# N8N) responde 404 aqui — só é acessível pelo domínio interno.
+#
+# Aponte a variável PUBLIC_BASE_URL do .env para este domínio
+# (ex.: PUBLIC_BASE_URL=https://fichas.SEU-DOMINIO.com.br).
+server {
+    listen 443 ssl;
+    server_name fichas.SEU-DOMINIO.com.br;
+
+    ssl_certificate     /etc/letsencrypt/live/fichas.SEU-DOMINIO.com.br/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/fichas.SEU-DOMINIO.com.br/privkey.pem;
+
+    # Uploads de documentos da ficha podem ser grandes.
+    client_max_body_size 50M;
+
+    # Arquivos estáticos (CSS/JS/imagens da página da ficha).
+    location /static/ {
+        alias /opt/hub-automacoes/static/;
+        expires 7d;
+    }
+
+    # Página da ficha (GET) e envio da ficha (POST).
+    location = /ficha_cliente { proxy_pass http://127.0.0.1:8000; include proxy_params; }
+    location = /receber_ficha { proxy_pass http://127.0.0.1:8000; include proxy_params; }
+
+    # Pré-preenchimento na correção: /api/ficha/<uuid>
+    location /api/ficha/        { proxy_pass http://127.0.0.1:8000; include proxy_params; }
+
+    # Consulta de CNPJ usada enquanto o cliente preenche: /api/cnpj_completo/<cnpj>
+    location /api/cnpj_completo/ { proxy_pass http://127.0.0.1:8000; include proxy_params; }
+
+    # Tudo o que não foi liberado acima fica invisível para a internet.
+    location / { return 404; }
+}
+# Obs.: o "include proxy_params" acima carrega os mesmos cabeçalhos de proxy
+# (Host, X-Real-IP, X-Forwarded-For, X-Forwarded-Proto) usados nos outros
+# blocos. No Debian/Ubuntu o arquivo /etc/nginx/proxy_params já existe; se o
+# seu Nginx não tiver, copie aquelas 4 linhas proxy_set_header para cada
+# location, ou crie o arquivo.
+
 # ── Redireciona HTTP -> HTTPS ─────────────────────────────────
 server {
     listen 80;
-    server_name hub.SEU-DOMINIO.com.br homologacao.SEU-DOMINIO.com.br;
+    server_name hub.SEU-DOMINIO.com.br homologacao.SEU-DOMINIO.com.br fichas.SEU-DOMINIO.com.br;
     return 301 https://$host$request_uri;
 }

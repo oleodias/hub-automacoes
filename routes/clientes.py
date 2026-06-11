@@ -16,7 +16,7 @@ import re
 import json
 from io import BytesIO
 from datetime import datetime
-from flask import Blueprint, render_template, request, jsonify, send_file, session
+from flask import Blueprint, render_template, request, jsonify, send_file, session, current_app
 from werkzeug.utils import secure_filename
 import requests as req_ext
 import uuid as uuid_lib
@@ -55,8 +55,12 @@ def cadastro_clientes():
 def gerar_link_ficha():
     """
     Gera o link da ficha (V-05) e o registra no banco para controle.
-    Só operadores logados com permissão 'clientes' geram links. O front
-    monta a URL final com origin + /ficha_cliente?t=<token>.
+    Só operadores logados com permissão 'clientes' geram links.
+
+    O Hub monta a URL final usando a base PÚBLICA configurada
+    (PUBLIC_BASE_URL), para que o link funcione fora da rede da empresa.
+    Quando a base não está configurada (dev), devolve só o token e o front
+    cai no comportamento antigo (origin do navegador).
     """
     dados = request.get_json(silent=True) or {}
     vendedor   = (dados.get('vendedor')  or '').strip()
@@ -78,7 +82,9 @@ def gerar_link_ficha():
         gerado_por_id=session.get('usuario_id'),
         gerado_por_nome=session.get('usuario_nome', 'Sistema'),
     )
-    return jsonify({'token': token})
+    base = current_app.config.get('PUBLIC_BASE_URL') or ''
+    url = f"{base}/ficha_cliente?t={token}" if base else ''
+    return jsonify({'token': token, 'url': url})
 
 
 @clientes_bp.route('/ficha_cliente')
