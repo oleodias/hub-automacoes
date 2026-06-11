@@ -75,6 +75,8 @@ O N8N orquestra o fluxo de **cadastro de clientes**: o Hub chama webhooks do N8N
 token compartilhado (`N8N_HUB_TOKEN`) e por uma checagem anti-SSRF
 (`utils/n8n_security.py`).
 
+> Como acessar o N8N e criar/publicar automações: veja [N8N.md](N8N.md).
+
 ## Pastas principais
 
 | Pasta/arquivo | Papel |
