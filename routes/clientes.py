@@ -21,7 +21,7 @@ from werkzeug.utils import secure_filename
 import requests as req_ext
 import uuid as uuid_lib
 
-import banco_cadastros
+from db import banco_cadastros
 from utils.cnpj_ws import consultar_cnpj_ws
 from utils.fila import (
     cadastro_entrar, cadastro_liberar_proximo,
@@ -30,7 +30,7 @@ from utils.fila import (
 from utils.n8n_security import resume_url_confiavel, exigir_token_n8n
 from utils.auth import permissao_required, admin_required
 from utils.validacao import eh_uuid_valido
-import banco_links
+from db import banco_links
 from utils.rastreio import iniciar_execucao_robo, finalizar_execucao_robo
 from automacoes.clientes import cadastro_novo
 from automacoes.clientes import cadastro_reativacao

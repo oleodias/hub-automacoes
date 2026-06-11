@@ -18,7 +18,7 @@ from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify, session
 from werkzeug.utils import secure_filename
 
-import banco_notas
+from db import banco_notas
 from automacoes.lancamento_notas.parser_xml import parsear_xml_nfe
 from utils.auth import permissao_required
 

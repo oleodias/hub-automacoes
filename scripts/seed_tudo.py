@@ -26,8 +26,7 @@ RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, RAIZ)
 
 # Importa os seeds já existentes (reaproveitando a lógica de cada um)
-import seed_notas
-from scripts import seed_dados_notas, seed_faq
+from scripts import seed_notas, seed_dados_notas, seed_faq
 
 
 def main():

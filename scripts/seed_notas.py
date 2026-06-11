@@ -7,7 +7,7 @@
 #
 # Como rodar (a partir da raiz do projeto, depois do upgrade do
 # Alembic):
-#     python seed_notas.py
+#     python scripts/seed_notas.py
 #
 # Idempotente: rodar várias vezes NÃO duplica registros — só
 # adiciona o que ainda não existe.
@@ -16,8 +16,9 @@
 import sys
 import os
 
-# Garante que conseguimos importar o app mesmo rodando de fora
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Garante que conseguimos importar o app mesmo rodando de fora.
+# Este arquivo vive em scripts/, então a raiz fica DOIS níveis acima.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import app
 from extensions import db
