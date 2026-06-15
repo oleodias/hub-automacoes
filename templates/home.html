@@ -181,6 +181,27 @@ content %}
       </div>
     </div>
 
+    <div
+      class="auto-card clickable"
+      onclick="window.location.href='/lancar_nota'"
+    >
+      <div class="card-accent-line" style="background: #059669"></div>
+      <div
+        class="card-icon-wrap"
+        style="background: rgba(5, 150, 105, 0.1); color: #059669"
+      >
+        <i class="fa-solid fa-file-arrow-up"></i>
+      </div>
+      <div class="card-title">Lançamento de Notas</div>
+      <div class="card-desc">
+        Upload do XML, revisão de centros de custo e parcelas, e envio para a
+        fila de lançamento no ERP.
+      </div>
+      <div class="badge-status badge-operational">
+        <span class="dot"></span> Operacional
+      </div>
+    </div>
+
     {% endif %} {% if tem_permissao('monitor') %}
     <div
       class="auto-card clickable"

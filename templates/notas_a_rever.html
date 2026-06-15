@@ -1,17 +1,35 @@
-{% extends "base.html" %}
-
-{% block title %}Notas a Rever{% endblock %}
-
-{% block content %}
-<div style="max-width:1200px;margin:0 auto;padding:20px;">
-    <h1 style="font-family:'Syne',sans-serif;">
-        <i class="fas fa-exclamation-triangle"></i> Notas a Rever
-    </h1>
-    <div style="background:var(--bg-card,#1a1a1a);padding:48px;border-radius:12px;text-align:center;margin-top:24px;">
-        <i class="fas fa-tools" style="font-size:48px;color:var(--amber,#f59e0b);margin-bottom:16px;"></i>
-        <h2 style="font-family:'Syne',sans-serif;">Em construção</h2>
-        <p style="color:var(--text-secondary,#999);">Esta tela faz parte do próximo pacote do projeto.</p>
-        <a href="/lancar_nota" style="display:inline-block;margin-top:16px;color:var(--teal,#14b8a6);">← Voltar para Lançar Nota</a>
+{% extends "base.html" %} {% block title %}Notas a Rever{% endblock %} {% block
+navbar_title %}Hub de Automações{% endblock %} {% block css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/notas_a_rever.css') }}"
+/>
+{% endblock %} {% block content %}
+<div class="construcao">
+  <!-- ── Cabeçalho padrão (page-header) ─────────────────── -->
+  <div class="page-header">
+    <div class="left">
+      <a class="btn-back" href="/lancar_nota" title="Voltar para Lançar Nota">
+        <i class="fa-solid fa-arrow-left" style="font-size: 13px"></i>
+      </a>
+      <div class="page-title">
+        Notas a Rever
+        <span>Módulo Fiscal · Pendências de lançamento</span>
+      </div>
     </div>
+    <span class="badge-api"><i class="fa-solid fa-clock me-1"></i>Em breve</span>
+  </div>
+
+  <!-- ── Estado em construção ───────────────────────────── -->
+  <div class="card-dark construcao-card">
+    <div class="construcao-icon">
+      <i class="fa-solid fa-screwdriver-wrench"></i>
+    </div>
+    <h2>Em construção</h2>
+    <p>Esta tela faz parte do próximo pacote do projeto.</p>
+    <a href="/lancar_nota" class="construcao-voltar">
+      <i class="fa-solid fa-arrow-left"></i> Voltar para Lançar Nota
+    </a>
+  </div>
 </div>
 {% endblock %}
