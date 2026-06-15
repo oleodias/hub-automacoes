@@ -85,6 +85,10 @@ docker compose -f docker-compose.prod.yml logs -f --tail=50
 O Hub fica escutando só no `localhost` do servidor (`127.0.0.1:8000` produção,
 `127.0.0.1:8010` homologação). Quem expõe para a rede, com HTTPS, é o **Nginx**.
 
+> **Link da ficha para clientes externos:** se os clientes recebem o link da
+> ficha por fora da rede, há um passo extra (domínio público só para as telas da
+> ficha). Veja [LINK_FICHA_PUBLICO.md](LINK_FICHA_PUBLICO.md).
+
 ---
 
 ## 5. Banco: criar a estrutura e os dados-base

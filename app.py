@@ -66,6 +66,14 @@ if EH_SERVIDOR:
     from werkzeug.middleware.proxy_fix import ProxyFix
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
+# URL base PÚBLICA para os links de ficha enviados a clientes externos.
+# O operador costuma acessar o Hub pelo IP interno (ex.: http://192.168.x.x);
+# se o link herdasse esse endereço, o cliente FORA da rede não conseguiria
+# abrir. Aqui definimos o domínio público (ex.: https://fichas.SEU-DOMINIO.com.br)
+# que o backend usa para montar o link. Sem barra no final.
+# Em dev fica vazia: aí o link cai no comportamento antigo (origin do navegador).
+app.config['PUBLIC_BASE_URL'] = os.getenv('PUBLIC_BASE_URL', '').strip().rstrip('/')
+
 # Banco de Dados (PostgreSQL)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
