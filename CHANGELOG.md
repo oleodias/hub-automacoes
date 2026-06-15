@@ -16,6 +16,9 @@ Todas as mudanças relevantes do Hub. Formato baseado em
   (`fichas.SEU-DOMINIO`) que expõe **apenas** as rotas da ficha
   (`/ficha_cliente`, `/receber_ficha`, `/api/ficha/`, `/api/cnpj_completo/`) e
   os estáticos — o resto do Hub responde 404 e segue só na rede interna.
+- **Guia `docs/LINK_FICHA_PUBLICO.md`:** passo a passo de infraestrutura (DNS,
+  HTTPS, Nginx, `.env`) para o link funcionar fora da rede, com validação e
+  problemas comuns. Referenciado em `docs/DEPLOY_LINUX.md`.
 
 #### Alterado
 - **Geração do link** (`/api/gerar_link_ficha`) agora devolve a URL completa
