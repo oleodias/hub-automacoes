@@ -54,10 +54,19 @@ def navegar_para_cidades(driver):
         wait = WebDriverWait(driver, 20)
         driver.switch_to.default_content()
 
+        # ── ESPERA ATIVA PELO BOTÃO DE FAVORITOS ──
+        # Logo após o login o ERP ainda termina de renderizar o cabeçalho.
+        # Em vez de um sleep fixo, ficamos "vigiando" o botão da estrela:
+        # assim que ele estiver presente E clicável, o robô segue na hora.
+        xpath_estrela = "//a[contains(@onclick, 'tab-header-menu-favoritos')]"
+        print("   ⏳ Aguardando o botão de Favoritos ficar disponível...")
+        wait_estrela = WebDriverWait(driver, 30)
+        btn_estrela = wait_estrela.until(
+            EC.element_to_be_clickable((By.XPATH, xpath_estrela))
+        )
+        print("   ✅ Botão de Favoritos disponível. Clicando...")
+
         # Clica na estrela de favoritos
-        btn_estrela = wait.until(EC.element_to_be_clickable(
-            (By.XPATH, "//a[contains(@onclick, 'tab-header-menu-favoritos')]")
-        ))
         driver.execute_script("arguments[0].click();", btn_estrela)
         time.sleep(1.5)
 
