@@ -213,6 +213,11 @@ def executar(dados):
 
     options = webdriver.ChromeOptions()
     options.add_argument('--start-maximized')
+    # "detach" mantém o Chrome aberto mesmo após o script Python terminar.
+    # Sem isso, o navegador fecha sozinho no fim (mesmo com driver.quit()
+    # comentado), porque o objeto driver é destruído junto com o processo.
+    # Útil durante os testes; em produção, deixe False / remova.
+    options.add_experimental_option("detach", True)
 
     driver = webdriver.Chrome(options=options)
     wait = WebDriverWait(driver, 20)
@@ -937,8 +942,10 @@ def executar(dados):
 
     finally:
         # Mantém o navegador aberto durante os primeiros testes pra conferência.
-        # Quando o robô estiver estável, descomenta a linha abaixo.
-        driver.quit()
+        # Combinado com options.add_experimental_option("detach", True), o
+        # Chrome NÃO fecha ao terminar. Quando o robô estiver estável,
+        # descomente o driver.quit() abaixo (e desligue o "detach").
+        # driver.quit()
         print("> 🏁 Fim da execução do robô de cadastro de CEP.")
 
 
