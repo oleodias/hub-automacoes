@@ -690,18 +690,73 @@ def executar(dados):
             except Exception as e:
                 raise Exception(f"Falha ao clicar na lupa de busca (Logradouros): {e}")
 
-            # ── 9.5: Existe? Procuramos QUALQUER linha de resultado ──
-            # (diferente do bairro, aqui o prompt só pede: se não houver
-            # resultado, cria. Se houver, consideramos já cadastrado.)
+            # ── 9.5: Existe? Conferimos a grade comparando TODOS os campos ──
+            # Só consideramos "já cadastrado" se uma linha bater em:
+            # logradouro + CEP + local + bairro(código) + bairro(nome).
+            logradouro_alvo_norm = logradouro_erp.upper()
+            bairro_alvo_norm = bairro_erp.upper()
+
             try:
                 WebDriverWait(driver, 6).until(EC.presence_of_element_located(
-                    (By.XPATH, "//td[contains(@headers, 'tabG') and contains(@headers, 'Logradouro')]")
+                    (By.XPATH, "//td[@headers='tabGeCepLog:colCodLocal']")
                 ))
-                logradouro_resolvido = True
-                print("   ✅ Logradouro JÁ EXISTE. Nada a criar.")
+                celulas_log_local = driver.find_elements(
+                    By.XPATH, "//td[@headers='tabGeCepLog:colCodLocal']"
+                )
+                print(f"   🔍 {len(celulas_log_local)} linha(s) de resultado de logradouro.")
             except TimeoutException:
-                logradouro_resolvido = False
-                print("   ℹ️ Nenhum logradouro encontrado. Vamos criar.")
+                celulas_log_local = []
+                print("   ℹ️ Nenhum logradouro na grade de resultados.")
+
+            for celula in celulas_log_local:
+                try:
+                    info = driver.execute_script("""
+                        var tdLocal = arguments[0];
+                        var tr = tdLocal.closest('tr');
+                        if (!tr) return null;
+                        function txt(sel){ var e = tr.querySelector(sel); return e ? e.textContent.trim() : ''; }
+                        return {
+                            desLog:    txt("td[headers='tabGeCepLog:colDesLogradouro']"),
+                            numCep:    txt("td[headers='tabGeCepLog:colNumCep']"),
+                            codLocal:  txt("td[headers='tabGeCepLog:colCodLocal']"),
+                            codBairro: txt("td[headers='tabGeCepLog:colCodBairro']"),
+                            desBairro: txt("td[headers='tabGeCepLog:colDesCepBai']")
+                        };
+                    """, celula)
+                except Exception as e:
+                    print(f"   ⚠️ Falha ao ler linha de logradouro: {e}")
+                    info = None
+
+                if not info:
+                    continue
+
+                # Normaliza para comparar (números só dígitos; texto upper/strip).
+                row_des_log = (info.get('desLog') or '').strip().upper()
+                row_cep = re.sub(r'\D', '', info.get('numCep') or '')
+                row_local = re.sub(r'\D', '', info.get('codLocal') or '')
+                row_bairro_cod = re.sub(r'\D', '', info.get('codBairro') or '')
+                row_bairro_des = (info.get('desBairro') or '').strip().upper()
+
+                bate = (
+                    row_des_log == logradouro_alvo_norm
+                    and row_cep == cep_limpo
+                    and row_local == (codigo_local_capturado or '')
+                    and row_bairro_cod == (codigo_bairro_capturado or '')
+                    and row_bairro_des == bairro_alvo_norm
+                )
+
+                print(
+                    f"      🔍 Linha: log={row_des_log!r} cep={row_cep} local={row_local} "
+                    f"bairroCod={row_bairro_cod} bairroDes={row_bairro_des!r} -> {'BATE' if bate else 'não'}"
+                )
+
+                if bate:
+                    logradouro_resolvido = True
+                    print("   ✅ Logradouro JÁ EXISTE (todos os campos batem). Nada a criar.")
+                    break
+
+            if not logradouro_resolvido:
+                print("   ℹ️ Nenhuma linha bateu com todos os campos. Vamos criar.")
 
             # ── 9.6: Criar logradouro novo (se não existe) ──
             if not logradouro_resolvido:
