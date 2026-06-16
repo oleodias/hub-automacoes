@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup F — Minimal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<style>
+  :root{
+    --bg:#ffffff;--panel:#fafbfc;--border:#edf0f3;--border2:#e3e8ee;
+    --ink:#101418;--txt:#2b3441;--txt2:#6a7686;--muted:#a3adba;
+    --accent:#0d9488;--green:#16a34a;--amber:#c2840a;--red:#dc2626;
+    --font:"Inter",-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);background:var(--bg);color:var(--txt);font-size:14px;-webkit-font-smoothing:antialiased}
+  .shell{max-width:1080px;margin:0 auto;padding:0 40px}
+  /* top nav horizontal */
+  .nav{border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(255,255,255,.85);backdrop-filter:saturate(180%) blur(10px);z-index:10}
+  .nav .in{max-width:1080px;margin:0 auto;padding:0 40px;height:62px;display:flex;align-items:center;gap:28px}
+  .nav .logo{display:flex;align-items:center;gap:9px;font-weight:600;color:var(--ink);font-size:15px}
+  .nav .logo .b{width:28px;height:28px;border-radius:7px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+  .nav .links{display:flex;gap:4px}
+  .nav .links a{font-size:13.5px;color:var(--txt2);text-decoration:none;padding:7px 12px;border-radius:7px;font-weight:500}
+  .nav .links a.on{color:var(--ink);background:var(--panel)}
+  .nav .links a:hover{color:var(--ink)}
+  .nav .right{margin-left:auto;display:flex;align-items:center;gap:14px}
+  .nav .right i{color:var(--txt2)}
+  .nav .av{width:32px;height:32px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12.5px}
+
+  .hero{padding:48px 0 34px;border-bottom:1px solid var(--border)}
+  .hero .eyebrow{font-size:12px;color:var(--accent);font-weight:600;letter-spacing:.02em;margin-bottom:10px}
+  .hero h1{font-size:30px;font-weight:600;letter-spacing:-.02em;color:var(--ink)}
+  .hero p{color:var(--txt2);font-size:15px;margin-top:8px;max-width:520px}
+  /* inline stat line */
+  .stats{display:flex;gap:40px;margin-top:30px;flex-wrap:wrap}
+  .stats .s .v{font-size:24px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
+  .stats .s .v small{font-size:13px;font-weight:500;margin-left:7px}
+  .stats .s .l{font-size:12.5px;color:var(--txt2);margin-top:3px}
+  .stats .s .v small.up{color:var(--green)} .stats .s .v small.dn{color:var(--red)} .stats .s .v small.wn{color:var(--amber)}
+  .stats .sep{width:1px;background:var(--border2)}
+
+  .section{padding:34px 0}
+  .sh{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px}
+  .sh h2{font-size:15px;font-weight:600;color:var(--ink)}
+  .sh span{font-size:13px;color:var(--muted)}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+  .card{background:#fff;padding:22px;cursor:pointer;transition:.15s;position:relative}
+  .card:hover{background:var(--panel)}
+  .card .ic{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--ink);background:var(--panel);border:1px solid var(--border2);margin-bottom:14px;transition:.15s}
+  .card:hover .ic{border-color:var(--accent);color:var(--accent)}
+  .card h3{font-size:14.5px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:8px}
+  .card h3 .arr{margin-left:auto;color:var(--muted);font-size:12px;opacity:0;transition:.15s}
+  .card:hover h3 .arr{opacity:1;color:var(--accent)}
+  .card p{font-size:13px;color:var(--txt2);line-height:1.55;margin-top:7px}
+  .card .st{font-size:11.5px;margin-top:14px;display:inline-flex;align-items:center;gap:6px;color:var(--txt2)}
+  .card .st .d{width:6px;height:6px;border-radius:50%;background:var(--green)}
+  .card .st.wn{color:var(--amber)} .card .st.wn .d{background:var(--amber)}
+  .ftr{padding:30px 0;border-top:1px solid var(--border);display:flex;justify-content:space-between;color:var(--muted);font-size:12.5px}
+  .ftr .vb{color:var(--accent);border:1px solid var(--border2);border-radius:100px;padding:3px 11px;font-size:11px}
+  @media(max-width:880px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:620px){.grid{grid-template-columns:1fr}.shell,.nav .in{padding:0 20px}.nav .links{display:none}.stats{gap:24px}.stats .sep{display:none}}
+</style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="in">
+      <div class="logo"><div class="b">C</div> CIAMED AI</div>
+      <div class="links"><a class="on">Início</a><a>Notas</a><a>Fichas</a><a>Histórico</a><a>Suporte</a></div>
+      <div class="right"><i class="fa-solid fa-magnifying-glass"></i><i class="fa-regular fa-bell"></i><div class="av">LD</div></div>
+    </div>
+  </nav>
+
+  <div class="shell">
+    <header class="hero">
+      <div class="eyebrow">Hub de Automações</div>
+      <h1>Bom dia, Leonardo</h1>
+      <p>Sua central de módulos de inteligência. Quatro itens pedem atenção hoje.</p>
+      <div class="stats">
+        <div class="s"><div class="v">142 <small class="up">↑ 12%</small></div><div class="l">Execuções nesta semana</div></div>
+        <div class="sep"></div>
+        <div class="s"><div class="v">9 <small class="wn">3 atrasadas</small></div><div class="l">Notas pendentes</div></div>
+        <div class="sep"></div>
+        <div class="s"><div class="v">5 <small class="wn">2 hoje</small></div><div class="l">Fichas a aprovar</div></div>
+        <div class="sep"></div>
+        <div class="s"><div class="v">3 <small class="dn">1 expira</small></div><div class="l">Links ativos</div></div>
+      </div>
+    </header>
+
+    <section class="section">
+      <div class="sh"><h2>Fiscal &amp; Cadastros</h2><span>5 módulos</span></div>
+      <div class="grid">
+        <div class="card"><div class="ic"><i class="fa-solid fa-pencil"></i></div><h3>Cadastro de Itens <span class="arr"><i class="fa-solid fa-arrow-right"></i></span></h3><p>Triagem de NCMs, consulta Sefaz e cadastro automático no ERP.</p><span class="st"><span class="d"></span>Operacional</span></div>
+        <div class="card"><div class="ic"><i class="fa-solid fa-cart-shopping"></i></div><h3>Fornecedores — Fiscal <span class="arr"><i class="fa-solid fa-arrow-right"></i></span></h3><p>Cadastro de fornecedores do setor fiscal via BrasilAPI.</p><span class="st"><span class="d"></span>Operacional</span></div>
+        <div class="card"><div class="ic"><i class="fa-solid fa-users-gear"></i></div><h3>Clientes — Fiscal <span class="arr"><i class="fa-solid fa-arrow-right"></i></span></h3><p>Cadastro e reativação de clientes para o setor fiscal.</p><span class="st"><span class="d"></span>Operacional</span></div>
+        <div class="card"><div class="ic"><i class="fa-solid fa-magnifying-glass"></i></div><h3>Consulta CNPJ <span class="arr"><i class="fa-solid fa-arrow-right"></i></span></h3><p>Consulta completa de informações de um CNPJ.</p><span class="st"><span class="d"></span>Operacional</span></div>
+        <div class="card"><div class="ic"><i class="fa-solid fa-map-location-dot"></i></div><h3>Cadastro de CEP <span class="arr"><i class="fa-solid fa-arrow-right"></i></span></h3><p>Cidade, bairro e logradouro no ERP a partir do CEP.</p><span class="st"><span class="d"></span>Operacional</span></div>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:0">
+      <div class="sh"><h2>Notas Fiscais</h2><span>3 módulos</span></div>
+      <div class="grid">
+        <div class="card"><div class="ic"><i class="fa-solid fa-receipt"></i></div><h3>Controle de Notas <span class="arr"><i class="fa-solid fa-arrow-right"></i></span></h3><p>Esteira visual das notas mensais, com quebra por unidade.</p><span class="st wn"><span class="d"></span>3 atrasadas</span></div>
+        <div class="card"><div class="ic"><i class="fa-solid fa-file-arrow-up"></i></div><h3>Lançamento de Notas <span class="arr"><i class="fa-solid fa-arrow-right"></i></span></h3><p>Upload do XML, revisão de centros de custo e fila do ERP.</p><span class="st"><span class="d"></span>Operacional</span></div>
+        <div class="card"><div class="ic"><i class="fa-solid fa-truck-fast"></i></div><h3>Relatório MDF-e <span class="arr"><i class="fa-solid fa-arrow-right"></i></span></h3><p>Extração automática de datas e notas de MDFs do NL.</p><span class="st"><span class="d"></span>Operacional</span></div>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:0">
+      <div class="sh"><h2>Monitoramento &amp; Histórico</h2><span>3 módulos</span></div>
+      <div class="grid">
+        <div class="card"><div class="ic"><i class="fa-solid fa-table-list"></i></div><h3>Monitor de Fichas <span class="arr"><i class="fa-solid fa-arrow-right"></i></span></h3><p>Histórico de fichas recebidas, filtros por status e período.</p><span class="st wn"><span class="d"></span>5 a aprovar</span></div>
+        <div class="card"><div class="ic"><i class="fa-solid fa-link"></i></div><h3>Links Gerados <span class="arr"><i class="fa-solid fa-arrow-right"></i></span></h3><p>Quem gerou, para qual cliente, validade e uso dos links.</p><span class="st"><span class="d"></span>Operacional</span></div>
+        <div class="card"><div class="ic"><i class="fa-solid fa-clock-rotate-left"></i></div><h3>Meu Histórico <span class="arr"><i class="fa-solid fa-arrow-right"></i></span></h3><p>Histórico das suas execuções de robôs, com status e detalhes.</p><span class="st"><span class="d"></span>Operacional</span></div>
+      </div>
+    </section>
+
+    <footer class="ftr"><span>© 2026 Leonardo Dias</span><span class="vb">v1.0.1</span></footer>
+  </div>
+</body>
+</html>
