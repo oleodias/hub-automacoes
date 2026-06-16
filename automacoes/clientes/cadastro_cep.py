@@ -305,7 +305,7 @@ def executar(dados):
         try:
             driver.execute_script("arguments[0].click();", celula_codigo_alvo)
             print("   ✅ Cadastro da cidade aberto. Aguardando carregar...")
-            time.sleep(2)
+            time.sleep(1.2)
         except Exception as e:
             raise Exception(f"Falha ao clicar no código da cidade: {e}")
 
@@ -354,7 +354,7 @@ def executar(dados):
                 EC.element_to_be_clickable((By.ID, "btnCrudVoltar"))
             )
             driver.execute_script("arguments[0].click();", btn_voltar)
-            time.sleep(1.5)
+            time.sleep(1)
 
             # O onclick chama confirmarSaida(); como só LEMOS o campo (sem
             # alterar nada), normalmente não há popup. Mesmo assim, tratamos
@@ -442,7 +442,7 @@ def executar(dados):
             )
             driver.execute_script("arguments[0].click();", btn_lupa)
             print("   ✅ Lupa clicada via JS. Aguardando resultados...")
-            time.sleep(2.5)
+            time.sleep(1.2)
         except Exception as e:
             raise Exception(f"Falha ao clicar na lupa de busca (Bairros): {e}")
 
@@ -529,7 +529,7 @@ def executar(dados):
                     EC.element_to_be_clickable((By.XPATH, "//button[contains(@class, 'btn_novo_icon')]"))
                 )
                 driver.execute_script("arguments[0].click();", btn_novo)
-                time.sleep(1.5)
+                time.sleep(1)
                 print("   ✅ Tela de novo bairro aberta.")
 
                 # ── 8.2: Preencher o "Local" (número bruto) ──
@@ -571,7 +571,7 @@ def executar(dados):
                 )
                 driver.execute_script("arguments[0].click();", btn_gravar)
                 print("   💾 Gravando novo bairro...")
-                time.sleep(2)
+                time.sleep(1)
 
                 # Trata um possível popup nativo pós-gravação.
                 try:
