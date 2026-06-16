@@ -428,7 +428,7 @@ body::before {
   border: 1px solid rgba(217, 119, 6, 0.2);
 }
 
-.badge-developing {
+.badge-developing .dot{
   background:var(--amber);
 }
 
