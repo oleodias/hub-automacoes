@@ -161,6 +161,18 @@ def executar(dados):
         logradouro = logradouro or dados_cep.get('logradouro', '').strip()
         complemento = complemento or dados_cep.get('complemento', '').strip()
 
+    # ── FALLBACK PARA CEPs "SECOS" (sem bairro/logradouro) ──
+    # CEPs únicos de cidade pequena costumam não trazer bairro nem logradouro.
+    # Para o robô não travar por falta de informação, usamos textos padrão.
+    # Esses textos também já existem no ERP, então a busca/matching reaproveita
+    # o registro existente em vez de criar duplicado.
+    if not bairro:
+        bairro = "INFORMAR BAIRRO"
+        print("   ⚠️ CEP sem bairro. Usando fallback 'INFORMAR BAIRRO'.")
+    if not logradouro:
+        logradouro = "INFORME LOGRADOURO"
+        print("   ⚠️ CEP sem logradouro. Usando fallback 'INFORME LOGRADOURO'.")
+
     # Logradouro respeita o limite de 50 caracteres do ERP.
     LIMITE_LOGRADOURO = 50
     logradouro_erp = logradouro[:LIMITE_LOGRADOURO].strip()
@@ -629,8 +641,9 @@ def executar(dados):
             # Sem bairro não dá pra seguir para o logradouro.
             registrar_aviso("REVISAR — sem código de bairro, etapa de Logradouro abortada")
         elif not logradouro_erp:
-            # CEP "geral" (sem logradouro). Não há o que cadastrar.
-            print("> ℹ️ ETAPA 9: CEP sem logradouro específico. Pulando etapa de Logradouro.")
+            # Não deve mais acontecer (há fallback "INFORME LOGRADOURO"),
+            # mas mantemos a guarda por segurança.
+            print("> ℹ️ ETAPA 9: Sem logradouro e sem fallback. Pulando etapa de Logradouro.")
             registrar_aviso("ATENÇÃO — CEP sem logradouro (não foi cadastrado logradouro)")
         else:
             print(f"> 🛣️ ETAPA 9: Resolvendo logradouro {logradouro_erp!r}...")
