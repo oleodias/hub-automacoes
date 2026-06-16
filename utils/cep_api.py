@@ -21,6 +21,7 @@ def _dados_vazios(status="vazio"):
     return {
         "cep":             "",
         "logradouro":      "",
+        "complemento":     "",
         "bairro":          "",
         "cidade":          "",
         "uf":              "",
@@ -40,6 +41,8 @@ def _consultar_brasilapi(cep_limpo):
     return {
         "cep":             re.sub(r'\D', '', j.get("cep", "") or "") or cep_limpo,
         "logradouro":      (j.get("street") or "").strip(),
+        # BrasilAPI v2 não traz complemento separado.
+        "complemento":     "",
         "bairro":          (j.get("neighborhood") or "").strip(),
         "cidade":          (j.get("city") or "").strip(),
         "uf":              (j.get("state") or "").strip().upper(),
@@ -62,6 +65,7 @@ def _consultar_viacep(cep_limpo):
     return {
         "cep":             re.sub(r'\D', '', j.get("cep", "") or "") or cep_limpo,
         "logradouro":      (j.get("logradouro") or "").strip(),
+        "complemento":     (j.get("complemento") or "").strip(),
         "bairro":          (j.get("bairro") or "").strip(),
         "cidade":          (j.get("localidade") or "").strip(),
         "uf":              (j.get("uf") or "").strip().upper(),

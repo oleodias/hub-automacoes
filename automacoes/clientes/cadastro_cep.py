@@ -118,24 +118,29 @@ def executar(dados):
         cep                : str — opcional, apenas para log/uso futuro
 
     Saída (dict):
-        status        : "Sucesso" | "Sucesso com avisos" | "Erro"
-        msg           : mensagem amigável
-        avisos        : lista de pontos a revisar
-        codigo_local  : código local interno do ERP (str) ou None
-        codigo_cidade : código da cidade exibido na grid (str) ou None
-        codigo_bairro : código do bairro (existente ou recém-criado) ou None
-        bairro_criado : bool — True se o robô teve que criar o bairro
+        status               : "Sucesso" | "Sucesso com avisos" | "Erro"
+        msg                  : mensagem amigável
+        avisos               : lista de pontos a revisar
+        codigo_local         : código local interno do ERP (str) ou None
+        codigo_cidade        : código IBGE da cidade (str) ou None
+        codigo_bairro        : código do bairro (existente/criado) ou None
+        bairro_criado        : bool — True se o robô criou o bairro
+        logradouro_resolvido : bool — True se o logradouro existe/foi criado
+        logradouro_criado    : bool — True se o robô criou o logradouro
     """
     cidade = str(dados.get('cidade', '')).strip()
     uf = str(dados.get('uf', '')).strip().upper()
     bairro = str(dados.get('bairro', '')).strip()
+    logradouro = str(dados.get('logradouro', '')).strip()
+    complemento = str(dados.get('complemento', '')).strip()
     codigo_novo_bairro = re.sub(r'\D', '', str(dados.get('codigo_novo_bairro', '')))
     cep = str(dados.get('cep', '')).strip()
+    cep_limpo = re.sub(r'\D', '', cep)
 
     # ── ENRIQUECIMENTO VIA API DE CEP ──
     # Se um CEP foi informado, consultamos a API (BrasilAPI → ViaCEP) para
-    # descobrir cidade/UF/bairro. O que vier explícito no payload TEM
-    # PRIORIDADE sobre a API (útil para forçar valores no teste de bancada).
+    # descobrir cidade/UF/bairro/logradouro/complemento. O que vier explícito
+    # no payload TEM PRIORIDADE sobre a API (útil para forçar valores no teste).
     cep_api_status = "nao_consultado"
     if cep:
         print(f"> 🌐 Consultando API de CEP para {cep!r}...")
@@ -143,11 +148,21 @@ def executar(dados):
         cep_api_status = dados_cep.get('_cep_api_status', 'desconhecido')
         print(
             f"   📦 API ({cep_api_status}): cidade={dados_cep.get('cidade')!r} "
-            f"uf={dados_cep.get('uf')!r} bairro={dados_cep.get('bairro')!r}"
+            f"uf={dados_cep.get('uf')!r} bairro={dados_cep.get('bairro')!r} "
+            f"logradouro={dados_cep.get('logradouro')!r}"
         )
         cidade = cidade or dados_cep.get('cidade', '').strip()
         uf = uf or dados_cep.get('uf', '').strip().upper()
         bairro = bairro or dados_cep.get('bairro', '').strip()
+        logradouro = logradouro or dados_cep.get('logradouro', '').strip()
+        complemento = complemento or dados_cep.get('complemento', '').strip()
+
+    # Logradouro respeita o limite de 50 caracteres do ERP.
+    LIMITE_LOGRADOURO = 50
+    logradouro_erp = logradouro[:LIMITE_LOGRADOURO].strip()
+    # Complemento respeita o limite de 65 caracteres do ERP.
+    LIMITE_COMPLEMENTO = 65
+    complemento_erp = complemento[:LIMITE_COMPLEMENTO].strip()
 
     # Nome do bairro como o ERP armazena: cortado em 20 caracteres (maxlength).
     # Usamos essa versão tanto na pesquisa quanto no matching da grade.
@@ -177,6 +192,8 @@ def executar(dados):
     codigo_cidade_capturado = None
     codigo_bairro_capturado = None
     bairro_criado = False
+    logradouro_resolvido = False
+    logradouro_criado = False
 
     options = webdriver.ChromeOptions()
     options.add_argument('--start-maximized')
@@ -341,6 +358,8 @@ def executar(dados):
                 "codigo_cidade": codigo_cidade_capturado,
                 "codigo_bairro": None,
                 "bairro_criado": False,
+                "logradouro_resolvido": False,
+                "logradouro_criado": False,
             }
 
         print(f"> ✅ ETAPA 3 CONCLUÍDA! Código local: {codigo_local_capturado}")
@@ -388,6 +407,8 @@ def executar(dados):
                 "codigo_cidade": codigo_cidade_capturado,
                 "codigo_bairro": None,
                 "bairro_criado": False,
+                "logradouro_resolvido": False,
+                "logradouro_criado": False,
             }
 
         # ════════════════════════════════════════════════════
@@ -521,6 +542,8 @@ def executar(dados):
                     "codigo_cidade": codigo_cidade_capturado,
                     "codigo_bairro": None,
                     "bairro_criado": False,
+                    "logradouro_resolvido": False,
+                    "logradouro_criado": False,
                 }
 
             try:
@@ -590,24 +613,211 @@ def executar(dados):
                 print(f"   ❌ Erro ao criar o bairro: {e}")
                 registrar_aviso("REVISAR — falha ao criar o novo bairro")
 
-        # ── Resultado final ──
-        if codigo_bairro_capturado and not avisos:
+        print(f"> ✅ Bairro resolvido. Código: {codigo_bairro_capturado}")
+
+        # ════════════════════════════════════════════════════
+        # ETAPA 9 — LOGRADOURO
+        # Com bairro + local + cidade(IBGE) em mãos, garantimos que o
+        # logradouro do CEP esteja cadastrado. Pesquisa por nome + cidade
+        # (IBGE) + bairro; se não existir, cria o registro.
+        # ════════════════════════════════════════════════════
+        if not codigo_bairro_capturado:
+            # Sem bairro não dá pra seguir para o logradouro.
+            registrar_aviso("REVISAR — sem código de bairro, etapa de Logradouro abortada")
+        elif not logradouro_erp:
+            # CEP "geral" (sem logradouro). Não há o que cadastrar.
+            print("> ℹ️ ETAPA 9: CEP sem logradouro específico. Pulando etapa de Logradouro.")
+            registrar_aviso("ATENÇÃO — CEP sem logradouro (não foi cadastrado logradouro)")
+        else:
+            print(f"> 🛣️ ETAPA 9: Resolvendo logradouro {logradouro_erp!r}...")
+
+            # ── 9.1: Navegar até "Logradouros" ──
+            if not navegar_via_favorito(driver, "Logradouros"):
+                raise Exception("Falha na navegação até a tela de Logradouros.")
+
+            # ── 9.2: Garantir o painel de filtros aberto ──
+            # Aqui o filtro costuma abrir sozinho; só clicamos se o campo
+            # de busca ainda não estiver visível.
+            try:
+                WebDriverWait(driver, 4).until(
+                    EC.visibility_of_element_located((By.ID, "txtDesLogradouro"))
+                )
+                print("   ✅ Painel de filtros já aberto.")
+            except TimeoutException:
+                try:
+                    btn_filtros = wait.until(
+                        EC.presence_of_element_located((By.ID, "btn_nlPanelOcultarMostrar_"))
+                    )
+                    driver.execute_script("arguments[0].click();", btn_filtros)
+                    time.sleep(1)
+                    print("   ✅ Painel de filtros aberto manualmente.")
+                except Exception as e:
+                    raise Exception(f"Falha ao abrir o painel de filtros (Logradouros): {e}")
+
+            # ── 9.3: Preencher filtros (nome + cidade IBGE + bairro) ──
+            try:
+                campo_log = wait.until(
+                    EC.element_to_be_clickable((By.ID, "txtDesLogradouro"))
+                )
+                limpar_e_preencher(driver, campo_log, logradouro_erp)
+                time.sleep(0.3)
+
+                campo_cid = wait.until(
+                    EC.element_to_be_clickable((By.ID, "lovCodCidade_txtCod"))
+                )
+                limpar_e_preencher(driver, campo_cid, codigo_cidade_capturado or "")
+                campo_cid.send_keys(Keys.TAB)
+                time.sleep(0.8)
+
+                campo_bai = wait.until(
+                    EC.element_to_be_clickable((By.ID, "lovCodBairro_txtCod"))
+                )
+                limpar_e_preencher(driver, campo_bai, codigo_bairro_capturado)
+                campo_bai.send_keys(Keys.TAB)
+                time.sleep(0.8)
+                print("   ✅ Filtros de logradouro preenchidos.")
+            except Exception as e:
+                raise Exception(f"Falha ao preencher filtros de Logradouro: {e}")
+
+            # ── 9.4: Pesquisar ──
+            try:
+                btn_lupa = wait.until(
+                    EC.presence_of_element_located((By.ID, "search_cmdSearch"))
+                )
+                driver.execute_script("arguments[0].click();", btn_lupa)
+                print("   ✅ Lupa clicada via JS. Aguardando resultados...")
+                time.sleep(2.5)
+            except Exception as e:
+                raise Exception(f"Falha ao clicar na lupa de busca (Logradouros): {e}")
+
+            # ── 9.5: Existe? Procuramos QUALQUER linha de resultado ──
+            # (diferente do bairro, aqui o prompt só pede: se não houver
+            # resultado, cria. Se houver, consideramos já cadastrado.)
+            try:
+                WebDriverWait(driver, 6).until(EC.presence_of_element_located(
+                    (By.XPATH, "//td[contains(@headers, 'tabG') and contains(@headers, 'Logradouro')]")
+                ))
+                logradouro_resolvido = True
+                print("   ✅ Logradouro JÁ EXISTE. Nada a criar.")
+            except TimeoutException:
+                logradouro_resolvido = False
+                print("   ℹ️ Nenhum logradouro encontrado. Vamos criar.")
+
+            # ── 9.6: Criar logradouro novo (se não existe) ──
+            if not logradouro_resolvido:
+                print("   ➕ Criando novo logradouro...")
+                try:
+                    # Clicar em "Novo"
+                    btn_novo = wait.until(EC.element_to_be_clickable(
+                        (By.XPATH, "//button[contains(@class, 'btn_novo_icon')]")
+                    ))
+                    driver.execute_script("arguments[0].click();", btn_novo)
+                    time.sleep(1.5)
+
+                    # CEP (onblur formata; mandamos os 8 dígitos)
+                    campo_cep = wait.until(
+                        EC.element_to_be_clickable((By.ID, "txtNumCep"))
+                    )
+                    limpar_e_preencher(driver, campo_cep, cep_limpo)
+                    campo_cep.send_keys(Keys.TAB)
+                    time.sleep(0.5)
+
+                    # Logradouro (nome)
+                    campo_desc_log = wait.until(
+                        EC.element_to_be_clickable((By.ID, "txtDesLogradouro"))
+                    )
+                    limpar_e_preencher(driver, campo_desc_log, logradouro_erp)
+                    time.sleep(0.3)
+
+                    # Complemento (opcional) + TAB
+                    if complemento_erp:
+                        campo_compl = wait.until(
+                            EC.element_to_be_clickable((By.ID, "txtDesComplemento"))
+                        )
+                        limpar_e_preencher(driver, campo_compl, complemento_erp)
+                        campo_compl.send_keys(Keys.TAB)
+                        time.sleep(0.3)
+
+                    # Código do bairro + TAB
+                    campo_bai_novo = wait.until(
+                        EC.element_to_be_clickable((By.ID, "lovCodBairro_txtCod"))
+                    )
+                    limpar_e_preencher(driver, campo_bai_novo, codigo_bairro_capturado)
+                    campo_bai_novo.send_keys(Keys.TAB)
+                    time.sleep(0.8)
+
+                    # Código do Local — o campo vem 'disabled' (o ERP costuma
+                    # preenchê-lo sozinho ao escolher o bairro). Tratamos de
+                    # forma defensiva: se estiver vazio, tentamos setar via JS.
+                    try:
+                        campo_local_log = driver.find_element(By.ID, "txtCodLocal")
+                        valor_local_atual = re.sub(r'\D', '', campo_local_log.get_attribute("value") or "")
+                        if not valor_local_atual:
+                            driver.execute_script(
+                                "arguments[0].value = arguments[1];", campo_local_log, codigo_local_capturado
+                            )
+                            print(f"   ℹ️ Local preenchido via JS (campo estava vazio): {codigo_local_capturado}")
+                        else:
+                            print(f"   ℹ️ Local já preenchido automaticamente: {valor_local_atual}")
+                    except Exception as e:
+                        print(f"   ⚠️ Não foi possível conferir/preencher o Local: {e}")
+                        registrar_aviso("REVISAR — campo Local (disabled) do logradouro")
+
+                    # Gravar
+                    btn_gravar_log = wait.until(
+                        EC.element_to_be_clickable((By.ID, "btnCrudGravar"))
+                    )
+                    driver.execute_script("arguments[0].click();", btn_gravar_log)
+                    print("   💾 Gravando novo logradouro...")
+                    time.sleep(2)
+
+                    # Popup nativo pós-gravação (defensivo)
+                    try:
+                        WebDriverWait(driver, 3).until(EC.alert_is_present())
+                        alert_text = driver.switch_to.alert.text
+                        print(f"   ℹ️ Popup pós-gravação: {alert_text!r}")
+                        driver.switch_to.alert.accept()
+                    except TimeoutException:
+                        pass
+
+                    logradouro_resolvido = True
+                    logradouro_criado = True
+                    print("   🏆 Logradouro criado com sucesso.")
+
+                except Exception as e:
+                    print(f"   ❌ Erro ao criar o logradouro: {e}")
+                    registrar_aviso("REVISAR — falha ao criar o novo logradouro")
+
+        # ════════════════════════════════════════════════════
+        # RESULTADO FINAL
+        # ════════════════════════════════════════════════════
+        if logradouro_resolvido and not avisos:
             status_final = "Sucesso"
-        elif codigo_bairro_capturado:
+        elif logradouro_resolvido or codigo_bairro_capturado:
             status_final = "Sucesso com avisos"
         else:
             status_final = "Erro"
 
-        origem = "criado" if bairro_criado else "já existente"
+        partes_msg = []
+        if codigo_local_capturado:
+            partes_msg.append(f"Local {codigo_local_capturado}")
+        if codigo_cidade_capturado:
+            partes_msg.append(f"Cidade(IBGE) {codigo_cidade_capturado}")
         if codigo_bairro_capturado:
-            msg_final = (
-                f"Bairro {bairro_erp!r} resolvido ({origem}). "
-                f"Local: {codigo_local_capturado} | Código do bairro: {codigo_bairro_capturado}."
+            partes_msg.append(
+                f"Bairro {codigo_bairro_capturado} ({'criado' if bairro_criado else 'existente'})"
             )
+        if logradouro_resolvido:
+            partes_msg.append(
+                f"Logradouro {'criado' if logradouro_criado else 'existente'}"
+            )
+
+        if status_final == "Erro":
+            msg_final = f"CEP {cep or '(sem cep)'} não pôde ser totalmente resolvido."
+        else:
+            msg_final = "CEP resolvido — " + " | ".join(partes_msg) + "."
             if avisos:
                 msg_final += f" {len(avisos)} ponto(s) para revisar."
-        else:
-            msg_final = f"Não foi possível resolver o bairro {bairro_erp!r} no local {codigo_local_capturado}."
 
         return {
             "status": status_final,
@@ -617,6 +827,8 @@ def executar(dados):
             "codigo_cidade": codigo_cidade_capturado,
             "codigo_bairro": codigo_bairro_capturado,
             "bairro_criado": bairro_criado,
+            "logradouro_resolvido": logradouro_resolvido,
+            "logradouro_criado": logradouro_criado,
         }
 
     except Exception as e:
@@ -629,6 +841,8 @@ def executar(dados):
             "codigo_cidade": codigo_cidade_capturado,
             "codigo_bairro": codigo_bairro_capturado,
             "bairro_criado": bairro_criado,
+            "logradouro_resolvido": logradouro_resolvido,
+            "logradouro_criado": logradouro_criado,
         }
 
     finally:
@@ -678,6 +892,8 @@ if __name__ == "__main__":
     print(f"Código cidade (grid): {resultado.get('codigo_cidade') or '(não capturado)'}")
     print(f"Código bairro: {resultado.get('codigo_bairro') or '(não capturado)'}")
     print(f"Bairro criado? {'Sim' if resultado.get('bairro_criado') else 'Não (já existia)'}")
+    print(f"Logradouro resolvido? {'Sim' if resultado.get('logradouro_resolvido') else 'Não'}")
+    print(f"Logradouro criado? {'Sim' if resultado.get('logradouro_criado') else 'Não (já existia)'}")
 
     avisos_finais = resultado.get('avisos', [])
     if avisos_finais:
