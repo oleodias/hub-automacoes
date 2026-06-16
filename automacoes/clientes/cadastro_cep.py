@@ -961,8 +961,8 @@ if __name__ == "__main__":
     dados_teste = {
         # Caminho NOVO (recomendado): informe só o CEP e deixe a API
         # descobrir cidade / UF / bairro / logradouro automaticamente.
-        "cep": "95010-005",
-        "codigo_novo_bairro": "99999",  # ← usado SÓ se o bairro não existir
+        "cep": "69452-000",
+        "codigo_novo_bairro": "99923",  # ← usado SÓ se o bairro não existir
 
         # Tipo de endereço (Rua/Avenida/...). Padrão "0" (NADA) mantém o
         # nome do logradouro completo. Códigos: RUA=208, AVENIDA=80, ESTRADA=135.
