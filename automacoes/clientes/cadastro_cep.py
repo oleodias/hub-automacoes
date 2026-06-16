@@ -10,6 +10,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 
 from automacoes.clientes.navegacao_erp import fazer_login
+from utils.cep_api import consultar_cep
 
 sys.stdout.reconfigure(encoding='utf-8')
 
@@ -130,6 +131,23 @@ def executar(dados):
     bairro = str(dados.get('bairro', '')).strip()
     codigo_novo_bairro = re.sub(r'\D', '', str(dados.get('codigo_novo_bairro', '')))
     cep = str(dados.get('cep', '')).strip()
+
+    # ── ENRIQUECIMENTO VIA API DE CEP ──
+    # Se um CEP foi informado, consultamos a API (BrasilAPI → ViaCEP) para
+    # descobrir cidade/UF/bairro. O que vier explícito no payload TEM
+    # PRIORIDADE sobre a API (útil para forçar valores no teste de bancada).
+    cep_api_status = "nao_consultado"
+    if cep:
+        print(f"> 🌐 Consultando API de CEP para {cep!r}...")
+        dados_cep = consultar_cep(cep)
+        cep_api_status = dados_cep.get('_cep_api_status', 'desconhecido')
+        print(
+            f"   📦 API ({cep_api_status}): cidade={dados_cep.get('cidade')!r} "
+            f"uf={dados_cep.get('uf')!r} bairro={dados_cep.get('bairro')!r}"
+        )
+        cidade = cidade or dados_cep.get('cidade', '').strip()
+        uf = uf or dados_cep.get('uf', '').strip().upper()
+        bairro = bairro or dados_cep.get('bairro', '').strip()
 
     # Nome do bairro como o ERP armazena: cortado em 20 caracteres (maxlength).
     # Usamos essa versão tanto na pesquisa quanto no matching da grade.
@@ -630,18 +648,23 @@ if __name__ == "__main__":
     print("=" * 60)
 
     dados_teste = {
-        "cidade": "Caxias do Sul",   # ← TROCAR pela cidade que vai testar
-        "uf": "RS",                  # ← sigla do estado correspondente
-        "bairro": "Centro",          # ← nome do bairro (será cortado em 20)
+        # Caminho NOVO (recomendado): informe só o CEP e deixe a API
+        # descobrir cidade / UF / bairro automaticamente.
+        "cep": "95010-005",
         "codigo_novo_bairro": "99999",  # ← usado SÓ se o bairro não existir
-        "cep": "95010000",           # opcional (uso futuro / log)
+
+        # Overrides manuais (opcionais): se preencher qualquer um destes,
+        # ele tem PRIORIDADE sobre a API. Útil para forçar um teste.
+        # "cidade": "Caxias do Sul",
+        # "uf": "RS",
+        # "bairro": "Centro",
     }
 
-    print(f"📋 Cidade: {dados_teste['cidade']}")
-    print(f"📋 UF: {dados_teste['uf']}")
-    print(f"📋 Bairro: {dados_teste['bairro']}")
-    print(f"📋 Código novo bairro (se precisar criar): {dados_teste['codigo_novo_bairro']}")
     print(f"📋 CEP: {dados_teste.get('cep', '(vazio)')}")
+    print(f"📋 Cidade (override): {dados_teste.get('cidade', '(via API)')}")
+    print(f"📋 UF (override): {dados_teste.get('uf', '(via API)')}")
+    print(f"📋 Bairro (override): {dados_teste.get('bairro', '(via API)')}")
+    print(f"📋 Código novo bairro (se precisar criar): {dados_teste['codigo_novo_bairro']}")
     print("=" * 60)
 
     resultado = executar(dados_teste)
