@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup C — Workspace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<style>
+  :root{
+    --teal:#0d9488;--teal2:#0ee6b8;--ink:#0f172a;--amber:#d97706;--blue:#2563eb;
+    --purple:#7c3aed;--red:#dc2626;--green:#16a34a;--bg:#f8fafc;--surface:#fff;
+    --border:#e8edf2;--txt:#0f172a;--txt2:#5b6b7f;--muted:#9aa7b6;
+    --head:"Syne",sans-serif;--body:"DM Sans",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--body);background:var(--bg);color:var(--txt);min-height:100vh}
+  .app{display:flex}
+  /* expanded sidebar with labels */
+  .side{width:230px;background:var(--ink);min-height:100vh;padding:20px 14px;position:sticky;top:0;display:flex;flex-direction:column}
+  .brand{display:flex;align-items:center;gap:10px;padding:6px 8px 18px;border-bottom:1px solid rgba(255,255,255,.07);margin-bottom:14px}
+  .brand .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--teal),var(--teal2));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-family:var(--head)}
+  .brand b{color:#fff;font-family:var(--head);font-size:15px}
+  .brand span{display:block;color:#64748b;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+  .navgroup{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#475569;padding:14px 8px 6px}
+  .side a{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:9px;color:#94a3b8;text-decoration:none;font-size:13.5px;transition:.18s}
+  .side a i{width:18px;text-align:center;font-size:14px}
+  .side a:hover{color:#e2e8f0;background:rgba(255,255,255,.05)}
+  .side a.active{color:#fff;background:rgba(14,230,184,.14);box-shadow:inset 2px 0 0 var(--teal2)}
+  .side a.active i{color:var(--teal2)}
+  .side .bottom{margin-top:auto}
+  .side .bottom a{color:#ef4444}
+
+  .main{flex:1;min-width:0;padding:30px 38px 60px;max-width:1180px}
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+  h1{font-family:var(--head);font-size:24px;font-weight:800;letter-spacing:-.02em}
+  .top p{color:var(--txt2);font-size:13px;margin-top:3px}
+  .av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--purple));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-family:var(--head)}
+
+  /* summary strip — minimal, inline */
+  .summary{display:flex;gap:0;background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:30px}
+  .summary .s{flex:1;padding:18px 22px;border-right:1px solid var(--border);display:flex;align-items:center;gap:14px}
+  .summary .s:last-child{border-right:none}
+  .summary .ic{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px}
+  .summary .v{font-family:var(--head);font-size:24px;font-weight:800;line-height:1}
+  .summary .l{font-size:12px;color:var(--txt2);margin-top:3px}
+  .summary .l b{color:var(--amber)}
+
+  .sec{font-family:var(--head);font-size:13px;font-weight:700;letter-spacing:.02em;color:var(--txt);margin:0 0 14px;display:flex;align-items:center;gap:10px}
+  .sec .n{font-size:11px;color:var(--muted);font-weight:600;background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:100px}
+  .sec:not(:first-of-type){margin-top:32px}
+
+  /* list rows — workspace feel */
+  .list{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .row{background:#fff;border:1px solid var(--border);border-radius:13px;padding:16px 18px;display:flex;align-items:center;gap:15px;cursor:pointer;transition:.18s}
+  .row:hover{border-color:#cbd5e1;box-shadow:0 8px 22px rgba(15,23,42,.07);transform:translateY(-2px)}
+  .row .ic{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+  .row .body{flex:1;min-width:0}
+  .row h3{font-family:var(--head);font-size:14px;font-weight:600}
+  .row p{font-size:12px;color:var(--txt2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .meta{display:flex;flex-direction:column;align-items:flex-end;gap:7px}
+  .row .arr{color:var(--muted);transition:.18s}
+  .row:hover .arr{color:var(--teal);transform:translateX(3px)}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:500;padding:4px 9px;border-radius:100px;white-space:nowrap}
+  .b-ok{color:var(--green);background:rgba(22,163,74,.1)} .b-ok .dot{background:var(--green)}
+  .b-warn{color:var(--amber);background:rgba(217,119,6,.12)} .b-warn .dot{background:var(--amber)}
+  .badge .dot{width:5px;height:5px;border-radius:50%}
+
+  .ic-teal{background:rgba(13,148,136,.1);color:var(--teal)}
+  .ic-amber{background:rgba(217,119,6,.12);color:var(--amber)}
+  .ic-blue{background:rgba(37,99,235,.12);color:var(--blue)}
+  .ic-red{background:rgba(220,38,38,.12);color:var(--red)}
+  .ic-purple{background:rgba(124,58,237,.12);color:var(--purple)}
+  .ic-green{background:rgba(5,150,105,.1);color:#059669}
+  .ic-orange{background:rgba(194,65,12,.1);color:#c2410c}
+  .ic-sky{background:rgba(56,189,248,.14);color:#0284c7}
+  .ic-violet{background:rgba(167,139,250,.16);color:#7c3aed}
+  @media(max-width:900px){.side{width:64px}.brand b,.brand span,.side a span,.navgroup{display:none}.brand{justify-content:center}.side a{justify-content:center}.list{grid-template-columns:1fr}}
+  @media(max-width:680px){.main{padding:22px 16px}.summary{flex-wrap:wrap}.summary .s{flex:1 1 50%;border-bottom:1px solid var(--border)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="side">
+    <div class="brand"><div class="logo">C</div><div><b>CIAMED AI</b><span>Hub</span></div></div>
+    <div class="navgroup">Geral</div>
+    <a class="active"><i class="fa-solid fa-house"></i><span>Início</span></a>
+    <a><i class="fa-solid fa-clock-rotate-left"></i><span>Meu Histórico</span></a>
+    <a><i class="fa-solid fa-comments"></i><span>Suporte</span></a>
+    <div class="navgroup">Conta</div>
+    <a><i class="fa-solid fa-user"></i><span>Perfil</span></a>
+    <a><i class="fa-solid fa-circle-question"></i><span>Ajuda</span></a>
+    <div class="bottom">
+      <a><i class="fa-solid fa-right-from-bracket"></i><span>Sair</span></a>
+    </div>
+  </nav>
+  <main class="main">
+    <div class="top">
+      <div><h1>Olá, Leonardo</h1><p>Aqui está o resumo das suas automações.</p></div>
+      <div class="av">LD</div>
+    </div>
+
+    <!-- summary inline, sóbrio -->
+    <div class="summary">
+      <div class="s"><div class="ic ic-teal"><i class="fa-solid fa-bolt"></i></div><div><div class="v">142</div><div class="l">Execuções na semana</div></div></div>
+      <div class="s"><div class="ic ic-amber"><i class="fa-solid fa-receipt"></i></div><div><div class="v">9</div><div class="l"><b>3 atrasadas</b> · notas pendentes</div></div></div>
+      <div class="s"><div class="ic ic-purple"><i class="fa-solid fa-id-card"></i></div><div><div class="v">5</div><div class="l">Fichas a aprovar</div></div></div>
+      <div class="s"><div class="ic ic-blue"><i class="fa-solid fa-link"></i></div><div><div class="v">3</div><div class="l">Links ativos</div></div></div>
+    </div>
+
+    <div class="sec">Fiscal &amp; Cadastros <span class="n">5</span></div>
+    <div class="list">
+      <div class="row"><div class="ic ic-teal"><i class="fa-solid fa-pencil"></i></div><div class="body"><h3>Cadastro de Itens</h3><p>Triagem de NCMs, consulta Sefaz e cadastro no ERP.</p></div><div class="meta"><span class="badge b-ok"><span class="dot"></span>Operacional</span></div><span class="arr"><i class="fa-solid fa-chevron-right"></i></span></div>
+      <div class="row"><div class="ic ic-blue"><i class="fa-solid fa-cart-shopping"></i></div><div class="body"><h3>Fornecedores — Fiscal</h3><p>Cadastro de fornecedores via BrasilAPI.</p></div><div class="meta"><span class="badge b-ok"><span class="dot"></span>Operacional</span></div><span class="arr"><i class="fa-solid fa-chevron-right"></i></span></div>
+      <div class="row"><div class="ic ic-purple"><i class="fa-solid fa-users-gear"></i></div><div class="body"><h3>Clientes — Fiscal</h3><p>Cadastro e reativação de clientes.</p></div><div class="meta"><span class="badge b-ok"><span class="dot"></span>Operacional</span></div><span class="arr"><i class="fa-solid fa-chevron-right"></i></span></div>
+      <div class="row"><div class="ic ic-red"><i class="fa-solid fa-magnifying-glass"></i></div><div class="body"><h3>Consulta CNPJ</h3><p>Consulta completa de informações de um CNPJ.</p></div><div class="meta"><span class="badge b-ok"><span class="dot"></span>Operacional</span></div><span class="arr"><i class="fa-solid fa-chevron-right"></i></span></div>
+      <div class="row"><div class="ic ic-teal"><i class="fa-solid fa-map-location-dot"></i></div><div class="body"><h3>Cadastro de CEP</h3><p>Cidade, bairro e logradouro a partir do CEP.</p></div><div class="meta"><span class="badge b-ok"><span class="dot"></span>Operacional</span></div><span class="arr"><i class="fa-solid fa-chevron-right"></i></span></div>
+    </div>
+
+    <div class="sec">Notas Fiscais <span class="n">3</span></div>
+    <div class="list">
+      <div class="row"><div class="ic ic-orange"><i class="fa-solid fa-receipt"></i></div><div class="body"><h3>Controle de Notas Fiscais</h3><p>Esteira visual das notas mensais por unidade.</p></div><div class="meta"><span class="badge b-warn"><span class="dot"></span>3 atrasadas</span></div><span class="arr"><i class="fa-solid fa-chevron-right"></i></span></div>
+      <div class="row"><div class="ic ic-green"><i class="fa-solid fa-file-arrow-up"></i></div><div class="body"><h3>Lançamento de Notas</h3><p>Upload do XML e envio para a fila do ERP.</p></div><div class="meta"><span class="badge b-ok"><span class="dot"></span>Operacional</span></div><span class="arr"><i class="fa-solid fa-chevron-right"></i></span></div>
+      <div class="row"><div class="ic ic-amber"><i class="fa-solid fa-truck-fast"></i></div><div class="body"><h3>Relatório MDF-e</h3><p>Extração de datas e notas de MDFs do NL.</p></div><div class="meta"><span class="badge b-ok"><span class="dot"></span>Operacional</span></div><span class="arr"><i class="fa-solid fa-chevron-right"></i></span></div>
+    </div>
+
+    <div class="sec">Monitoramento &amp; Histórico <span class="n">3</span></div>
+    <div class="list">
+      <div class="row"><div class="ic ic-green"><i class="fa-solid fa-table-list"></i></div><div class="body"><h3>Monitor de Fichas</h3><p>Histórico de fichas, filtros por status e período.</p></div><div class="meta"><span class="badge b-warn"><span class="dot"></span>5 a aprovar</span></div><span class="arr"><i class="fa-solid fa-chevron-right"></i></span></div>
+      <div class="row"><div class="ic ic-sky"><i class="fa-solid fa-link"></i></div><div class="body"><h3>Links Gerados</h3><p>Quem gerou, cliente, validade e uso.</p></div><div class="meta"><span class="badge b-ok"><span class="dot"></span>Operacional</span></div><span class="arr"><i class="fa-solid fa-chevron-right"></i></span></div>
+      <div class="row"><div class="ic ic-violet"><i class="fa-solid fa-clock-rotate-left"></i></div><div class="body"><h3>Meu Histórico</h3><p>Suas execuções de robôs, com status e detalhes.</p></div><div class="meta"><span class="badge b-ok"><span class="dot"></span>Operacional</span></div><span class="arr"><i class="fa-solid fa-chevron-right"></i></span></div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

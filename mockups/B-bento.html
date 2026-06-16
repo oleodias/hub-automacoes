@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup B — Bento Grid</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<style>
+  :root{
+    --teal:#0d9488;--teal2:#0ee6b8;--ink:#0f172a;--amber:#d97706;--blue:#2563eb;
+    --purple:#7c3aed;--red:#dc2626;--green:#16a34a;--bg:#eef2f6;--surface:#fff;
+    --border:#e2e8f0;--txt:#0f172a;--txt2:#475569;--muted:#94a3b8;
+    --head:"Syne",sans-serif;--body:"DM Sans",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--body);background:var(--bg);color:var(--txt);min-height:100vh}
+  .app{display:flex}
+  .side{width:64px;background:var(--ink);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:18px 0;gap:6px;position:sticky;top:0}
+  .side .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--teal),var(--teal2));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;margin-bottom:14px;font-family:var(--head)}
+  .side a{width:42px;height:42px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#64748b;text-decoration:none;transition:.2s}
+  .side a:hover,.side a.active{color:var(--teal2);background:rgba(14,230,184,.12)}
+  .side a.bottom{margin-top:auto;color:#ef4444}
+  .main{flex:1;min-width:0;padding:34px 40px 60px}
+  .head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:26px}
+  .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--teal);display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .eyebrow::before{content:"";width:24px;height:1px;background:var(--teal)}
+  h1{font-family:var(--head);font-size:28px;font-weight:800;letter-spacing:-.02em}
+  .head p{color:var(--txt2);font-size:13.5px;margin-top:4px}
+  .search{background:#fff;border:1px solid var(--border);border-radius:11px;padding:10px 16px;display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13.5px;width:260px}
+
+  /* BENTO */
+  .bento{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:150px;gap:16px}
+  .b{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:20px;cursor:pointer;transition:.24s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden;display:flex;flex-direction:column}
+  .b:hover{transform:translateY(-4px);box-shadow:0 20px 40px rgba(15,23,42,.13);border-color:#cbd5e1}
+  .b .ic{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:auto}
+  .b h3{font-family:var(--head);font-size:14.5px;font-weight:600;margin-top:12px}
+  .b p{font-size:12px;color:var(--txt2);line-height:1.45;margin-top:5px}
+  .b .arr{position:absolute;top:20px;right:20px;color:var(--muted);transition:.2s}
+  .b:hover .arr{color:var(--teal);transform:translate(2px,-2px)}
+
+  /* span helpers */
+  .c2{grid-column:span 2} .r2{grid-row:span 2}
+
+  /* featured big card */
+  .feat{background:radial-gradient(600px 300px at 100% 0,rgba(14,230,184,.22),transparent),linear-gradient(135deg,#0b1220,#0f172a);color:#fff;border:none}
+  .feat h3{font-size:20px} .feat p{color:#94a3b8;font-size:13px;max-width:90%}
+  .feat .ic{background:rgba(14,230,184,.16);color:var(--teal2)}
+  .feat .arr{color:#64748b}
+  .feat:hover .arr{color:var(--teal2)}
+  .feat .tag{position:absolute;bottom:20px;right:20px;font-size:11px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);padding:5px 12px;border-radius:100px}
+
+  /* stat tile inside bento */
+  .stat{display:flex;flex-direction:column;justify-content:center}
+  .stat .v{font-family:var(--head);font-size:34px;font-weight:800;line-height:1}
+  .stat .l{font-size:12px;color:var(--txt2);margin-top:6px}
+  .stat .sub{font-size:11px;font-weight:600;margin-top:8px;display:inline-flex;align-items:center;gap:6px;width:fit-content;padding:3px 9px;border-radius:100px}
+  .warn{color:var(--amber);background:rgba(217,119,6,.12)} .ok{color:var(--green);background:rgba(22,163,74,.12)}
+  .danger-tile{border-color:rgba(217,119,6,.4);background:linear-gradient(135deg,rgba(217,119,6,.07),#fff)}
+
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:500;padding:4px 9px;border-radius:100px;color:var(--green);background:rgba(22,163,74,.1);margin-top:10px;width:fit-content}
+  .badge .dot{width:5px;height:5px;border-radius:50%;background:var(--green)}
+
+  .ic-teal{background:rgba(13,148,136,.1);color:var(--teal)}
+  .ic-amber{background:rgba(217,119,6,.12);color:var(--amber)}
+  .ic-blue{background:rgba(37,99,235,.12);color:var(--blue)}
+  .ic-red{background:rgba(220,38,38,.12);color:var(--red)}
+  .ic-purple{background:rgba(124,58,237,.12);color:var(--purple)}
+  .ic-green{background:rgba(5,150,105,.1);color:#059669}
+  .ic-orange{background:rgba(194,65,12,.1);color:#c2410c}
+  .ic-sky{background:rgba(56,189,248,.14);color:#0284c7}
+  .ic-violet{background:rgba(167,139,250,.16);color:#7c3aed}
+  @media(max-width:1100px){.bento{grid-template-columns:repeat(2,1fr)}.c2{grid-column:span 2}}
+  @media(max-width:680px){.bento{grid-template-columns:1fr;grid-auto-rows:auto}.c2,.r2{grid-column:auto;grid-row:auto}.main{padding:24px 18px}.head{flex-direction:column;align-items:flex-start;gap:14px}.search{width:100%}}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="side">
+    <div class="logo">C</div>
+    <a class="active"><i class="fa-solid fa-house"></i></a>
+    <a><i class="fa-solid fa-globe"></i></a>
+    <a><i class="fa-solid fa-user"></i></a>
+    <a><i class="fa-solid fa-comments"></i></a>
+    <a><i class="fa-solid fa-circle-question"></i></a>
+    <a class="bottom"><i class="fa-solid fa-right-from-bracket"></i></a>
+  </nav>
+  <main class="main">
+    <div class="head">
+      <div>
+        <div class="eyebrow">Central de Automações</div>
+        <h1>Módulos de Inteligência</h1>
+        <p>Bem-vindo, Leonardo. Tudo no lugar — escolha por onde começar.</p>
+      </div>
+      <div class="search"><i class="fa-solid fa-magnifying-glass"></i> Buscar módulo…</div>
+    </div>
+
+    <section class="bento">
+      <!-- Featured 2x2 -->
+      <div class="b feat c2 r2">
+        <div class="ic"><i class="fa-solid fa-receipt"></i></div>
+        <h3>Controle de Notas Fiscais</h3>
+        <p>Esteira visual das notas mensais — chegou, atrasou, falta. Gestão de recorrentes e quebra por unidade.</p>
+        <span class="arr"><i class="fa-solid fa-arrow-up-right-from-square"></i></span>
+        <span class="tag">⚠ 3 atrasadas · 9 pendentes</span>
+      </div>
+
+      <!-- stat tiles -->
+      <div class="b stat">
+        <div class="v">142</div><div class="l">Execuções na semana</div>
+        <span class="sub ok"><i class="fa-solid fa-arrow-trend-up"></i> +12%</span>
+      </div>
+      <div class="b stat danger-tile">
+        <div class="v" style="color:var(--amber)">5</div><div class="l">Fichas a aprovar</div>
+        <span class="sub warn"><i class="fa-solid fa-bell"></i> 2 novas hoje</span>
+      </div>
+
+      <!-- regular tiles -->
+      <div class="b"><div class="ic ic-teal"><i class="fa-solid fa-pencil"></i></div><h3>Cadastro de Itens</h3><span class="badge"><span class="dot"></span>Operacional</span><span class="arr"><i class="fa-solid fa-arrow-right"></i></span></div>
+      <div class="b"><div class="ic ic-blue"><i class="fa-solid fa-cart-shopping"></i></div><h3>Fornecedores</h3><span class="badge"><span class="dot"></span>Operacional</span><span class="arr"><i class="fa-solid fa-arrow-right"></i></span></div>
+
+      <div class="b c2"><div class="ic ic-green"><i class="fa-solid fa-file-arrow-up"></i></div><h3>Lançamento de Notas</h3><p>Upload do XML, revisão de centros de custo e parcelas, e envio para a fila do ERP.</p><span class="arr"><i class="fa-solid fa-arrow-right"></i></span></div>
+      <div class="b"><div class="ic ic-purple"><i class="fa-solid fa-users-gear"></i></div><h3>Clientes — Fiscal</h3><span class="badge"><span class="dot"></span>Operacional</span><span class="arr"><i class="fa-solid fa-arrow-right"></i></span></div>
+      <div class="b"><div class="ic ic-red"><i class="fa-solid fa-magnifying-glass"></i></div><h3>Consulta CNPJ</h3><span class="badge"><span class="dot"></span>Operacional</span><span class="arr"><i class="fa-solid fa-arrow-right"></i></span></div>
+
+      <div class="b"><div class="ic ic-teal"><i class="fa-solid fa-map-location-dot"></i></div><h3>Cadastro de CEP</h3><span class="badge"><span class="dot"></span>Operacional</span><span class="arr"><i class="fa-solid fa-arrow-right"></i></span></div>
+      <div class="b"><div class="ic ic-amber"><i class="fa-solid fa-truck-fast"></i></div><h3>Relatório MDF-e</h3><span class="badge"><span class="dot"></span>Operacional</span><span class="arr"><i class="fa-solid fa-arrow-right"></i></span></div>
+      <div class="b"><div class="ic ic-green"><i class="fa-solid fa-table-list"></i></div><h3>Monitor de Fichas</h3><span class="badge"><span class="dot"></span>Operacional</span><span class="arr"><i class="fa-solid fa-arrow-right"></i></span></div>
+      <div class="b"><div class="ic ic-sky"><i class="fa-solid fa-link"></i></div><h3>Links Gerados</h3><span class="badge"><span class="dot"></span>Operacional</span><span class="arr"><i class="fa-solid fa-arrow-right"></i></span></div>
+
+      <div class="b c2"><div class="ic ic-violet"><i class="fa-solid fa-clock-rotate-left"></i></div><h3>Meu Histórico</h3><p>Consulte o histórico das suas execuções de robôs, com status e detalhes.</p><span class="arr"><i class="fa-solid fa-arrow-right"></i></span></div>
+    </section>
+  </main>
+</div>
+</body>
+</html>

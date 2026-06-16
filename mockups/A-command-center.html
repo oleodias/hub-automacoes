@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup A — Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<style>
+  :root{
+    --teal:#0d9488; --teal2:#0ee6b8; --ink:#0b1220; --ink2:#0f172a;
+    --amber:#d97706; --blue:#2563eb; --purple:#7c3aed; --red:#dc2626;
+    --green:#16a34a; --bg:#f1f5f9; --surface:#fff; --border:#e2e8f0;
+    --txt:#0f172a; --txt2:#475569; --muted:#94a3b8;
+    --head:"Syne",sans-serif; --body:"DM Sans",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--body);background:var(--bg);color:var(--txt);min-height:100vh}
+  .app{display:flex}
+  /* sidebar */
+  .side{width:64px;background:var(--ink);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:18px 0;gap:6px;position:sticky;top:0}
+  .side .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--teal),var(--teal2));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;margin-bottom:14px;font-family:var(--head)}
+  .side a{width:42px;height:42px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#64748b;text-decoration:none;transition:.2s}
+  .side a:hover,.side a.active{color:var(--teal2);background:rgba(14,230,184,.12)}
+  .side a.bottom{margin-top:auto}
+  .main{flex:1;min-width:0}
+  /* hero */
+  .hero{background:radial-gradient(1200px 400px at 10% -20%,rgba(14,230,184,.18),transparent),linear-gradient(135deg,#0b1220,#0f172a);color:#fff;padding:34px 44px 90px;position:relative;overflow:hidden}
+  .hero::after{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:46px 46px}
+  .hero>*{position:relative;z-index:1}
+  .hero .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--teal2);display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .hero .eyebrow::before{content:"";width:26px;height:1px;background:var(--teal2)}
+  .hero h1{font-family:var(--head);font-size:30px;font-weight:800;letter-spacing:-.02em}
+  .hero p{color:#94a3b8;margin-top:8px;max-width:520px;font-size:14px}
+  .hero .topbar{display:flex;justify-content:space-between;align-items:flex-start}
+  .pill{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);padding:8px 14px;border-radius:100px;font-size:13px}
+  .pill .d{width:7px;height:7px;border-radius:50%;background:var(--teal2);box-shadow:0 0 10px var(--teal2)}
+  /* kpi row floats over hero */
+  .wrap{padding:0 44px 60px;margin-top:-64px;position:relative;z-index:2}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;box-shadow:0 10px 30px rgba(15,23,42,.07)}
+  .kpi .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .kpi .ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px}
+  .kpi .trend{font-size:11px;font-weight:600;padding:3px 8px;border-radius:100px}
+  .kpi .v{font-family:var(--head);font-size:30px;font-weight:800;line-height:1}
+  .kpi .l{font-size:12px;color:var(--txt2);margin-top:5px}
+  .up{color:var(--green);background:rgba(22,163,74,.1)}
+  .down{color:var(--red);background:rgba(220,38,38,.1)}
+  /* section */
+  .sec-h{display:flex;align-items:center;gap:12px;margin:38px 0 16px}
+  .sec-h h2{font-family:var(--head);font-size:15px;font-weight:700;letter-spacing:.02em}
+  .sec-h .line{flex:1;height:1px;background:var(--border)}
+  .sec-h .count{font-size:12px;color:var(--muted);font-family:var(--head);font-weight:600}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;cursor:pointer;transition:.22s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden}
+  .card:hover{transform:translateY(-4px);border-color:#cbd5e1;box-shadow:0 18px 36px rgba(15,23,42,.14)}
+  .card .accent{position:absolute;top:0;left:0;right:0;height:3px;transform:scaleX(0);transform-origin:left;transition:.22s}
+  .card:hover .accent{transform:scaleX(1)}
+  .card .ic{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:14px}
+  .card h3{font-family:var(--head);font-size:14.5px;font-weight:600;margin-bottom:6px}
+  .card p{font-size:12.5px;color:var(--txt2);line-height:1.5;margin-bottom:14px;min-height:38px}
+  .card .foot{display:flex;align-items:center;justify-content:space-between}
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500;padding:5px 11px;border-radius:100px;color:var(--green);background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.2)}
+  .badge .dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+  .card .go{color:var(--muted);font-size:13px;transition:.2s}
+  .card:hover .go{color:var(--teal);transform:translateX(3px)}
+  /* alert strip */
+  .alerts{background:linear-gradient(135deg,rgba(217,119,6,.08),rgba(220,38,38,.05));border:1px solid rgba(217,119,6,.25);border-radius:14px;padding:18px 22px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .alerts .big{width:46px;height:46px;border-radius:11px;background:rgba(217,119,6,.15);color:var(--amber);display:flex;align-items:center;justify-content:center;font-size:19px}
+  .alerts .txt strong{font-family:var(--head);display:block;font-size:14px}
+  .alerts .txt span{font-size:12.5px;color:var(--txt2)}
+  .alerts .chips{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap}
+  .chip{background:#fff;border:1px solid var(--border);border-radius:10px;padding:9px 14px;font-size:12.5px;font-weight:500;display:flex;align-items:center;gap:8px}
+  .chip b{font-family:var(--head)}
+  .chip.warn b{color:var(--amber)} .chip.red b{color:var(--red)} .chip.blue b{color:var(--blue)}
+  /* dims */
+  .teal{background:var(--teal)} .ic-teal{background:rgba(13,148,136,.1);color:var(--teal)}
+  .amber{background:var(--amber)} .ic-amber{background:rgba(217,119,6,.12);color:var(--amber)}
+  .blue{background:var(--blue)} .ic-blue{background:rgba(37,99,235,.12);color:var(--blue)}
+  .red{background:var(--red)} .ic-red{background:rgba(220,38,38,.12);color:var(--red)}
+  .purple{background:var(--purple)} .ic-purple{background:rgba(124,58,237,.12);color:var(--purple)}
+  .green{background:#059669} .ic-green{background:rgba(5,150,105,.1);color:#059669}
+  .ic-sky{background:rgba(56,189,248,.12);color:#0284c7}
+  .ic-violet{background:rgba(167,139,250,.14);color:#7c3aed}
+  @media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:680px){.grid,.kpis{grid-template-columns:1fr}.wrap,.hero{padding-left:18px;padding-right:18px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="side">
+    <div class="logo">C</div>
+    <a class="active" title="Início"><i class="fa-solid fa-house"></i></a>
+    <a title="Web"><i class="fa-solid fa-globe"></i></a>
+    <a title="Perfil"><i class="fa-solid fa-user"></i></a>
+    <a title="Suporte"><i class="fa-solid fa-comments"></i></a>
+    <a title="Ajuda"><i class="fa-solid fa-circle-question"></i></a>
+    <a class="bottom" title="Sair" style="color:#ef4444"><i class="fa-solid fa-right-from-bracket"></i></a>
+  </nav>
+  <main class="main">
+    <header class="hero">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Central de Automações</div>
+          <h1>Bom dia, Leonardo 👋</h1>
+          <p>Você tem <b style="color:#fff">4 pendências</b> esperando ação hoje. Comece pelo que está atrasado.</p>
+        </div>
+        <div class="pill"><span class="d"></span> Todos os sistemas operacionais</div>
+      </div>
+    </header>
+
+    <div class="wrap">
+      <!-- KPIs reais e acionáveis -->
+      <section class="kpis">
+        <div class="kpi">
+          <div class="top"><div class="ic ic-teal"><i class="fa-solid fa-bolt"></i></div><span class="trend up">+12%</span></div>
+          <div class="v">142</div><div class="l">Execuções esta semana</div>
+        </div>
+        <div class="kpi">
+          <div class="top"><div class="ic ic-amber"><i class="fa-solid fa-clock"></i></div><span class="trend down">3 atrasadas</span></div>
+          <div class="v">9</div><div class="l">Notas pendentes</div>
+        </div>
+        <div class="kpi">
+          <div class="top"><div class="ic ic-purple"><i class="fa-solid fa-user-clock"></i></div><span class="trend up">2 novas</span></div>
+          <div class="v">5</div><div class="l">Fichas a aprovar</div>
+        </div>
+        <div class="kpi">
+          <div class="top"><div class="ic ic-blue"><i class="fa-solid fa-link"></i></div><span class="trend down">expira hoje</span></div>
+          <div class="v">3</div><div class="l">Links ativos</div>
+        </div>
+      </section>
+
+      <!-- faixa de pendências -->
+      <div class="sec-h"><h2>Precisa de atenção</h2><div class="line"></div></div>
+      <div class="alerts">
+        <div class="big"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div class="txt"><strong>4 itens precisam de você</strong><span>Resolva agora para manter a esteira limpa.</span></div>
+        <div class="chips">
+          <div class="chip red"><i class="fa-solid fa-receipt"></i> <b>3</b> notas atrasadas</div>
+          <div class="chip warn"><i class="fa-solid fa-id-card"></i> <b>5</b> fichas a aprovar</div>
+          <div class="chip blue"><i class="fa-solid fa-hourglass-half"></i> <b>1</b> link expirando</div>
+        </div>
+      </div>
+
+      <!-- Grupo: Fiscal -->
+      <div class="sec-h"><h2>Fiscal &amp; Cadastros</h2><span class="count">5 módulos</span><div class="line"></div></div>
+      <section class="grid">
+        <div class="card"><div class="accent teal"></div><div class="ic ic-teal"><i class="fa-solid fa-pencil"></i></div><h3>Cadastro de Itens</h3><p>Triagem de NCMs, consulta Sefaz e cadastro automático no ERP.</p><div class="foot"><span class="badge"><span class="dot"></span>Operacional</span><span class="go"><i class="fa-solid fa-arrow-right"></i></span></div></div>
+        <div class="card"><div class="accent blue"></div><div class="ic ic-blue"><i class="fa-solid fa-cart-shopping"></i></div><h3>Fornecedores — Fiscal</h3><p>Cadastro de fornecedores do setor fiscal via BrasilAPI.</p><div class="foot"><span class="badge"><span class="dot"></span>Operacional</span><span class="go"><i class="fa-solid fa-arrow-right"></i></span></div></div>
+        <div class="card"><div class="accent purple"></div><div class="ic ic-purple"><i class="fa-solid fa-users-gear"></i></div><h3>Clientes — Fiscal</h3><p>Cadastro e reativação de clientes para o setor fiscal.</p><div class="foot"><span class="badge"><span class="dot"></span>Operacional</span><span class="go"><i class="fa-solid fa-arrow-right"></i></span></div></div>
+        <div class="card"><div class="accent red"></div><div class="ic ic-red"><i class="fa-solid fa-magnifying-glass"></i></div><h3>Consulta CNPJ</h3><p>Consulta completa de informações de um CNPJ.</p><div class="foot"><span class="badge"><span class="dot"></span>Operacional</span><span class="go"><i class="fa-solid fa-arrow-right"></i></span></div></div>
+        <div class="card"><div class="accent teal"></div><div class="ic ic-teal"><i class="fa-solid fa-map-location-dot"></i></div><h3>Cadastro de CEP</h3><p>Cidade, bairro e logradouro no ERP a partir do CEP.</p><div class="foot"><span class="badge"><span class="dot"></span>Operacional</span><span class="go"><i class="fa-solid fa-arrow-right"></i></span></div></div>
+      </section>
+
+      <!-- Grupo: Notas -->
+      <div class="sec-h"><h2>Notas Fiscais</h2><span class="count">3 módulos</span><div class="line"></div></div>
+      <section class="grid">
+        <div class="card"><div class="accent" style="background:#c2410c"></div><div class="ic" style="background:rgba(194,65,12,.1);color:#c2410c"><i class="fa-solid fa-receipt"></i></div><h3>Controle de Notas Fiscais</h3><p>Esteira visual das notas mensais com quebra por unidade.</p><div class="foot"><span class="badge" style="color:var(--amber);background:rgba(217,119,6,.1);border-color:rgba(217,119,6,.2)"><span class="dot" style="background:var(--amber)"></span>3 atrasadas</span><span class="go"><i class="fa-solid fa-arrow-right"></i></span></div></div>
+        <div class="card"><div class="accent green"></div><div class="ic ic-green"><i class="fa-solid fa-file-arrow-up"></i></div><h3>Lançamento de Notas</h3><p>Upload do XML, revisão de centros de custo e fila do ERP.</p><div class="foot"><span class="badge"><span class="dot"></span>Operacional</span><span class="go"><i class="fa-solid fa-arrow-right"></i></span></div></div>
+        <div class="card"><div class="accent amber"></div><div class="ic ic-amber"><i class="fa-solid fa-truck-fast"></i></div><h3>Relatório MDF-e</h3><p>Extração automática de datas e notas de MDFs do sistema NL.</p><div class="foot"><span class="badge"><span class="dot"></span>Operacional</span><span class="go"><i class="fa-solid fa-arrow-right"></i></span></div></div>
+      </section>
+
+      <!-- Grupo: Monitoramento -->
+      <div class="sec-h"><h2>Monitoramento &amp; Histórico</h2><span class="count">3 módulos</span><div class="line"></div></div>
+      <section class="grid">
+        <div class="card"><div class="accent green"></div><div class="ic ic-green"><i class="fa-solid fa-table-list"></i></div><h3>Monitor de Fichas</h3><p>Histórico de fichas recebidas, filtros por status e período.</p><div class="foot"><span class="badge"><span class="dot"></span>Operacional</span><span class="go"><i class="fa-solid fa-arrow-right"></i></span></div></div>
+        <div class="card"><div class="accent" style="background:#38bdf8"></div><div class="ic ic-sky"><i class="fa-solid fa-link"></i></div><h3>Links Gerados</h3><p>Quem gerou, para qual cliente, validade e uso dos links.</p><div class="foot"><span class="badge"><span class="dot"></span>Operacional</span><span class="go"><i class="fa-solid fa-arrow-right"></i></span></div></div>
+        <div class="card"><div class="accent" style="background:#a78bfa"></div><div class="ic ic-violet"><i class="fa-solid fa-clock-rotate-left"></i></div><h3>Meu Histórico</h3><p>Histórico das suas execuções de robôs, com status e detalhes.</p><div class="foot"><span class="badge"><span class="dot"></span>Operacional</span><span class="go"><i class="fa-solid fa-arrow-right"></i></span></div></div>
+      </section>
+    </div>
+  </main>
+</div>
+</body>
+</html>
