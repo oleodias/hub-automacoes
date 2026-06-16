@@ -20,6 +20,7 @@ MODULOS_HUB = {
     'fornecedor':  'Cadastro de Fornecedor',
     'clientes':    'Cadastro de Clientes',
     'cnpj':        'Consulta CNPJ',
+    'cep':         'Cadastro de CEP',
     'monitor':     'Monitor de Cadastros',
     'notas':       'Controle de Notas Fiscais',
     'lancamento_notas': 'Lançamento de Notas',

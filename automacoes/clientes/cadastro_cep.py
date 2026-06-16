@@ -214,10 +214,11 @@ def executar(dados):
     options = webdriver.ChromeOptions()
     options.add_argument('--start-maximized')
     # "detach" mantém o Chrome aberto mesmo após o script Python terminar.
-    # Sem isso, o navegador fecha sozinho no fim (mesmo com driver.quit()
-    # comentado), porque o objeto driver é destruído junto com o processo.
-    # Útil durante os testes; em produção, deixe False / remova.
-    options.add_experimental_option("detach", True)
+    # Só ligamos quando manter_navegador=True (teste de bancada). Em produção
+    # (chamado pelo Hub), o navegador FECHA no fim para não acumular janelas.
+    manter_navegador = bool(dados.get('manter_navegador', False))
+    if manter_navegador:
+        options.add_experimental_option("detach", True)
 
     driver = webdriver.Chrome(options=options)
     wait = WebDriverWait(driver, 20)
@@ -941,24 +942,43 @@ def executar(dados):
         }
 
     finally:
-        # Mantém o navegador aberto durante os primeiros testes pra conferência.
-        # Combinado com options.add_experimental_option("detach", True), o
-        # Chrome NÃO fecha ao terminar. Quando o robô estiver estável,
-        # descomente o driver.quit() abaixo (e desligue o "detach").
-        # driver.quit()
+        # Em produção (Hub), fecha o navegador. No teste de bancada
+        # (manter_navegador=True), mantém aberto para conferência.
+        if not manter_navegador:
+            driver.quit()
         print("> 🏁 Fim da execução do robô de cadastro de CEP.")
 
 
 # ─────────────────────────────────────────────────────────────
-# TESTE DE BANCADA
-# Roda direto no terminal:
-#   python -m automacoes.clientes.cadastro_cep
+# PONTO DE ENTRADA
+# 1) Via Hub (subprocess):  python -m automacoes.clientes.cadastro_cep '<json>'
+#    → recebe os dados no argv, roda e fecha o navegador no fim.
+# 2) Teste de bancada:      python -m automacoes.clientes.cadastro_cep
+#    → usa os dados abaixo e MANTÉM o navegador aberto para conferência.
 # ─────────────────────────────────────────────────────────────
 if __name__ == "__main__":
+    import json
+
+    # ── Modo subprocess: dados chegam como JSON no argv[1] ──
+    if len(sys.argv) > 1:
+        try:
+            dados_hub = json.loads(sys.argv[1])
+        except Exception as e:
+            print(f"❌ Erro ao ler os dados do argv: {e}")
+            print("[FIM_DO_PROCESSO]")
+            sys.exit(0)
+        executar(dados_hub)
+        # Marcador lido pelo front-end (SSE) para encerrar o stream.
+        print("[FIM_DO_PROCESSO]")
+        sys.exit(0)
+
+    # ── Modo teste de bancada (terminal, sem argv) ──
     print("🧪 Iniciando Teste de Bancada — CADASTRO DE CEP...")
     print("=" * 60)
 
     dados_teste = {
+        # Mantém o Chrome aberto ao fim, só no teste de bancada.
+        "manter_navegador": True,
         # Caminho NOVO (recomendado): informe só o CEP e deixe a API
         # descobrir cidade / UF / bairro / logradouro automaticamente.
         "cep": "69452-000",

@@ -1,0 +1,155 @@
+{% extends "base.html" %} {% block title %}Cadastro de CEP - Hub Ciamed{% endblock
+%} {% block css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/cadastro_cep.css') }}"
+/>
+{% endblock %} {% block navbar_title %}Hub de Automações{% endblock %} {% block
+content %}
+<div class="page-header">
+  <div class="left">
+    <button
+      class="btn-back"
+      onclick="window.location.href = '/'"
+      title="Voltar ao Painel"
+    >
+      <i class="fa-solid fa-arrow-left" style="font-size: 13px"></i>
+    </button>
+    <div class="page-title">
+      Cadastro de CEP
+      <span>Endereços · Integração BrasilAPI / ViaCEP</span>
+    </div>
+  </div>
+  <span class="badge-api"><i class="fa-solid fa-plug me-1"></i>BrasilAPI</span>
+</div>
+
+<div class="card-dark" style="margin-bottom: 20px; animation-delay: 0.1s">
+  <div class="card-title-row">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <h5>Busca Automática — CEP</h5>
+  </div>
+  <div class="search-wrap">
+    <p>Digite o CEP para buscar o endereço antes de iniciar a automação.</p>
+    <div class="input-dark-group">
+      <input
+        type="text"
+        id="cepInput"
+        class="input-dark"
+        placeholder="00000-000"
+        maxlength="9"
+      />
+      <button class="btn-teal" type="button" id="btnConsultar">
+        <i class="fa-solid fa-search me-1"></i> Buscar
+      </button>
+    </div>
+    <div class="status-row">
+      <span class="status-dot bg-gray" id="dot-cep"></span>
+      <span id="txt-cep">Aguardando CEP...</span>
+    </div>
+  </div>
+</div>
+
+<div class="card-dark" style="margin-bottom: 20px; animation-delay: 0.18s">
+  <div class="card-title-row">
+    <i class="fa-solid fa-list-check"></i>
+    <h5>Revisão de Dados</h5>
+  </div>
+  <form id="formCep" class="form-grid">
+    <div class="form-row cols-3-7-2">
+      <div class="form-field">
+        <label>CEP</label>
+        <input type="text" id="cep" readonly />
+      </div>
+      <div class="form-field">
+        <label>Logradouro</label>
+        <input type="text" id="logradouro" readonly />
+      </div>
+      <div class="form-field">
+        <label>UF</label>
+        <input type="text" id="uf" readonly style="text-align: center" />
+      </div>
+    </div>
+
+    <div class="form-row cols-4-4-4">
+      <div class="form-field">
+        <label>Cidade</label>
+        <input type="text" id="cidade" readonly />
+      </div>
+      <div class="form-field">
+        <label>Bairro</label>
+        <input type="text" id="bairro" readonly />
+      </div>
+      <div class="form-field">
+        <label>Código IBGE</label>
+        <input type="text" id="ibge" readonly style="text-align: center" />
+      </div>
+    </div>
+
+    <div class="form-row cols-12-1">
+      <div class="form-field">
+        <label>Complemento</label>
+        <input type="text" id="complemento" readonly />
+      </div>
+    </div>
+
+    <div class="form-divider"></div>
+
+    <!-- Parâmetros operacionais (editáveis) -->
+    <div class="form-row cols-9-3">
+      <div class="form-field">
+        <label>Código p/ Novo Bairro (se precisar criar)</label>
+        <input type="text" id="codigoNovoBairro" inputmode="numeric" value="99999" />
+      </div>
+      <div class="form-field">
+        <label>Tipo de Logradouro (cód.)</label>
+        <input type="text" id="codigoTipoLogradouro" inputmode="numeric" value="0" />
+      </div>
+    </div>
+  </form>
+  <button class="btn-iniciar" id="btnIniciarRobo" onclick="iniciarCadastroCep()">
+    <i class="fa-solid fa-play me-2"></i> Iniciar Cadastro no ERP
+  </button>
+</div>
+
+<div class="term-wrap">
+  <div class="term-titlebar">
+    <div class="term-titlebar-left">
+      <div class="term-dots">
+        <div class="dot dot-r"></div>
+        <div class="dot dot-y"></div>
+        <div class="dot dot-g"></div>
+      </div>
+      <div class="term-tab">
+        Console do Robô CEP
+        <div class="term-status-pill">
+          <div class="term-pulse-dot"></div>
+          ao vivo
+        </div>
+      </div>
+    </div>
+    <div class="term-actions">
+      <button class="term-btn" id="btnCopiarLog" onclick="copiarLog()">
+        Copiar log
+      </button>
+    </div>
+  </div>
+  <div class="term-body" id="terminal-cep">
+    <div class="log-line log-muted">
+      <span class="log-time">--:--:--</span>
+      <span class="log-prefix">·</span>
+      <span class="log-text">> Sistema de CEP pronto para operar.</span>
+    </div>
+  </div>
+  <div class="term-footer">
+    <span class="term-footer-info">
+      processo:
+      <span id="footerProc" class="term-footer-highlight">–</span>
+      &nbsp;|&nbsp; linhas:
+      <span id="footerLines" class="term-footer-highlight">1</span>
+    </span>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
+<script src="{{ url_for('static', filename='js/cadastro_cep.js') }}"></script>
+{% endblock %}

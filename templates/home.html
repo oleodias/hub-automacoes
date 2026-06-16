@@ -26,7 +26,7 @@ content %}
         <i class="fa-solid fa-bolt"></i>
       </div>
       <div>
-        <div class="stat-value">6</div>
+        <div class="stat-value">7</div>
         <div class="stat-label">Automações Ativas</div>
       </div>
     </div>
@@ -50,7 +50,7 @@ content %}
         <i class="fa-solid fa-layer-group"></i>
       </div>
       <div>
-        <div class="stat-value">8</div>
+        <div class="stat-value">9</div>
         <div class="stat-label">Total de Módulos</div>
       </div>
     </div>
@@ -133,6 +133,27 @@ content %}
       <div class="card-desc">
         Robô programado para consultar todas as informações de um cnpj, sendo
         isso relevante para vários setores da empresa.
+      </div>
+      <div class="badge-status badge-operational">
+        <span class="dot"></span> Operacional
+      </div>
+    </div>
+    {% endif %} {% if tem_permissao('cep') %}
+    <div
+      class="auto-card clickable"
+      onclick="window.location.href='{{ url_for('cep.cadastro_cep') }}'"
+    >
+      <div class="card-accent-line" style="background: var(--teal)"></div>
+      <div
+        class="card-icon-wrap"
+        style="background: var(--teal-dim); color: var(--teal)"
+      >
+        <i class="fa-solid fa-map-location-dot"></i>
+      </div>
+      <div class="card-title">Cadastro de CEP</div>
+      <div class="card-desc">
+        Cadastro automático de cidade, bairro e logradouro no ERP a partir do
+        CEP, com consulta via BrasilAPI/ViaCEP.
       </div>
       <div class="badge-status badge-operational">
         <span class="dot"></span> Operacional

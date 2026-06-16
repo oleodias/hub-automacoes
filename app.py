@@ -102,6 +102,7 @@ from routes.mdf import mdf_bp
 from routes.fornecedor import fornecedor_bp
 from routes.clientes import clientes_bp
 from routes.cnpj import cnpj_bp
+from routes.cep import cep_bp
 from routes.admin import admin_bp
 from routes.notas import notas_bp
 from routes.lancamento_notas import lancamento_notas_bp
@@ -114,6 +115,7 @@ app.register_blueprint(mdf_bp)
 app.register_blueprint(fornecedor_bp)
 app.register_blueprint(clientes_bp)
 app.register_blueprint(cnpj_bp)
+app.register_blueprint(cep_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(notas_bp)
 app.register_blueprint(lancamento_notas_bp)
