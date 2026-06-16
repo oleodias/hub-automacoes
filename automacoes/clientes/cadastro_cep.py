@@ -2,6 +2,7 @@
 import sys
 import time
 import re
+import unicodedata
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -20,6 +21,73 @@ sys.stdout.reconfigure(encoding='utf-8')
 # cadastro_reativacao) para esse robô ficar autocontido. Se um dia
 # centralizarmos, é só mover para automacoes/clientes/helpers.py.
 # ─────────────────────────────────────────────────────────────
+
+def _normalizar(texto):
+    """Uppercase + sem acentos + sem espaços nas pontas (comparações tolerantes)."""
+    txt = unicodedata.normalize('NFKD', str(texto or ''))
+    txt = ''.join(c for c in txt if not unicodedata.combining(c))
+    return txt.strip().upper()
+
+
+def resolver_lov_bairro(driver, codigo_local, bairro_nome, registrar_aviso):
+    """
+    Quando o código do bairro é AMBÍGUO (o mesmo número existe em mais de uma
+    cidade), o ERP abre um LOV dentro de um iframe (af_dialog_content) listando
+    as opções. Esta função detecta o iframe e seleciona a linha cujo LOCAL bate
+    (campo mais confiável, único por cidade); havendo empate, confirma pelo NOME
+    do bairro (comparação tolerante a acento/maiúsculas).
+
+    Se nenhum iframe aparecer (código de bairro único), não faz nada.
+    """
+    try:
+        WebDriverWait(driver, 3).until(
+            EC.frame_to_be_available_and_switch_to_it(
+                (By.CSS_SELECTOR, "iframe.af_dialog_content")
+            )
+        )
+    except TimeoutException:
+        return  # sem popup: o código de bairro era único
+
+    print("   ℹ️ LOV de bairro ambíguo detectado. Procurando a linha correta...")
+    try:
+        local_alvo = re.sub(r'\D', '', str(codigo_local or ''))
+        bairro_alvo = _normalizar(bairro_nome)
+
+        celulas_local = driver.find_elements(
+            By.XPATH, "//td[@headers='tabUiLov:j_idt109']"
+        )
+        celula_escolhida = None
+        for cel in celulas_local:
+            if re.sub(r'\D', '', cel.text or '') != local_alvo:
+                continue  # Local diferente — descarta
+            # Local bate. Lê o nome do bairro da mesma linha para confirmar.
+            nome_linha = driver.execute_script("""
+                var td = arguments[0]; var tr = td.closest('tr');
+                if (!tr) return '';
+                var e = tr.querySelector("td[headers='tabUiLov:j_idt60']");
+                return e ? e.textContent.trim() : '';
+            """, cel)
+            celula_escolhida = cel  # 1ª linha com o Local certo já serve
+            if _normalizar(nome_linha) == bairro_alvo:
+                break  # nome também bate → linha definitiva
+
+        if celula_escolhida is None:
+            registrar_aviso("REVISAR LOGRADOURO — LOV de bairro: nenhuma linha bateu com o Local")
+            driver.switch_to.default_content()
+            return
+
+        # Clica (forçado) na célula do nome do bairro daquela linha.
+        celula_nome = driver.execute_script("""
+            var td = arguments[0]; var tr = td.closest('tr');
+            return tr ? tr.querySelector("td[headers='tabUiLov:j_idt60']") : null;
+        """, celula_escolhida)
+        driver.execute_script("arguments[0].click();", celula_nome or celula_escolhida)
+        print(f"   ✅ Linha do LOV selecionada (Local {local_alvo}).")
+        time.sleep(1)
+    finally:
+        # Sempre volta para a página principal, com ou sem sucesso.
+        driver.switch_to.default_content()
+
 
 def limpar_e_preencher(driver, campo, valor):
     """
@@ -698,6 +766,8 @@ def executar(dados):
                 limpar_e_preencher(driver, campo_bai, codigo_bairro_capturado)
                 campo_bai.send_keys(Keys.TAB)
                 time.sleep(0.8)
+                # Se o código do bairro for ambíguo, trata o LOV em iframe.
+                resolver_lov_bairro(driver, codigo_local_capturado, bairro_erp, registrar_aviso)
                 print("   ✅ Filtros de logradouro preenchidos.")
             except Exception as e:
                 raise Exception(f"Falha ao preencher filtros de Logradouro: {e}")
@@ -841,6 +911,10 @@ def executar(dados):
                     limpar_e_preencher(driver, campo_bai_novo, codigo_bairro_capturado)
                     campo_bai_novo.send_keys(Keys.TAB)
                     time.sleep(0.8)
+                    # Se o código do bairro for ambíguo (existe em + de uma
+                    # cidade), o ERP abre um LOV em iframe: selecionamos a
+                    # linha do Local certo (e confirmamos pelo nome do bairro).
+                    resolver_lov_bairro(driver, codigo_local_capturado, bairro_erp, registrar_aviso)
 
                     # Código do Local — o campo vem 'disabled' (o ERP costuma
                     # preenchê-lo sozinho ao escolher o bairro). Tratamos de
