@@ -147,12 +147,9 @@ content %}
             
           >
             <option value="">Todos os robôs</option>
-            <option value="itens_fase1">Itens — Fase 1</option>
-            <option value="itens_fase2">Itens — Fase 2</option>
-            <option value="mdf">Relatório MDF-e</option>
-            <option value="fornecedor">Fornecedor</option>
-            <option value="cliente_novo">Cliente Novo</option>
-            <option value="cadastro_cep">Cadastro de CEP</option>
+            {% for chave, nome in robos.items() %}
+            <option value="{{ chave }}">{{ nome }}</option>
+            {% endfor %}
           </select>
           <select
             id="filtro-status-hist"

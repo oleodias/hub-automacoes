@@ -31,6 +31,22 @@ def permissoes_padrao():
     """Retorna dict com todos os módulos liberados (padrão para novos usuários)."""
     return {modulo: True for modulo in MODULOS_HUB}
 
+
+# ── ROBÔS DO HUB (lista central p/ filtros de histórico) ─────
+# Chaves são EXATAMENTE os nomes passados em iniciar_execucao_robo(...).
+# Ao criar um robô novo, adicione aqui e o filtro do histórico
+# (admin e meu_historico) já passa a listá-lo automaticamente.
+
+ROBOS_HUB = {
+    'itens_fase1':        'Itens — Fase 1',
+    'itens_fase2':        'Itens — Fase 2',
+    'mdf':                'Relatório MDF-e',
+    'fornecedor':         'Fornecedor',
+    'cliente_novo':       'Cliente Novo',
+    'cliente_reativacao': 'Cliente Reativação',
+    'cadastro_cep':       'Cadastro de CEP',
+}
+
 SETORES_CIAMED = [
     'TI',
     'Controladoria',

@@ -78,7 +78,8 @@ def fila_sair(meu_id):
 
 @main_bp.route('/meu_historico')
 def meu_historico():
-    return render_template('meu_historico.html')
+    from models import ROBOS_HUB
+    return render_template('meu_historico.html', robos=ROBOS_HUB)
 
 
 @main_bp.route('/api/meu_historico')
