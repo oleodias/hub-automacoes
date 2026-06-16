@@ -133,6 +133,10 @@ def executar(dados):
     bairro = str(dados.get('bairro', '')).strip()
     logradouro = str(dados.get('logradouro', '')).strip()
     complemento = str(dados.get('complemento', '')).strip()
+    # Código do tipo de endereço (Rua/Avenida/...). Padrão "0" (NADA): assim
+    # o nome do logradouro fica completo e consistente com o matching da grade.
+    # Referência: RUA=208, AVENIDA=80, ESTRADA=135, NADA=0.
+    codigo_tipo_logradouro = re.sub(r'\D', '', str(dados.get('codigo_tipo_logradouro', '0'))) or '0'
     codigo_novo_bairro = re.sub(r'\D', '', str(dados.get('codigo_novo_bairro', '')))
     cep = str(dados.get('cep', '')).strip()
     cep_limpo = re.sub(r'\D', '', cep)
@@ -784,6 +788,24 @@ def executar(dados):
                     limpar_e_preencher(driver, campo_desc_log, logradouro_erp)
                     time.sleep(0.3)
 
+                    # Tipo de endereço (Rua/Avenida/Estrada/...) por código + TAB.
+                    # Abordagem escolhida: por padrão "0" (NADA) e o nome do
+                    # logradouro fica completo (ex: "RUA TAL"). Isso mantém o
+                    # nome consistente com o matching da grade (que compara o
+                    # nome completo). Pode ser sobrescrito via payload.
+                    # Referência de códigos: RUA=208, AVENIDA=80, ESTRADA=135, NADA=0.
+                    try:
+                        campo_tipo = wait.until(
+                            EC.element_to_be_clickable((By.ID, "lovCodTipo_txtCod"))
+                        )
+                        limpar_e_preencher(driver, campo_tipo, codigo_tipo_logradouro)
+                        campo_tipo.send_keys(Keys.TAB)
+                        time.sleep(0.8)
+                        print(f"   ✅ Tipo de endereço preenchido: {codigo_tipo_logradouro}")
+                    except Exception as e:
+                        print(f"   ⚠️ Falha ao preencher o tipo de endereço: {e}")
+                        registrar_aviso("REVISAR — tipo de endereço do logradouro")
+
                     # Complemento (opcional) + TAB
                     if complemento_erp:
                         campo_compl = wait.until(
@@ -918,15 +940,20 @@ if __name__ == "__main__":
 
     dados_teste = {
         # Caminho NOVO (recomendado): informe só o CEP e deixe a API
-        # descobrir cidade / UF / bairro automaticamente.
+        # descobrir cidade / UF / bairro / logradouro automaticamente.
         "cep": "95010-005",
         "codigo_novo_bairro": "99999",  # ← usado SÓ se o bairro não existir
+
+        # Tipo de endereço (Rua/Avenida/...). Padrão "0" (NADA) mantém o
+        # nome do logradouro completo. Códigos: RUA=208, AVENIDA=80, ESTRADA=135.
+        # "codigo_tipo_logradouro": "0",
 
         # Overrides manuais (opcionais): se preencher qualquer um destes,
         # ele tem PRIORIDADE sobre a API. Útil para forçar um teste.
         # "cidade": "Caxias do Sul",
         # "uf": "RS",
         # "bairro": "Centro",
+        # "logradouro": "Rua Os Dezoito do Forte",
     }
 
     print(f"📋 CEP: {dados_teste.get('cep', '(vazio)')}")
