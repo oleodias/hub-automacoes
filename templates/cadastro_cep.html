@@ -97,8 +97,13 @@ content %}
     <!-- Parâmetros operacionais (editáveis) -->
     <div class="form-row cols-9-3">
       <div class="form-field">
-        <label>Código p/ Novo Bairro (se precisar criar)</label>
-        <input type="text" id="codigoNovoBairro" inputmode="numeric" value="99999" />
+        <label>Código p/ Novo Bairro (vazio = Local + 1)</label>
+        <input
+          type="text"
+          id="codigoNovoBairro"
+          inputmode="numeric"
+          placeholder="automático (Local + 1)"
+        />
       </div>
       <div class="form-field">
         <label>Tipo de Logradouro (cód.)</label>

@@ -182,7 +182,8 @@ def executar(dados):
         cidade             : str — nome da cidade (obrigatório)
         uf                 : str — sigla do estado (obrigatório)
         bairro             : str — nome do bairro (obrigatório p/ etapa Bairros)
-        codigo_novo_bairro : str — número a usar SE precisar criar o bairro
+        codigo_novo_bairro : str — OPCIONAL. Override do código ao criar o bairro.
+                                   Se vazio, usa o padrão: código do Local + 1.
         cep                : str — opcional, apenas para log/uso futuro
 
     Saída (dict):
@@ -619,13 +620,25 @@ def executar(dados):
         if not encontrou_bairro:
             print("> ➕ ETAPA 8: Bairro não encontrado. Criando novo registro...")
 
-            if not codigo_novo_bairro:
-                registrar_aviso("REVISAR — bairro inexistente e sem 'codigo_novo_bairro' no payload")
+            # Código do novo bairro: por padrão é o LOCAL + 1 (determinístico).
+            # Um valor explícito em 'codigo_novo_bairro' (payload) tem prioridade.
+            if codigo_novo_bairro:
+                codigo_bairro_novo = codigo_novo_bairro
+                print(f"   ℹ️ Código de bairro informado no payload: {codigo_bairro_novo}")
+            else:
+                try:
+                    codigo_bairro_novo = str(int(codigo_local_capturado) + 1)
+                    print(f"   🧮 Código do novo bairro = Local + 1 = {codigo_bairro_novo}")
+                except (ValueError, TypeError):
+                    codigo_bairro_novo = ""
+
+            if not codigo_bairro_novo:
+                registrar_aviso("REVISAR — não foi possível definir o código do novo bairro")
                 return {
                     "status": "Erro",
                     "msg": (
                         f"O bairro {bairro_erp!r} não existe no local {codigo_local_capturado} "
-                        "e nenhum 'codigo_novo_bairro' foi informado para criá-lo."
+                        "e não foi possível definir um código para criá-lo."
                     ),
                     "avisos": avisos,
                     "codigo_local": codigo_local_capturado,
@@ -661,14 +674,14 @@ def executar(dados):
                     print(f"   ⚠️ Falha ao preencher Local do novo bairro (id provisório): {e}")
                     registrar_aviso("REVISAR — campo Local da tela de novo bairro (id provisório)")
 
-                # ── 8.3: Preencher o código do bairro (numérico, do payload) ──
+                # ── 8.3: Preencher o código do bairro (numérico) ──
                 campo_cod_bairro = wait.until(
                     EC.element_to_be_clickable((By.ID, "txtCodBairro"))
                 )
-                limpar_e_preencher(driver, campo_cod_bairro, codigo_novo_bairro)
+                limpar_e_preencher(driver, campo_cod_bairro, codigo_bairro_novo)
                 campo_cod_bairro.send_keys(Keys.TAB)
                 time.sleep(0.5)
-                print(f"   ✅ Código do bairro {codigo_novo_bairro} preenchido.")
+                print(f"   ✅ Código do bairro {codigo_bairro_novo} preenchido.")
 
                 # ── 8.4: Preencher o nome do bairro (cortado em 20) ──
                 campo_desc_novo = wait.until(
@@ -695,7 +708,7 @@ def executar(dados):
                 except TimeoutException:
                     pass
 
-                codigo_bairro_capturado = codigo_novo_bairro
+                codigo_bairro_capturado = codigo_bairro_novo
                 bairro_criado = True
                 print(f"   🏆 Bairro criado com sucesso. Código: {codigo_bairro_capturado}")
 
@@ -1056,7 +1069,8 @@ if __name__ == "__main__":
         # Caminho NOVO (recomendado): informe só o CEP e deixe a API
         # descobrir cidade / UF / bairro / logradouro automaticamente.
         "cep": "69452-000",
-        "codigo_novo_bairro": "99923",  # ← usado SÓ se o bairro não existir
+        # Código do novo bairro: vazio = Local + 1 (padrão). Descomente p/ forçar.
+        # "codigo_novo_bairro": "99923",
 
         # Tipo de endereço (Rua/Avenida/...). Padrão "0" (NADA) mantém o
         # nome do logradouro completo. Códigos: RUA=208, AVENIDA=80, ESTRADA=135.
