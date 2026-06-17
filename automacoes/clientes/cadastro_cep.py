@@ -284,7 +284,7 @@ def executar(dados):
     # "detach" mantém o Chrome aberto mesmo após o script Python terminar.
     # Só ligamos quando manter_navegador=True (teste de bancada). Em produção
     # (chamado pelo Hub), o navegador FECHA no fim para não acumular janelas.
-    manter_navegador = bool(dados.get('manter_navegador', False))
+    manter_navegador = bool(dados.get('manter_navegador', True))
     if manter_navegador:
         options.add_experimental_option("detach", True)
 
