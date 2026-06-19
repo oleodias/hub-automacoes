@@ -6,14 +6,15 @@
 #   2. n8n      → motor de workflows local (testes seguros)
 #   3. hub      → o Hub em container (OPCIONAL — veja abaixo)
 #
-# FLUXO RECOMENDADO NO DEV:
-#   - Suba só o apoio:   docker compose up -d           (postgres + n8n)
-#   - Rode o Hub e os robôs DIRETO no Windows (python app.py), porque
-#     os robôs abrem o navegador com JANELA VISÍVEL no seu PC.
+# FLUXO NO DEV (duas formas, escolha a que preferir):
+#   A) Tudo em container (mais parecido com o servidor):
+#        docker compose --profile app up -d --build   → http://localhost:5000
+#   B) Só o apoio em container e o Hub rodando no Windows (python app.py):
+#        docker compose up -d                          (sobe postgres + n8n)
 #
-# Se quiser testar o Hub DENTRO do container (igual ao servidor):
-#   docker compose --profile app up -d --build          (sobe também o hub)
-#   Acesse em http://localhost:5000
+# Os robôs rodam HEADLESS (sem janela) e funcionam normalmente no container.
+# A janela visível do navegador é só um recurso OPCIONAL de depuração (assistir
+# aos cliques) — e ela precisa de tela, então para isso rode o Hub no Windows.
 #
 # Comandos úteis:
 #   Parar tudo:     docker compose down
@@ -61,10 +62,12 @@ services:
       postgres:
         condition: service_healthy
 
-  # ── HUB (container — OPCIONAL no dev) ───────────────────────
+  # ── HUB (container) ─────────────────────────────────────────
   # Só sobe com:  docker compose --profile app up -d --build
-  # No dia a dia do dev você roda o Hub no Windows; este serviço é
-  # para testar a imagem igual à do servidor.
+  # Roda o Hub (e os robôs, em headless) igual ao servidor. Útil para
+  # validar a imagem localmente. Se preferir rodar o Hub no Windows
+  # (ex.: para assistir aos cliques do robô), use o "up" normal e
+  # deixe este serviço de fora.
   hub:
     build: .
     container_name: hub_app
