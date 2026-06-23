@@ -106,6 +106,7 @@ from routes.admin import admin_bp
 from routes.notas import notas_bp
 from routes.lancamento_notas import lancamento_notas_bp
 from routes.suporte import suporte_bp
+from routes.relatorios import relatorios_bp
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(main_bp)
@@ -118,6 +119,7 @@ app.register_blueprint(admin_bp)
 app.register_blueprint(notas_bp)
 app.register_blueprint(lancamento_notas_bp)
 app.register_blueprint(suporte_bp)
+app.register_blueprint(relatorios_bp)
 
 
 # ══════════════════════════════════════════════════════════════
@@ -144,6 +146,10 @@ ROTAS_PUBLICAS = {
     'clientes.fila_cadastro_liberar',    # N8N chama direto
     'clientes.n8n_iniciar_cadastro',     # N8N chama direto
     'clientes.n8n_iniciar_reativacao',     # N8N chama direto
+    'relatorios.relatorios_fila_entrar',     # N8N chama direto (token)
+    'relatorios.relatorios_fila_liberar',    # N8N chama direto (token)
+    'relatorios.relatorios_iniciar',         # N8N chama direto (token)
+    'relatorios.relatorios_download',        # N8N chama direto (token)
 }
 
 @app.before_request

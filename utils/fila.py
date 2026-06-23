@@ -34,8 +34,9 @@ logger = logging.getLogger(__name__)
 from utils.n8n_security import resume_url_confiavel
 
 
-RECURSO_RPA      = 'rpa'
-RECURSO_CADASTRO = 'cadastro'
+RECURSO_RPA        = 'rpa'
+RECURSO_CADASTRO   = 'cadastro'
+RECURSO_RELATORIOS = 'relatorios'   # robô de relatórios aos laboratórios (mesmo padrão N8N)
 
 
 def _timeout_min():
@@ -214,60 +215,63 @@ def recurso_em_execucao(recurso=RECURSO_RPA):
 
 
 # ══════════════════════════════════════════════════════════════
-# FILA DE CADASTRO (controle via N8N) — recurso 'cadastro'
+# FILA COM RESUME_URL (controle via N8N) — recursos 'cadastro' e 'relatorios'
 # ══════════════════════════════════════════════════════════════
+# As funções abaixo são genéricas pelo parâmetro `recurso` (default
+# 'cadastro', para não mexer no fluxo existente). O robô de relatórios
+# reusa exatamente o mesmo mecanismo passando RECURSO_RELATORIOS.
 
-def cadastro_entrar(resume_url):
-    """Adiciona uma execução na fila de cadastro. Retorna (token, posicao, sua_vez)."""
+def cadastro_entrar(resume_url, recurso=RECURSO_CADASTRO):
+    """Adiciona uma execução na fila (com resume_url). Retorna (token, posicao, sua_vez)."""
     token = uuid_lib.uuid4().hex
     with _get_engine().begin() as conn:
         conn.execute(text("""
             INSERT INTO fila_execucao (token, recurso, status, resume_url, criado_em)
             VALUES (:t, :r, 'aguardando', :url, :agora)
-        """), {"t": token, "r": RECURSO_CADASTRO, "url": resume_url, "agora": datetime.now()})
+        """), {"t": token, "r": recurso, "url": resume_url, "agora": datetime.now()})
 
     posicao = posicao_na_fila(token)
-    logger.info(f"[FILA] Entrada cadastro | token: {token[:8]} | Posição: {posicao}")
+    logger.info(f"[FILA] Entrada {recurso} | token: {token[:8]} | Posição: {posicao}")
 
-    assumido = _liberar_proximo_cadastro()
+    assumido = _liberar_proximo_cadastro(recurso)
     sua_vez = bool(assumido and assumido['token'] == token)
     return token, posicao, sua_vez
 
 
-def cadastro_liberar_proximo():
-    """Remove o atual da fila de cadastro e acorda o próximo Wait node do N8N."""
+def cadastro_liberar_proximo(recurso=RECURSO_CADASTRO):
+    """Remove o atual da fila e acorda o próximo Wait node do N8N."""
     with _get_engine().begin() as conn:
-        conn.execute(text("SELECT pg_advisory_xact_lock(hashtext(:r))"), {"r": RECURSO_CADASTRO})
+        conn.execute(text("SELECT pg_advisory_xact_lock(hashtext(:r))"), {"r": recurso})
         res = conn.execute(text("""
             DELETE FROM fila_execucao
             WHERE recurso = :r AND status = 'executando'
-        """), {"r": RECURSO_CADASTRO})
+        """), {"r": recurso})
         if res.rowcount:
-            logger.info("[FILA] Cadastro concluído | liberando próximo.")
-    _liberar_proximo_cadastro()
+            logger.info(f"[FILA] {recurso} concluído | liberando próximo.")
+    _liberar_proximo_cadastro(recurso)
 
 
-def _liberar_proximo_cadastro():
+def _liberar_proximo_cadastro(recurso=RECURSO_CADASTRO):
     """
-    ATÔMICO: se ninguém está executando, assume o próximo da fila de
-    cadastro e dispara (em thread) a chamada que acorda o N8N.
+    ATÔMICO: se ninguém está executando, assume o próximo da fila do
+    recurso e dispara (em thread) a chamada que acorda o N8N.
     Retorna o item assumido (dict) ou None.
     """
     with _get_engine().begin() as conn:
-        conn.execute(text("SELECT pg_advisory_xact_lock(hashtext(:r))"), {"r": RECURSO_CADASTRO})
-        _expirar_travadas(conn, RECURSO_CADASTRO)
+        conn.execute(text("SELECT pg_advisory_xact_lock(hashtext(:r))"), {"r": recurso})
+        _expirar_travadas(conn, recurso)
 
         if conn.execute(text("""
             SELECT 1 FROM fila_execucao
             WHERE recurso = :r AND status = 'executando' LIMIT 1
-        """), {"r": RECURSO_CADASTRO}).first():
+        """), {"r": recurso}).first():
             return None
 
         proximo = conn.execute(text("""
             SELECT id, token, resume_url FROM fila_execucao
             WHERE recurso = :r AND status = 'aguardando'
             ORDER BY id LIMIT 1
-        """), {"r": RECURSO_CADASTRO}).first()
+        """), {"r": recurso}).first()
         if proximo is None:
             return None
 
@@ -279,7 +283,7 @@ def _liberar_proximo_cadastro():
 
         assumido = {"token": proximo.token, "resume_url": proximo.resume_url}
 
-    logger.info(f"[FILA] Liberando cadastro | token: {assumido['token'][:8]}")
+    logger.info(f"[FILA] Liberando {recurso} | token: {assumido['token'][:8]}")
     threading.Thread(
         target=_acordar_n8n,
         args=(assumido['token'], assumido['resume_url']),
@@ -303,19 +307,19 @@ def _acordar_n8n(token, resume_url):
         logger.error(f"[FILA] Erro ao acordar N8N: {e}")
 
 
-def fila_cadastro_status_dict():
-    """Estado atual da fila de cadastro — usado no endpoint de status/debug."""
+def fila_cadastro_status_dict(recurso=RECURSO_CADASTRO):
+    """Estado atual da fila — usado no endpoint de status/debug."""
     with _get_engine().begin() as conn:
-        _expirar_travadas(conn, RECURSO_CADASTRO)
+        _expirar_travadas(conn, recurso)
         em_exec = conn.execute(text("""
             SELECT 1 FROM fila_execucao
             WHERE recurso = :r AND status = 'executando' LIMIT 1
-        """), {"r": RECURSO_CADASTRO}).first() is not None
+        """), {"r": recurso}).first() is not None
         pendentes = conn.execute(text("""
             SELECT token, resume_url FROM fila_execucao
             WHERE recurso = :r AND status = 'aguardando'
             ORDER BY id
-        """), {"r": RECURSO_CADASTRO}).fetchall()
+        """), {"r": recurso}).fetchall()
 
     return {
         "em_execucao": em_exec,
@@ -327,13 +331,13 @@ def fila_cadastro_status_dict():
     }
 
 
-def fila_cadastro_reset():
-    """Destrava a fila de cadastro à força. Retorna a quantidade removida."""
+def fila_cadastro_reset(recurso=RECURSO_CADASTRO):
+    """Destrava a fila à força. Retorna a quantidade removida."""
     with _get_engine().begin() as conn:
-        conn.execute(text("SELECT pg_advisory_xact_lock(hashtext(:r))"), {"r": RECURSO_CADASTRO})
+        conn.execute(text("SELECT pg_advisory_xact_lock(hashtext(:r))"), {"r": recurso})
         qtd = conn.execute(text("""
             SELECT COUNT(*) FROM fila_execucao WHERE recurso = :r
-        """), {"r": RECURSO_CADASTRO}).scalar()
-        conn.execute(text("DELETE FROM fila_execucao WHERE recurso = :r"), {"r": RECURSO_CADASTRO})
-    logger.warning(f"[FILA] ⚠️ RESET forçado da fila de cadastro! {qtd} item(ns) removido(s).")
+        """), {"r": recurso}).scalar()
+        conn.execute(text("DELETE FROM fila_execucao WHERE recurso = :r"), {"r": recurso})
+    logger.warning(f"[FILA] ⚠️ RESET forçado da fila '{recurso}'! {qtd} item(ns) removido(s).")
     return qtd
