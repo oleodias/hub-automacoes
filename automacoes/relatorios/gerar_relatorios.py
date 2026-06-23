@@ -316,7 +316,12 @@ def executar(job):
                 if lab.get("pos"):
                     caminho_venda = aplicar_pos_processamento(caminho_venda, lab, pasta)
                 arquivos.append(os.path.basename(caminho_venda))
-            itens.append({"lab_id": e["lab_id"], "nome": lab["nome"], "arquivos": arquivos})
+            itens.append({
+                "id": e.get("id"),
+                "lab_id": e["lab_id"],
+                "nome": lab["nome"],
+                "arquivos": arquivos,
+            })
 
         status = "Sucesso com avisos" if avisos else "Sucesso"
         print("> ✅ Concluído.")
