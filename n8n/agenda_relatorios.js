@@ -47,6 +47,15 @@ const NOMES = {
 // ⚠️ PREENCHER (ex.: a colega que gera hoje + quem monitora).
 const RESPONSAVEIS_BCC = [];
 
+// ── MODO TESTE ──────────────────────────────────────────────────
+// Enquanto MODO_TESTE = true, NENHUM e-mail vai aos laboratórios:
+// todos os relatórios são redirecionados para EMAIL_TESTE (sem BCC).
+// Os avisos de conclusão/erro vão para EMAIL_AVISOS.
+// Para ir a PRODUÇÃO, basta trocar MODO_TESTE para false.
+const MODO_TESTE = true;
+const EMAIL_TESTE = "leonardodiascaumo@gmail.com";  // destino dos relatórios em teste
+const EMAIL_AVISOS = "ti6@ciamedrs.com.br";         // avisos de conclusão/erro
+
 // ── Quem dispara em cada tipo + qual a regra de período da VENDA ──
 // regra_periodo ∈ {mes_anterior, semana_anterior, mes_ate_ultima_sexta, mes_ate_ultima_quarta}
 const TIPO1_PRIMEIRO_DIA_UTIL = [   // todos os 12, venda = todo mês anterior
@@ -124,8 +133,10 @@ function novoEnvio(lab_id, tipo, regra, hoje) {
     periodo_ini: valido ? fmt(ini) : "",
     periodo_fim: valido ? fmt(fim) : "",
     valido,
-    emails: EMAILS[lab_id] || [],
-    bcc: RESPONSAVEIS_BCC,
+    emails: MODO_TESTE ? [EMAIL_TESTE] : (EMAILS[lab_id] || []),
+    bcc: MODO_TESTE ? [] : RESPONSAVEIS_BCC,
+    // referência: para quem iria em produção (útil p/ conferir no teste)
+    emails_producao: EMAILS[lab_id] || [],
   };
 }
 
@@ -152,6 +163,8 @@ const ignorados = candidatos.filter((e) => !e.valido).map((e) => ({ id: e.id, mo
 return [{
   json: {
     data_ref: fmt(hoje),
+    modo_teste: MODO_TESTE,
+    email_avisos: EMAIL_AVISOS,
     tem_disparo: envios.length > 0,
     tipos: { tipo1: ehTipo1, tipo2: ehTipo2, tipo3: ehTipo3 },
     qtd_envios: envios.length,

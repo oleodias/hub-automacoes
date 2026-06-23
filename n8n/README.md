@@ -3,6 +3,16 @@
 Orquestra o robô do Hub e envia os relatórios por e-mail. Espelha o
 padrão do fluxo de **Cadastro de Clientes** (fila + Wait/resume + token).
 
+## ⚠️ MODO TESTE (ligado)
+No topo do `agenda_relatorios.js` está `MODO_TESTE = true`. Enquanto isso:
+- **Todos** os relatórios dos laboratórios vão para `leonardodiascaumo@gmail.com`
+  (nenhum lab real recebe nada) — campo `to` já sai redirecionado.
+- **Avisos** de conclusão/erro vão para `ti6@ciamedrs.com.br`
+  (exposto na saída como `{{$('Agenda').first().json.email_avisos}}`).
+- A lista real de cada lab fica preservada em `emails_producao` (só para conferência).
+
+Para ir a **produção**: trocar `MODO_TESTE` para `false` (e preencher `RESPONSAVEIS_BCC`).
+
 ## Variáveis / credenciais a configurar no n8n
 - **Config Hub**: `hub_url` (ex.: `http://localhost:5000`) — como no cadastro.
 - **Header `X-Hub-Token`** em todas as chamadas ao Hub = `N8N_HUB_TOKEN` do `.env` do Hub.
@@ -25,7 +35,7 @@ padrão do fluxo de **Cadastro de Clientes** (fila + Wait/resume + token).
 | 10 | **Download** | HTTP Request | `GET {{hub}}/relatorios/download?exec={{$json.exec}}&arquivo={{$json.arquivo}}` · header token · **Response Format: File** (binário no campo `data`) |
 | 11 | **Juntar Binários** | Code | cola `juntar_binarios.js` (reagrupa por lab) |
 | 12 | **Enviar E-mail** | Send Email (SMTP) | To `{{$json.to}}` · BCC `{{$json.bcc}}` · Subject `{{$json.subject}}` · **Attachments** `{{ Object.keys($binary).join(',') }}` |
-| 13 | **Resumo** (opcional) | Send Email | aviso interno de conclusão/erros |
+| 13 | **Resumo** (avisos) | Send Email | To `{{$('Agenda').first().json.email_avisos}}` · Subject `Relatórios enviados — {{$('Agenda').first().json.data_ref}}` · corpo com qtd/labs/erros |
 
 ### Observações
 - **Ordem 4→5→6→7**: igual ao cadastro — o Hub coloca na fila, acorda o Wait
