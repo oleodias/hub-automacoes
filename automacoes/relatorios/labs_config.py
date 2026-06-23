@@ -2,8 +2,9 @@
 # labs_config.py — Mapa dos laboratórios e seletores do NL (APEX)
 # ──────────────────────────────────────────────────────────────
 # Fonte da verdade dos XPATHs/IDs: prompt "Prompt_de_Xpaths_para_o_Script".
-# As telas de relatório são apps Oracle APEX dentro do NL e NÃO estão em
-# iframe (confirmado), então os seletores são acessados direto.
+# As telas de relatório são apps Oracle APEX dentro do NL. O portal pode
+# renderizá-las em <iframe>; o robô entra no contexto certo sozinho via
+# _entrar_na_tela() (procura o marcador no topo e nos iframes).
 #
 # Estratégia de seleção do "modelo salvo" (saved report): sempre pelo
 # VALUE numérico (estável), nunca pelo número visível "9.", "10."… porque

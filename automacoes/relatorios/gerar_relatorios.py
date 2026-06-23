@@ -39,6 +39,7 @@ from datetime import datetime
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 
 # Login/navegador reaproveitados do robô de cadastro (não reescrevemos login).
 from automacoes.clientes.navegacao_erp import iniciar_navegador, fazer_login
@@ -131,8 +132,42 @@ def _selecionar_modelo(driver, item_id, value=None, label=None):
     return value
 
 
-def _abrir_favorito(driver, invoker_code):
-    """Abre a estrela de favoritos e clica no atalho pelo código invoker (estável)."""
+def _entrar_na_tela(driver, marker_id, timeout=TIMEOUT_PADRAO):
+    """Posiciona o Selenium no contexto onde o marcador da tela existe.
+
+    Portais que hospedam apps Oracle APEX costumam renderizar a tela dentro
+    de um <iframe> (e os diálogos modais do APEX TAMBÉM são iframes). O
+    Selenium só "enxerga" o que está no contexto atual, então aqui:
+      1) se abriu nova aba/janela, vai para a mais recente;
+      2) procura o marcador no documento principal;
+      3) se não achar, entra em cada <iframe> (1 nível) até encontrá-lo.
+    Deixa o driver JÁ posicionado no contexto certo e diz onde achou.
+    """
+    fim = time.time() + timeout
+    while time.time() < fim:
+        if len(driver.window_handles) > 1:                  # 1) nova janela/aba
+            driver.switch_to.window(driver.window_handles[-1])
+        driver.switch_to.default_content()                  # 2) documento principal
+        if driver.find_elements(By.ID, marker_id):
+            return "topo"
+        for fr in driver.find_elements(By.TAG_NAME, "iframe"):  # 3) iframes
+            driver.switch_to.default_content()
+            try:
+                driver.switch_to.frame(fr)
+            except Exception:  # noqa: BLE001
+                continue
+            if driver.find_elements(By.ID, marker_id):
+                return "iframe"
+        driver.switch_to.default_content()
+        time.sleep(0.5)
+    raise TimeoutException(
+        f"Marcador '{marker_id}' não encontrado no documento principal nem em iframes."
+    )
+
+
+def _abrir_favorito(driver, invoker_code, marker_id):
+    """Abre a estrela de favoritos, clica no atalho pelo código invoker
+    (estável) e entra no contexto (iframe/aba) onde a tela carregou."""
     wait = WebDriverWait(driver, TIMEOUT_PADRAO)
     driver.switch_to.default_content()
     estrela = wait.until(EC.element_to_be_clickable(
@@ -144,6 +179,8 @@ def _abrir_favorito(driver, invoker_code):
         (By.XPATH, f"//a[contains(@href, \"{invoker_code}\")]")))
     _js_click(driver, link)
     time.sleep(2.5)
+    onde = _entrar_na_tela(driver, marker_id)
+    print(f"> 🧭 Tela carregada (marcador em: {onde}).")
 
 
 def _esperar_apex_pronto(driver, timeout=TIMEOUT_PADRAO):
@@ -322,13 +359,13 @@ def executar(job):
                     setores.append(s)
         estoque_paths = {}
         if setores:
-            _abrir_favorito(driver, ESTOQUE["favorito_invoker"])
+            _abrir_favorito(driver, ESTOQUE["favorito_invoker"], ESTOQUE["item_marcador"])
             for setor in setores:
                 estoque_paths[setor] = gerar_analise_estoque(driver, setor, pasta)
 
         # ---- 2) DEMANDA FORNECEDOR (gera cada combo único 1x) ----
         combos = {}  # (modelo_id, operacao, ini, fim) -> caminho
-        _abrir_favorito(driver, DEMANDA["favorito_invoker"])
+        _abrir_favorito(driver, DEMANDA["favorito_invoker"], DEMANDA["item_marcador"])
         for e in envios:
             lab = LABS[e["lab_id"]]
             modelo_id = lab["modelo_venda"] or lab.get("modelo_label")
