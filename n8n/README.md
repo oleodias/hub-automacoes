@@ -3,6 +3,21 @@
 Orquestra o robô do Hub e envia os relatórios por e-mail. Espelha o
 padrão do fluxo de **Cadastro de Clientes** (fila + Wait/resume + token).
 
+## 🚀 Importar pronto (`fluxo_relatorios.json`)
+Há um workflow **importável** no diretório: `n8n/fluxo_relatorios.json`.
+No n8n: *Workflows → Import from File*. Depois ajuste **4 coisas**:
+1. **URL do Hub** — trocar `http://localhost:5000` nos 4 nós HTTP.
+2. **Token** — trocar `TROQUE_PELO_N8N_HUB_TOKEN` no header `X-Hub-Token` (= `N8N_HUB_TOKEN`).
+3. **Credencial SMTP** — religar os nós de e-mail à sua "SMTP account".
+4. **Remetente** — ajustar o `fromEmail` (hoje `robo@ciamedrs.com.br`).
+
+> O importável usa os **Code nodes já testados** (`preparar_envios` /
+> `explodir_arquivos` / `juntar_binarios`) para o encanamento de dados —
+> é o caminho **confiável**. A versão 100% nativa (Split Out + Merge),
+> mais granular, está descrita abaixo para você refatorar **no canvas**,
+> trocando um nó por vez e validando cada passo (mais seguro). Os dois
+> Code nodes de regra/binário (`Agenda`, `Juntar Binários`) permanecem.
+
 ## ⚠️ MODO TESTE (ligado)
 No topo do `agenda_relatorios.js` está `MODO_TESTE = true`. Enquanto isso:
 - **Todos** os relatórios dos laboratórios vão para `leonardodiascaumo@gmail.com`

@@ -1,0 +1,518 @@
+{
+  "name": "Relatórios aos Laboratórios",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 30 6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "Schedule 06:30",
+      "name": "Schedule 06:30",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        260,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ══════════════════════════════════════════════════════════════\n// agenda_relatorios.js — Code node do n8n (o \"cérebro\" da agenda)\n// ──────────────────────────────────────────────────────────────\n// Roda no início do workflow (depois do Schedule Trigger). Decide\n// QUAIS laboratórios disparam HOJE, com QUAL período de venda, e já\n// anexa os E-MAILS de cada um. A saída alimenta:\n//   1) POST {hub}/relatorios/iniciar  → { envios: [...] }\n//   2) o loop de e-mail (emailSend SMTP) por lab, usando o manifesto.\n//\n// Fonte da verdade: planilha \"ENVIO DE RELATÓRIOS - VENDAS/ESTOQUE\".\n//\n// ⚠️ DOIS PONTOS A CONFIRMAR (ver constantes abaixo):\n//   • REGRA_TIPO1: a planilha diz \"1º DIA ÚTIL\"; antes tínhamos falado\n//     \"todo dia 1º (mesmo fim de semana)\". Default aqui = 1º dia útil.\n//   • SEMANA_ANTERIOR: seg→dom (default) ou seg→sex? (Bayer/Roche)\n//\n// OBS.: o ESTOQUE não tem filtro de data — é a foto atual. A coluna\n// \"PERÍODO ESTOQUE\" da planilha só explica POR QUE se envia naquele dia\n// (rodar no 1º dia útil ≈ \"como o mês fechou\"). Por isso o robô não\n// recebe período de estoque, só o período de VENDA.\n// ══════════════════════════════════════════════════════════════\n\n// ── Config: e-mails por laboratório (lab_id casa com o Hub/LABS) ──\nconst EMAILS = {\n  bayer:        [\"operacoescomerciaisbhp@bayer.com\", \"elias.zanatta@bayer.com\", \"paula.yokomizo@bayer.com\"],\n  csl:          [\"csl@wfbconsultoria.com.br\", \"Rafael.Esteves@csl.com.au\"],\n  fresenius:    [\"jailton.silva@fresenius-kabi.com\"],\n  glaxo:        [\"alexandre.x.mitsuda@gsk.com\"],\n  organon:      [\"rodrigo.blas@organon.com\"],\n  roche:        [\"brasil.operacoescomerciais@roche.com\", \"joao.pessoa@roche.com\"],\n  sandoz_rs_sc: [\"marcelo.novelli@sandoz.com\", \"isaque.fedrigo@sandoz.com\"],\n  sandoz_sp:    [\"roger.damian@sandoz.com\"],\n  sankyo:       [\"marcio.honorati@daiichisankyo.com\", \"pedro.mota@daiichisankyo.com\", \"alexandre.jesus@daiichisankyo.com\"],\n  sun_geral:    [\"Gisele.Lemos@sunpharma.com\", \"Ana.ferreira@sunpharma.com\"],\n  sun_13082:    [\"Cecilia.Castro@sunpharma.com\", \"Edgar.Lopes@sunpharma.com\"],\n  united:       [\"leonardo.rossi@knighttx.com\"],\n};\n\nconst NOMES = {\n  bayer: \"Bayer\", csl: \"CSL\", fresenius: \"Fresenius\", glaxo: \"Glaxo\",\n  organon: \"Organon\", roche: \"Roche\", sandoz_rs_sc: \"Sandoz RS/SC\",\n  sandoz_sp: \"Sandoz SP\", sankyo: \"Sankyo\", sun_geral: \"Sun Geral\",\n  sun_13082: \"Sun Item 13082\", united: \"United\",\n};\n\n// Responsáveis internos que recebem CÓPIA OCULTA (BCC) de cada envio.\n// ⚠️ PREENCHER (ex.: a colega que gera hoje + quem monitora).\nconst RESPONSAVEIS_BCC = [];\n\n// ── MODO TESTE ──────────────────────────────────────────────────\n// Enquanto MODO_TESTE = true, NENHUM e-mail vai aos laboratórios:\n// todos os relatórios são redirecionados para EMAIL_TESTE (sem BCC).\n// Os avisos de conclusão/erro vão para EMAIL_AVISOS.\n// Para ir a PRODUÇÃO, basta trocar MODO_TESTE para false.\nconst MODO_TESTE = true;\nconst EMAIL_TESTE = \"leonardodiascaumo@gmail.com\";  // destino dos relatórios em teste\nconst EMAIL_AVISOS = \"ti6@ciamedrs.com.br\";         // avisos de conclusão/erro\n\n// ── Quem dispara em cada tipo + qual a regra de período da VENDA ──\n// regra_periodo ∈ {mes_anterior, semana_anterior, mes_ate_ultima_sexta, mes_ate_ultima_quarta}\nconst TIPO1_PRIMEIRO_DIA_UTIL = [   // todos os 12, venda = todo mês anterior\n  \"bayer\", \"csl\", \"fresenius\", \"glaxo\", \"organon\", \"roche\",\n  \"sandoz_rs_sc\", \"sandoz_sp\", \"sankyo\", \"sun_geral\", \"sun_13082\", \"united\",\n];\nconst TIPO2_SEGUNDA = {\n  bayer: \"semana_anterior\", roche: \"semana_anterior\",\n  csl: \"mes_ate_ultima_sexta\", fresenius: \"mes_ate_ultima_sexta\",\n  glaxo: \"mes_ate_ultima_sexta\", sun_geral: \"mes_ate_ultima_sexta\",\n};\nconst TIPO3_QUINTA = { sun_13082: \"mes_ate_ultima_quarta\" };\n\n// ── PARÂMETROS (decididos com o Leonardo) ──\nconst REGRA_TIPO1 = \"dia_1\";        // dispara sempre no dia 1º, mesmo fim de semana\nconst SEMANA_ANTERIOR = \"seg_sex\";  // semana anterior = segunda a sexta\n\n// ────────────────────────── helpers de data ──────────────────────────\nfunction fmt(d) {\n  const dd = String(d.getDate()).padStart(2, \"0\");\n  const mm = String(d.getMonth() + 1).padStart(2, \"0\");\n  return `${dd}/${mm}/${d.getFullYear()}`;\n}\nfunction addDias(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }\nfunction ehFimDeSemana(d) { const w = d.getDay(); return w === 0 || w === 6; }\n\nfunction primeiroDiaUtilDoMes(ref) {\n  let d = new Date(ref.getFullYear(), ref.getMonth(), 1);\n  while (ehFimDeSemana(d)) d = addDias(d, 1); // sem feriados, conforme combinado\n  return d;\n}\nfunction ultimoDiaSemanaAntes(ref, weekday) {\n  // weekday: 1=seg ... 5=sex, 3=qua. Retorna a ocorrência mais recente ANTES de ref.\n  let d = addDias(ref, -1);\n  while (d.getDay() !== weekday) d = addDias(d, -1);\n  return d;\n}\n\nfunction periodo(regra, hoje) {\n  if (regra === \"mes_anterior\") {\n    const ini = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);\n    const fim = new Date(hoje.getFullYear(), hoje.getMonth(), 0); // último dia do mês anterior\n    return [ini, fim];\n  }\n  if (regra === \"semana_anterior\") {\n    // segunda desta semana → volta 7 dias = segunda passada\n    const segDestaSemana = addDias(hoje, -((hoje.getDay() + 6) % 7));\n    const segAnterior = addDias(segDestaSemana, -7);\n    const fim = SEMANA_ANTERIOR === \"seg_sex\" ? addDias(segAnterior, 4) : addDias(segAnterior, 6);\n    return [segAnterior, fim];\n  }\n  if (regra === \"mes_ate_ultima_sexta\" || regra === \"mes_ate_ultima_quarta\") {\n    const weekday = regra === \"mes_ate_ultima_sexta\" ? 5 : 3; // 5=sexta, 3=quarta\n    const dia1 = new Date(hoje.getFullYear(), hoje.getMonth(), 1);\n    const fim = ultimoDiaSemanaAntes(hoje, weekday); // ocorrência mais recente antes de hoje\n    if (fim >= dia1) return [dia1, fim];             // caso normal: 1º do mês → última sexta/quarta\n    // Borda (1ª segunda/quinta do mês, sem essa data ainda no mês vigente):\n    // usa a semana que antecede hoje = última semana do mês passado (seg → sexta/quarta).\n    const segDestaSemana = addDias(hoje, -((hoje.getDay() + 6) % 7));\n    return [addDias(segDestaSemana, -7), fim];\n  }\n  return [null, null];\n}\n\nfunction novoEnvio(lab_id, tipo, regra, hoje) {\n  const [ini, fim] = periodo(regra, hoje);\n  // Blindagem: período inválido (ex.: 1ª segunda do mês, sem sexta ainda no mês vigente).\n  const valido = ini && fim && fim >= ini;\n  return {\n    id: `${lab_id}__T${tipo}`,            // chave p/ casar o manifesto do Hub com o e-mail\n    lab_id,\n    lab_nome: NOMES[lab_id],\n    tipo,\n    regra_periodo: regra,\n    periodo_ini: valido ? fmt(ini) : \"\",\n    periodo_fim: valido ? fmt(fim) : \"\",\n    valido,\n    emails: MODO_TESTE ? [EMAIL_TESTE] : (EMAILS[lab_id] || []),\n    bcc: MODO_TESTE ? [] : RESPONSAVEIS_BCC,\n    // referência: para quem iria em produção (útil p/ conferir no teste)\n    emails_producao: EMAILS[lab_id] || [],\n  };\n}\n\n// ─────────────────────────────── main ───────────────────────────────\n// Atenção ao fuso: assume o servidor do n8n em America/Sao_Paulo.\nconst hoje = new Date();\nconst w = hoje.getDay(); // 0=Dom..6=Sab\n\nconst ehTipo1 = REGRA_TIPO1 === \"dia_1\"\n  ? hoje.getDate() === 1\n  : fmt(hoje) === fmt(primeiroDiaUtilDoMes(hoje));\nconst ehTipo2 = w === 1; // segunda\nconst ehTipo3 = w === 4; // quinta\n\nconst candidatos = [];\nif (ehTipo1) for (const lab of TIPO1_PRIMEIRO_DIA_UTIL) candidatos.push(novoEnvio(lab, 1, \"mes_anterior\", hoje));\nif (ehTipo2) for (const [lab, regra] of Object.entries(TIPO2_SEGUNDA)) candidatos.push(novoEnvio(lab, 2, regra, hoje));\nif (ehTipo3) for (const [lab, regra] of Object.entries(TIPO3_QUINTA)) candidatos.push(novoEnvio(lab, 3, regra, hoje));\n\n// Só seguem os envios com período válido; os inválidos ficam reportados à parte.\nconst envios = candidatos.filter((e) => e.valido);\nconst ignorados = candidatos.filter((e) => !e.valido).map((e) => ({ id: e.id, motivo: \"periodo_invalido\" }));\n\nreturn [{\n  json: {\n    data_ref: fmt(hoje),\n    modo_teste: MODO_TESTE,\n    email_avisos: EMAIL_AVISOS,\n    tem_disparo: envios.length > 0,\n    tipos: { tipo1: ehTipo1, tipo2: ehTipo2, tipo3: ehTipo3 },\n    qtd_envios: envios.length,\n    envios,\n    ignorados,\n  },\n}];\n"
+      },
+      "id": "Agenda",
+      "name": "Agenda",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.tem_disparo }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "Tem disparo?",
+      "name": "Tem disparo?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        780,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "tipo",
+              "value": 1,
+              "type": "number"
+            },
+            {
+              "id": "a2",
+              "name": "envios",
+              "value": "={{ $json.envios }}",
+              "type": "array"
+            },
+            {
+              "id": "a3",
+              "name": "email_avisos",
+              "value": "={{ $json.email_avisos }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "Payload do robô",
+      "name": "Payload do robô",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1040,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5000/relatorios/fila/entrar",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"resume_url\": $execution.resumeUrl } }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Hub-Token",
+              "value": "TROQUE_PELO_N8N_HUB_TOKEN"
+            }
+          ]
+        }
+      },
+      "id": "Fila Entrar",
+      "name": "Fila Entrar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1300,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "options": {}
+      },
+      "id": "Vez na fila",
+      "name": "Vez na fila",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5000/relatorios/iniciar",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"tipo\": $(\"Payload do robô\").item.json.tipo, \"envios\": $(\"Payload do robô\").item.json.envios } }}",
+        "options": {
+          "timeout": 600000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Hub-Token",
+              "value": "TROQUE_PELO_N8N_HUB_TOKEN"
+            }
+          ]
+        }
+      },
+      "id": "Iniciar Robo",
+      "name": "Iniciar Robo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1820,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5000/relatorios/fila/liberar_proximo",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Hub-Token",
+              "value": "TROQUE_PELO_N8N_HUB_TOKEN"
+            }
+          ]
+        }
+      },
+      "id": "Fila Liberar",
+      "name": "Fila Liberar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2080,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $(\"Iniciar Robo\").item.json.status }}",
+              "rightValue": "sucesso",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      },
+      "id": "Robô OK?",
+      "name": "Robô OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ══════════════════════════════════════════════════════════════\n// preparar_envios.js — Code node do n8n (pós /relatorios/iniciar)\n// ──────────────────────────────────────────────────────────────\n// Junta o MANIFESTO do robô (itens: id, lab_id, arquivos) com os\n// ENVIOS da agenda (emails, período) pelo campo \"id\". Produz UM item\n// por laboratório, pronto para o loop de download + emailSend.\n//\n// Requisitos de nomes dos nós (ajuste se os seus tiverem outro nome):\n//   • \"Agenda\"      → Code node agenda_relatorios.js\n//   • \"Iniciar Robo\"→ HTTP Request que chamou POST /relatorios/iniciar\n//\n// Saída (1 item por lab):\n//   { id, lab_id, lab_nome, to, bcc, subject, exec, arquivos: [...] }\n//   → o exec + cada \"arquivo\" alimentam GET /relatorios/download\n// ══════════════════════════════════════════════════════════════\n\nconst agenda = $('Agenda').first().json;\nconst resp = $('Iniciar Robo').first().json || {};\nconst manifesto = resp.resultado || {};\nconst itens = manifesto.itens || [];\nconst exec = manifesto.exec || '';\n\n// Indexa os envios da agenda por id (para pegar emails/período de cada lab).\nconst porId = {};\nfor (const e of (agenda.envios || [])) porId[e.id] = e;\n\nconst saida = [];\nfor (const it of itens) {\n  const env = porId[it.id] || {};\n  const periodo = env.periodo_ini\n    ? `${env.periodo_ini} a ${env.periodo_fim}`\n    : 'estoque atual';\n  saida.push({\n    json: {\n      id: it.id,\n      lab_id: it.lab_id,\n      lab_nome: it.nome || env.lab_nome || it.lab_id,\n      to: (env.emails || []).join('; '),\n      bcc: (env.bcc || []).join('; '),\n      subject: `Relatório Vendas/Estoque — ${it.nome || env.lab_nome || it.lab_id} (${periodo})`,\n      exec,\n      arquivos: it.arquivos || [],\n    },\n  });\n}\n\nreturn saida;\n"
+      },
+      "id": "Preparar Envios",
+      "name": "Preparar Envios",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2600,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ══════════════════════════════════════════════════════════════\n// explodir_arquivos.js — Code node do n8n (antes do Download)\n// ──────────────────────────────────────────────────────────────\n// Recebe 1 item por laboratório (de \"Preparar Envios\") e emite 1 item\n// por ARQUIVO, carregando os metadados do e-mail. Cada item alimenta o\n// HTTP \"Download\": GET /relatorios/download?exec=<exec>&arquivo=<arquivo>\n// ══════════════════════════════════════════════════════════════\n\nconst saida = [];\nfor (const it of $input.all()) {\n  const j = it.json;\n  for (let idx = 0; idx < (j.arquivos || []).length; idx++) {\n    saida.push({\n      json: {\n        lab_id: j.lab_id,\n        lab_nome: j.lab_nome,\n        id: j.id,\n        to: j.to,\n        bcc: j.bcc,\n        subject: j.subject,\n        exec: j.exec,\n        arquivo: j.arquivos[idx],\n        idx,\n      },\n    });\n  }\n}\nreturn saida;\n"
+      },
+      "id": "Arquivos do lab",
+      "name": "Arquivos do lab",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2860,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://localhost:5000/relatorios/download",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "exec",
+              "value": "={{ $json.exec }}"
+            },
+            {
+              "name": "arquivo",
+              "value": "={{ $json.arquivo }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Hub-Token",
+              "value": "TROQUE_PELO_N8N_HUB_TOKEN"
+            }
+          ]
+        }
+      },
+      "id": "Download",
+      "name": "Download",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3120,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ══════════════════════════════════════════════════════════════\n// juntar_binarios.js — Code node do n8n (depois do Download)\n// ──────────────────────────────────────────────────────────────\n// Reagrupa os arquivos baixados por laboratório: junta todos os\n// binários de um mesmo lab num ÚNICO item, para o emailSend mandar\n// um e-mail por lab com TODOS os anexos.\n//\n// Pareia cada download (na ordem) com o item correspondente do nó\n// \"Arquivos do lab\" (Split Out) — n8n preserva ordem e contagem. Assim os\n// metadados (to/bcc/subject) não dependem do HTTP repassar o json.\n// (Se você usar o atalho com o Code \"Explodir Arquivos\", troque o nome abaixo.)\n//\n// No emailSend, configure o campo \"Attachments\" com a expressão:\n//   {{ Object.keys($binary).join(',') }}\n// para anexar dinamicamente todos os binários do item.\n// ══════════════════════════════════════════════════════════════\n\nconst downloads = $input.all();\nconst explodidos = $('Arquivos do lab').all();\n\nconst grupos = {};\nfor (let i = 0; i < downloads.length; i++) {\n  const meta = explodidos[i].json;\n  const labId = meta.lab_id;\n\n  if (!grupos[labId]) {\n    grupos[labId] = {\n      json: {\n        lab_id: labId,\n        lab_nome: meta.lab_nome,\n        to: meta.to,\n        bcc: meta.bcc,\n        subject: meta.subject,\n        arquivos: [],\n      },\n      binary: {},\n    };\n  }\n\n  const g = grupos[labId];\n  const bin = downloads[i].binary || {};\n  for (const k of Object.keys(bin)) {\n    const nome = `anexo_${Object.keys(g.binary).length}`;\n    g.binary[nome] = bin[k];\n    g.json.arquivos.push(meta.arquivo);\n  }\n}\n\nreturn Object.values(grupos);\n"
+      },
+      "id": "Juntar Binários",
+      "name": "Juntar Binários",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3380,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "robo@ciamedrs.com.br",
+        "toEmail": "={{ $json.to }}",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "text",
+        "text": "=Segue em anexo o relatório de {{ $json.lab_nome }}.\\n\\n(Envio automático — Hub de Automações)",
+        "options": {
+          "bccEmail": "={{ $json.bcc }}",
+          "attachments": "={{ Object.keys($binary).join(',') }}",
+          "appendAttribution": false
+        }
+      },
+      "id": "Enviar ao lab",
+      "name": "Enviar ao lab",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        3640,
+        220
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "SMTP_CRED_ID",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "robo@ciamedrs.com.br",
+        "toEmail": "={{ $(\"Agenda\").first().json.email_avisos }}",
+        "subject": "=⚠️ Robô de relatórios falhou — {{ $(\"Agenda\").first().json.data_ref }}",
+        "emailFormat": "text",
+        "text": "={{ JSON.stringify($(\"Iniciar Robo\").item.json.resultado || $(\"Iniciar Robo\").item.json, null, 2) }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "Avisos (erro)",
+      "name": "Avisos (erro)",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        2600,
+        440
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "SMTP_CRED_ID",
+          "name": "SMTP account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule 06:30": {
+      "main": [
+        [
+          {
+            "node": "Agenda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agenda": {
+      "main": [
+        [
+          {
+            "node": "Tem disparo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem disparo?": {
+      "main": [
+        [
+          {
+            "node": "Payload do robô",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload do robô": {
+      "main": [
+        [
+          {
+            "node": "Fila Entrar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fila Entrar": {
+      "main": [
+        [
+          {
+            "node": "Vez na fila",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vez na fila": {
+      "main": [
+        [
+          {
+            "node": "Iniciar Robo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Iniciar Robo": {
+      "main": [
+        [
+          {
+            "node": "Fila Liberar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fila Liberar": {
+      "main": [
+        [
+          {
+            "node": "Robô OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Robô OK?": {
+      "main": [
+        [
+          {
+            "node": "Preparar Envios",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Avisos (erro)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Envios": {
+      "main": [
+        [
+          {
+            "node": "Arquivos do lab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Arquivos do lab": {
+      "main": [
+        [
+          {
+            "node": "Download",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download": {
+      "main": [
+        [
+          {
+            "node": "Juntar Binários",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Juntar Binários": {
+      "main": [
+        [
+          {
+            "node": "Enviar ao lab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
