@@ -337,12 +337,32 @@ def executar(job):
 
 
 def main():
-    """Execução standalone p/ teste: python -m automacoes.relatorios.gerar_relatorios '<job_json>'."""
+    """Execução standalone p/ teste.
+
+    Aceita o job de 3 formas (a 1ª que existir):
+      • caminho de um arquivo .json:  python -m ...gerar_relatorios job.json
+      • JSON inline:                  python -m ...gerar_relatorios '{"envios":[...]}'
+      • via stdin:                    Get-Content job.json | python -m ...gerar_relatorios
+
+    Dica PowerShell: prefira o ARQUIVO. O PowerShell remove as aspas duplas
+    de JSON inline, o que quebra o parse ("Expecting property name ...").
+    """
     sys.stdout.reconfigure(encoding="utf-8")
     try:
-        job = json.loads(sys.argv[1]) if len(sys.argv) > 1 else {}
+        if len(sys.argv) > 1:
+            arg = sys.argv[1]
+            if os.path.isfile(arg):                       # caminho de arquivo .json
+                with open(arg, "r", encoding="utf-8") as f:
+                    job = json.load(f)
+            else:                                          # JSON inline
+                job = json.loads(arg)
+        elif not sys.stdin.isatty():                       # JSON via stdin (pipe)
+            job = json.load(sys.stdin)
+        else:
+            job = {}
     except Exception as e:  # noqa: BLE001
         print(f"> ❌ Job inválido: {e}")
+        print("   Dica (PowerShell): use um arquivo .json em vez de JSON inline.")
         print("[FIM_DO_PROCESSO]")
         return
     resultado = executar(job)
