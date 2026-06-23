@@ -33,6 +33,7 @@ import sys
 import json
 import time
 import shutil
+import traceback
 from datetime import datetime
 
 from selenium.webdriver.common.by import By
@@ -74,6 +75,14 @@ def _set_valor(driver, item_id, valor):
         var id = arguments[0], val = arguments[1];
         var el = document.getElementById(id);
         if (!el) { return false; }
+        // Ativa o widget como um usuário (foco + mouse) — o APEX só anexa
+        // alguns listeners no 1º foco; sem isso o change "não pega". Foi o
+        // que destravou no teste manual. Tudo via DOM = headless-safe (não
+        // abre o dropdown nativo do SO).
+        try { el.focus(); } catch (e) {}
+        ['mousedown', 'mouseup', 'click'].forEach(function (t) {
+            el.dispatchEvent(new MouseEvent(t, {bubbles: true}));
+        });
         if (window.apex && apex.item) {            // caminho oficial do APEX
             try { apex.item(id).setValue(val); } catch (e) {}
         }
@@ -83,6 +92,7 @@ def _set_valor(driver, item_id, valor):
         if (window.jQuery) {                       // APEX escuta via jQuery
             try { jQuery(el).trigger('change'); } catch (e) {}
         }
+        try { el.blur(); } catch (e) {}
         return el.value === String(val);
         """,
         item_id, valor,
@@ -355,8 +365,12 @@ def executar(job):
                 "itens": itens, "avisos": avisos}
 
     except Exception as e:  # noqa: BLE001
-        print(f"> ❌ Erro durante a geração: {e}")
-        return {"status": "Erro", "msg": str(e), "pasta": pasta, "itens": [], "avisos": avisos}
+        tipo = type(e).__name__
+        detalhe = (str(e) or "").strip().splitlines()[0] if str(e).strip() else "(sem mensagem)"
+        print(f"> ❌ Erro durante a geração [{tipo}]: {detalhe}")
+        traceback.print_exc()  # mostra a LINHA do robô que estourou
+        return {"status": "Erro", "msg": f"{tipo}: {detalhe}", "pasta": pasta,
+                "itens": [], "avisos": avisos}
     finally:
         time.sleep(2)
         driver.quit()
