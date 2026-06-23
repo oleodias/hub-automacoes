@@ -20,7 +20,8 @@ ESTOQUE = {
     "modelo_value": "153738614031239522",          # "1. ESTOQUE PARA MAPA" (fixo p/ todos)
     "btn_consultar": "B117091108340763197",
     "actions_button": "R117088519510763187_actions_button",
-    "download_menu_item": "R117088519510763187_actions_menu_14i",
+    "actions_menu": "R117088519510763187_actions_menu",   # container do dropdown
+    "download_menu_item": "R117088519510763187_actions_menu_14i",  # fallback (id muda)
     "download_csv": "R117088519510763187_download_CSV",
     "item_marcador": "P366_FILTRO",                # presença = tela carregou
 }
@@ -34,7 +35,8 @@ DEMANDA = {
     "saved_reports": "R40762810755068572_saved_reports",
     "btn_consultar": "B40766510306068601",
     "actions_button": "R40762810755068572_actions_button",
-    "download_menu_item": "R40762810755068572_actions_menu_14i",
+    "actions_menu": "R40762810755068572_actions_menu",   # container do dropdown
+    "download_menu_item": "R40762810755068572_actions_menu_14i",  # fallback (id muda)
     "download_csv": "R40762810755068572_download_CSV",
     "item_marcador": "P117_VALIDADE_INI",          # presença = tela carregou
 }

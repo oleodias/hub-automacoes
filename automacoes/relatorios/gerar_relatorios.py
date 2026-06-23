@@ -197,6 +197,39 @@ def _esperar_apex_pronto(driver, timeout=TIMEOUT_PADRAO):
         time.sleep(0.5)
 
 
+def _clicar_real(driver, el):
+    """Clique robusto p/ widgets APEX (a-Menu, diálogos): dispara a sequência
+    de eventos de mouse via DOM. Um .click() simples às vezes não aciona o
+    handler do menu/itens do Interactive Report."""
+    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", el)
+    driver.execute_script(
+        "var el = arguments[0];"
+        "['mouseover','mousedown','mouseup','click'].forEach(function (t) {"
+        "  el.dispatchEvent(new MouseEvent(t, {bubbles: true, cancelable: true, view: window}));"
+        "});",
+        el,
+    )
+
+
+def _clicar_item_menu(driver, menu_el, texto, id_fallback=None):
+    """Clica num item do menu Ações pelo TEXTO visível (o id numérico do APEX,
+    ex.: '..._menu_14i', muda quando o menu é reconstruído). Cai para o id
+    informado se o texto não bater."""
+    alvo = None
+    for botao in menu_el.find_elements(By.CSS_SELECTOR, "button.a-Menu-label"):
+        try:
+            if botao.text.strip().lower() == texto.lower():
+                alvo = botao
+                break
+        except Exception:  # noqa: BLE001
+            continue
+    if alvo is None and id_fallback:
+        alvo = driver.find_element(By.ID, id_fallback)
+    if alvo is None:
+        raise TimeoutException(f"Item '{texto}' não encontrado no menu de Ações.")
+    _clicar_real(driver, alvo)
+
+
 def _baixar_csv(driver, cfg, pasta, destino_basename):
     """Abre Ações → Download → CSV, espera baixar e converte para .xlsx.
 
@@ -205,17 +238,19 @@ def _baixar_csv(driver, cfg, pasta, destino_basename):
     wait = WebDriverWait(driver, TIMEOUT_PADRAO)
     antes = set(os.listdir(pasta))
 
-    # Ações
+    # 1) Abre o menu Ações e espera ele REALMENTE aparecer (display: block).
     botao_acoes = wait.until(EC.presence_of_element_located((By.ID, cfg["actions_button"])))
     _js_click(driver, botao_acoes)
-    time.sleep(0.8)
-    # Download (item do menu)
-    item_download = wait.until(EC.presence_of_element_located((By.ID, cfg["download_menu_item"])))
-    _js_click(driver, item_download)
-    time.sleep(0.8)
-    # CSV (dentro do diálogo)
-    link_csv = wait.until(EC.presence_of_element_located((By.ID, cfg["download_csv"])))
-    _js_click(driver, link_csv)
+    menu = wait.until(EC.visibility_of_element_located((By.ID, cfg["actions_menu"])))
+    time.sleep(0.3)
+
+    # 2) Download — pelo texto (id numérico muda), com sequência de mouse.
+    _clicar_item_menu(driver, menu, "Download", cfg.get("download_menu_item"))
+    time.sleep(0.6)
+
+    # 3) Formato CSV no diálogo de download.
+    link_csv = wait.until(EC.visibility_of_element_located((By.ID, cfg["download_csv"])))
+    _clicar_real(driver, link_csv)
 
     caminho_csv = _esperar_download(pasta, antes)
     destino_xlsx = os.path.join(pasta, destino_basename + ".xlsx")
