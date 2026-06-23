@@ -5,9 +5,10 @@
 // binários de um mesmo lab num ÚNICO item, para o emailSend mandar
 // um e-mail por lab com TODOS os anexos.
 //
-// Pareia cada download (na ordem) com o item correspondente de
-// "Explodir Arquivos" (n8n preserva a ordem e a contagem). Assim os
+// Pareia cada download (na ordem) com o item correspondente do nó
+// "Arquivos do lab" (Split Out) — n8n preserva ordem e contagem. Assim os
 // metadados (to/bcc/subject) não dependem do HTTP repassar o json.
+// (Se você usar o atalho com o Code "Explodir Arquivos", troque o nome abaixo.)
 //
 // No emailSend, configure o campo "Attachments" com a expressão:
 //   {{ Object.keys($binary).join(',') }}
@@ -15,7 +16,7 @@
 // ══════════════════════════════════════════════════════════════
 
 const downloads = $input.all();
-const explodidos = $('Explodir Arquivos').all();
+const explodidos = $('Arquivos do lab').all();
 
 const grupos = {};
 for (let i = 0; i < downloads.length; i++) {

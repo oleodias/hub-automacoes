@@ -19,35 +19,79 @@ Para ir a **produção**: trocar `MODO_TESTE` para `false` (e preencher `RESPONS
 - **Credencial SMTP** (a mesma "SMTP account" do cadastro).
 - **BCC** dos responsáveis: definido em `RESPONSAVEIS_BCC` no Code "Agenda".
 
+## Filosofia: nós separados e visíveis
+Cada etapa é um **nó nativo próprio** (Set, IF, Split Out, Merge, Aggregate…),
+para a manutenção ser feita olhando o canvas, sem abrir código. Sobram só
+**dois** Code nodes — de propósito, porque são os únicos pontos onde código é
+mais claro que 10 nós nativos encadeados:
+- **`Agenda (regras)`** → o "livro de regras" de datas/períodos. Mexer nas
+  regras = editar **um** lugar documentado.
+- **`Juntar binários`** → manipulação de binários (anexos), que os nós nativos
+  fazem de forma frágil. (Há alternativa nativa com **Aggregate** — ver nota.)
+
 ## Cadeia de nós
 
-| # | Nó | Tipo | Config principal |
-|---|----|------|------------------|
+### Bloco 1 — Decisão
+| # | Nó | Tipo | Config |
+|---|----|------|--------|
 | 1 | **Schedule** | Schedule Trigger | diário ~06:30 (America/Sao_Paulo) |
-| 2 | **Agenda** | Code | cola `agenda_relatorios.js` |
-| 3 | **IF tem_disparo** | IF | `{{$json.tem_disparo}}` é `true` |
-| 4 | **Fila Entrar** | HTTP Request | `POST {{hub}}/relatorios/fila/entrar` · JSON `{"resume_url":"{{$execution.resumeUrl}}"}` · header token |
-| 5 | **Wait Robô** | Wait | resume: **On Webhook Call** |
-| 6 | **Iniciar Robo** | HTTP Request | `POST {{hub}}/relatorios/iniciar` · JSON `{"tipo":"{{$('Agenda').first().json.tipos}}","envios":{{ JSON.stringify($('Agenda').first().json.envios) }}}` · **timeout ~600000 ms** · header token |
-| 7 | **Fila Liberar** | HTTP Request | `POST {{hub}}/relatorios/fila/liberar_proximo` · header token |
-| 8 | **Preparar Envios** | Code | cola `preparar_envios.js` (1 item por lab) |
-| 9 | **Explodir Arquivos** | Code | cola `explodir_arquivos.js` (1 item por arquivo) |
-| 10 | **Download** | HTTP Request | `GET {{hub}}/relatorios/download?exec={{$json.exec}}&arquivo={{$json.arquivo}}` · header token · **Response Format: File** (binário no campo `data`) |
-| 11 | **Juntar Binários** | Code | cola `juntar_binarios.js` (reagrupa por lab) |
-| 12 | **Enviar E-mail** | Send Email (SMTP) | To `{{$json.to}}` · BCC `{{$json.bcc}}` · Subject `{{$json.subject}}` · **Attachments** `{{ Object.keys($binary).join(',') }}` |
-| 13 | **Resumo** (avisos) | Send Email | To `{{$('Agenda').first().json.email_avisos}}` · Subject `Relatórios enviados — {{$('Agenda').first().json.data_ref}}` · corpo com qtd/labs/erros |
+| 2 | **Agenda (regras)** | Code | cola `agenda_relatorios.js` → 1 item com `envios[]` |
+| 3 | **Tem disparo?** | IF | `{{$json.tem_disparo}}` é `true` (false → encerra) |
+
+### Bloco 2 — Rodar o robô (fila + Wait, igual ao cadastro)
+| # | Nó | Tipo | Config |
+|---|----|------|--------|
+| 4 | **Payload do robô** | Set/Edit Fields | `tipo` = `{{$json.tipos}}` · `envios` = `{{$json.envios}}` |
+| 5 | **Fila: Entrar** | HTTP Request | `POST {{hub}}/relatorios/fila/entrar` · body `{"resume_url":"{{$execution.resumeUrl}}"}` · header token |
+| 6 | **Vez na fila** | Wait | resume: **On Webhook Call** |
+| 7 | **Robô: Iniciar** | HTTP Request | `POST {{hub}}/relatorios/iniciar` · body `{"tipo":"{{$('Payload do robô').first().json.tipo}}","envios":{{ JSON.stringify($('Payload do robô').first().json.envios) }}}` · **timeout ~600000 ms** · header token |
+| 8 | **Fila: Liberar** | HTTP Request | `POST {{hub}}/relatorios/fila/liberar_proximo` · header token |
+| 9 | **Robô OK?** | IF | `{{$('Robô: Iniciar').first().json.status}}` == `sucesso` (false → Bloco 5 avisos) |
+
+### Bloco 3 — Casar manifesto × e-mails (tudo nativo)
+| # | Nó | Tipo | Config |
+|---|----|------|--------|
+| 10 | **Itens do manifesto** | Split Out | campo `resultado.itens` → 1 item por lab |
+| 11 | **Envios da agenda** | Split Out | campo `envios` (de `Agenda (regras)`) → 1 item por lab |
+| 12 | **Casar por id** | Merge | modo **Combine → Combine by Matching Fields**, campo `id` (entrada 1 = nó 10, entrada 2 = nó 11) |
+| 13 | **Dados do e-mail** | Set/Edit Fields | `to`=`{{$json.emails.join('; ')}}` · `bcc`=`{{$json.bcc.join('; ')}}` · `subject`=`Relatório Vendas/Estoque — {{$json.lab_nome}} ({{$json.periodo_ini}} a {{$json.periodo_fim}})` · `exec`=`{{$('Robô: Iniciar').first().json.resultado.exec}}` · `arquivos`=`{{$json.arquivos}}` |
+
+### Bloco 4 — Baixar arquivos e enviar
+| # | Nó | Tipo | Config |
+|---|----|------|--------|
+| 14 | **Arquivos do lab** | Split Out | campo `arquivos` · **Include Other Fields = All** → 1 item por arquivo (mantém `to/bcc/subject/exec/lab_id`) |
+| 15 | **Download** | HTTP Request | `GET {{hub}}/relatorios/download?exec={{$json.exec}}&arquivo={{$json.arquivos}}` · header token · **Response Format: File** (binário em `data`) |
+| 16 | **Juntar binários** | Code | cola `juntar_binarios.js` (reagrupa por lab; aponta para o nó **`Arquivos do lab`**) |
+| 17 | **Enviar ao lab** | Send Email (SMTP) | To `{{$json.to}}` · BCC `{{$json.bcc}}` · Subject `{{$json.subject}}` · **Attachments** `{{ Object.keys($binary).join(',') }}` |
+
+### Bloco 5 — Aviso interno
+| # | Nó | Tipo | Config |
+|---|----|------|--------|
+| 18 | **Avisos** | Send Email | To `{{$('Agenda (regras)').first().json.email_avisos}}` · Subject `Relatórios — {{$('Agenda (regras)').first().json.data_ref}}` · corpo com qtd/labs/erros |
 
 ### Observações
-- **Ordem 4→5→6→7**: igual ao cadastro — o Hub coloca na fila, acorda o Wait
-  quando é a vez (resume_url), o robô roda no `/iniciar` e devolve o manifesto,
-  e o `/liberar_proximo` libera a fila.
-- O `/iniciar` responde **sempre 200**; trate `status` (`sucesso`/`erro_robo`)
-  num **IF** após o nó 6 para decidir entre seguir ao envio ou avisar erro.
-- Os arquivos são **vários `.xlsx` soltos** por lab (Sun Geral = 4, demais = 2).
+- **Ordem 5→6→7→8**: igual ao cadastro — entra na fila, o Wait acorda quando é
+  a vez (resume_url), o robô roda no `/iniciar` e devolve o manifesto, e o
+  `/liberar_proximo` libera o próximo.
+- O `/iniciar` responde **sempre 200**; o nó 9 (**IF Robô OK?**) separa
+  `sucesso` de erro.
+- Arquivos = **vários `.xlsx` soltos** por lab (Sun Geral = 4, demais = 2).
 - Fuso: o Code "Agenda" assume o servidor do n8n em **America/Sao_Paulo**.
 
-## Arquivos deste diretório (cole no respectivo Code node)
-- `agenda_relatorios.js` — decide disparos do dia + períodos + e-mails.
-- `preparar_envios.js` — junta manifesto do robô × e-mails (por `id`).
-- `explodir_arquivos.js` — 1 item por arquivo (para o Download).
-- `juntar_binarios.js` — reagrupa os binários por lab (para o e-mail).
+#### Nota — alternativa 100% nativa ao "Juntar binários"
+Dá para trocar o nó 16 por um **Aggregate** (opção *Include Binaries*) precedido
+de um **Loop Over Items** (batch 1) por lab — assim cada lote agrega só os
+anexos daquele lab. Mantive o Code por ser mais robusto contra colisão de nomes
+de binário; se preferir zero código aqui, é só avisar que detalho o Aggregate.
+
+## Atalho opcional (1 Code node no lugar do Bloco 3)
+Se preferir condensar o Bloco 3 (nós 10–13) num único Code node, use
+`preparar_envios.js` (faz a junção por `id` e monta `to/bcc/subject` de uma vez).
+O `explodir_arquivos.js` é o equivalente em código do nó 14 (Split Out). Ficam
+no repo como alternativa — o caminho recomendado é o nativo acima.
+
+## Arquivos deste diretório
+- `agenda_relatorios.js` — **(nó 2)** regras: disparos do dia + períodos + e-mails.
+- `juntar_binarios.js` — **(nó 16)** reagrupa os binários por lab.
+- `preparar_envios.js` — *(opcional)* condensa o Bloco 3 num Code node.
+- `explodir_arquivos.js` — *(opcional)* equivalente em código do Split Out (nó 14).
