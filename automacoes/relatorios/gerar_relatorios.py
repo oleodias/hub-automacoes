@@ -57,15 +57,41 @@ def _js_click(driver, elemento):
 
 
 def _set_valor(driver, item_id, valor):
-    """Define o valor de um <select>/<input> e dispara 'change' (APEX escuta)."""
+    """Define o valor de um item APEX (<select>/<input>) de forma robusta.
+
+    Usa a API do próprio APEX — apex.item(id).setValue() — que inicializa o
+    widget e dispara as cascatas/refresh corretamente, sem depender de clique
+    nem do item já estar focado (o dispatchEvent "cru" só pega depois que o
+    widget foi ativado). Faz fallback para value+events e, em <select>, para
+    o Select nativo do Selenium.
+    """
     el = WebDriverWait(driver, TIMEOUT_PADRAO).until(
         EC.presence_of_element_located((By.ID, item_id))
     )
-    driver.execute_script(
-        "arguments[0].value = arguments[1];"
-        "arguments[0].dispatchEvent(new Event('change', {bubbles: true}));",
-        el, valor,
+    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", el)
+    ok = driver.execute_script(
+        """
+        var id = arguments[0], val = arguments[1];
+        var el = document.getElementById(id);
+        if (!el) { return false; }
+        if (window.apex && apex.item) {            // caminho oficial do APEX
+            try { apex.item(id).setValue(val); } catch (e) {}
+        }
+        el.value = val;                            // garante o value no DOM
+        el.dispatchEvent(new Event('input',  {bubbles: true}));
+        el.dispatchEvent(new Event('change', {bubbles: true}));
+        if (window.jQuery) {                       // APEX escuta via jQuery
+            try { jQuery(el).trigger('change'); } catch (e) {}
+        }
+        return el.value === String(val);
+        """,
+        item_id, valor,
     )
+    if not ok and el.tag_name.lower() == "select":  # rede de segurança
+        try:
+            Select(el).select_by_value(str(valor))
+        except Exception:  # noqa: BLE001
+            pass
     return el
 
 
