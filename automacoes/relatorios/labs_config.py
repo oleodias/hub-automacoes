@@ -50,11 +50,13 @@ OPERACAO_PUBLICO = "17"   # 17 - VENDA FATURAMENTO LIQUIDO PÚBLICO (só Sun Ger
 LABS = {
     "bayer":        {"nome": "Bayer",            "modelo_venda": "103052508672357463", "estoque": ["privado"], "operacoes": [OPERACAO_PRIVADO]},
     "csl":          {"nome": "CSL",              "modelo_venda": "103030134957924372", "estoque": ["privado"], "operacoes": [OPERACAO_PRIVADO]},
-    # ⚠️ PENDENTE DE CONFIRMAÇÃO: o usuário citou "10. MAPA DE VENDA FRESENIUS",
-    # mas no HTML do select a opção 10 é "MAPA DE VENDA GLAXO". A única opção de
-    # Fresenius existente é a "22. MAPA VENDA FRESENIUS" (value abaixo). Ajustar
-    # se a confirmação apontar outro value.
-    "fresenius":    {"nome": "Fresenius",        "modelo_venda": "94439473807980962", "estoque": ["privado"], "operacoes": [OPERACAO_PRIVADO], "pos": ["fresenius_desconto"]},
+    # Fresenius usa um relatório PRÓPRIO criado pelo time ("MAPA DE VENDA FRESENIUS").
+    # Como esse value não veio no HTML, selecionamos pelo NOME (modelo_label): o robô
+    # resolve o value certo em tempo de execução. Quando tiver o value, é só preenchê-lo
+    # em modelo_venda que a seleção passa a ser por value (mais estável).
+    # OBS.: como é um relatório dedicado ao Fresenius, assumi que o ajuste do desconto
+    # já está embutido no próprio relatório → sem pós-processamento aqui.
+    "fresenius":    {"nome": "Fresenius",        "modelo_venda": None, "modelo_label": "MAPA DE VENDA FRESENIUS", "estoque": ["privado"], "operacoes": [OPERACAO_PRIVADO]},
     "glaxo":        {"nome": "Glaxo",            "modelo_venda": "103036051703963152", "estoque": ["privado"], "operacoes": [OPERACAO_PRIVADO]},
     "organon":      {"nome": "Organon",          "modelo_venda": "103037225680969181", "estoque": ["privado"], "operacoes": [OPERACAO_PRIVADO]},
     "roche":        {"nome": "Roche",            "modelo_venda": "103031583388937239", "estoque": ["privado"], "operacoes": [OPERACAO_PRIVADO]},

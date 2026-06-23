@@ -36,7 +36,7 @@ import shutil
 from datetime import datetime
 
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 
 # Login/navegador reaproveitados do robô de cadastro (não reescrevemos login).
@@ -67,6 +67,32 @@ def _set_valor(driver, item_id, valor):
         el, valor,
     )
     return el
+
+
+def _selecionar_modelo(driver, item_id, value=None, label=None):
+    """Seleciona o 'saved report' por VALUE (preferido) ou por NOME (label).
+
+    Por label: procura a <option> cujo texto contenha o trecho informado e
+    resolve o value real em tempo de execução — útil quando o relatório foi
+    criado depois (não temos o value) ou quando o número visível muda.
+    """
+    el = WebDriverWait(driver, TIMEOUT_PADRAO).until(
+        EC.presence_of_element_located((By.ID, item_id))
+    )
+    if not value and label:
+        alvo = next(
+            (op for op in Select(el).options if label.lower() in op.text.lower()),
+            None,
+        )
+        if alvo is None:
+            raise ValueError(f"Modelo '{label}' não encontrado no select {item_id}.")
+        value = alvo.get_attribute("value")
+    driver.execute_script(
+        "arguments[0].value = arguments[1];"
+        "arguments[0].dispatchEvent(new Event('change', {bubbles: true}));",
+        el, value,
+    )
+    return value
 
 
 def _abrir_favorito(driver, invoker_code):
@@ -190,9 +216,10 @@ def gerar_analise_estoque(driver, setor, pasta):
     return _baixar_csv(driver, ESTOQUE, pasta, f"estoque_{setor}")
 
 
-def gerar_demanda(driver, modelo_value, operacao, data_ini, data_fim, pasta):
+def gerar_demanda(driver, modelo_value, modelo_label, operacao, data_ini, data_fim, pasta):
     """Tela B — gera a Demanda Fornecedor para (modelo, operação, período)."""
-    print(f"> 🧾 Demanda Fornecedor — modelo {modelo_value} | op {operacao} | {data_ini}→{data_fim}")
+    rotulo = modelo_value or modelo_label
+    print(f"> 🧾 Demanda Fornecedor — modelo {rotulo} | op {operacao} | {data_ini}→{data_fim}")
     wait = WebDriverWait(driver, TIMEOUT_PADRAO)
     wait.until(EC.presence_of_element_located((By.ID, DEMANDA["item_marcador"])))
 
@@ -200,13 +227,13 @@ def gerar_demanda(driver, modelo_value, operacao, data_ini, data_fim, pasta):
     _set_valor(driver, DEMANDA["data_fim"], data_fim)
     _set_valor(driver, DEMANDA["operacao"], operacao)
     time.sleep(0.4)
-    _set_valor(driver, DEMANDA["saved_reports"], modelo_value)
+    _selecionar_modelo(driver, DEMANDA["saved_reports"], value=modelo_value, label=modelo_label)
     time.sleep(0.8)
     _js_click(driver, driver.find_element(By.ID, DEMANDA["btn_consultar"]))
     _esperar_apex_pronto(driver)
     time.sleep(1.5)
 
-    nome = f"venda_{modelo_value}_{operacao}_{_slug(data_ini)}_{_slug(data_fim)}"
+    nome = f"venda_{_slug(rotulo)}_{operacao}_{_slug(data_ini)}_{_slug(data_fim)}"
     return _baixar_csv(driver, DEMANDA, pasta, nome)
 
 
@@ -264,15 +291,16 @@ def executar(job):
                 estoque_paths[setor] = gerar_analise_estoque(driver, setor, pasta)
 
         # ---- 2) DEMANDA FORNECEDOR (gera cada combo único 1x) ----
-        combos = {}  # (modelo, operacao, ini, fim) -> caminho
+        combos = {}  # (modelo_id, operacao, ini, fim) -> caminho
         _abrir_favorito(driver, DEMANDA["favorito_invoker"])
         for e in envios:
             lab = LABS[e["lab_id"]]
+            modelo_id = lab["modelo_venda"] or lab.get("modelo_label")
             for operacao in lab["operacoes"]:
-                chave = (lab["modelo_venda"], operacao, e["periodo_ini"], e["periodo_fim"])
+                chave = (modelo_id, operacao, e["periodo_ini"], e["periodo_fim"])
                 if chave not in combos:
                     combos[chave] = gerar_demanda(
-                        driver, lab["modelo_venda"], operacao,
+                        driver, lab["modelo_venda"], lab.get("modelo_label"), operacao,
                         e["periodo_ini"], e["periodo_fim"], pasta,
                     )
 
@@ -280,9 +308,10 @@ def executar(job):
         itens = []
         for e in envios:
             lab = LABS[e["lab_id"]]
+            modelo_id = lab["modelo_venda"] or lab.get("modelo_label")
             arquivos = [os.path.basename(estoque_paths[s]) for s in lab["estoque"]]
             for operacao in lab["operacoes"]:
-                chave = (lab["modelo_venda"], operacao, e["periodo_ini"], e["periodo_fim"])
+                chave = (modelo_id, operacao, e["periodo_ini"], e["periodo_fim"])
                 caminho_venda = combos[chave]
                 if lab.get("pos"):
                     caminho_venda = aplicar_pos_processamento(caminho_venda, lab, pasta)
