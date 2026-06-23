@@ -60,9 +60,9 @@ const TIPO2_SEGUNDA = {
 };
 const TIPO3_QUINTA = { sun_13082: "mes_ate_ultima_quarta" };
 
-// ── PARÂMETROS A CONFIRMAR ──
-const REGRA_TIPO1 = "primeiro_dia_util"; // ou "dia_1"
-const SEMANA_ANTERIOR = "seg_dom";        // ou "seg_sex"
+// ── PARÂMETROS (decididos com o Leonardo) ──
+const REGRA_TIPO1 = "dia_1";        // dispara sempre no dia 1º, mesmo fim de semana
+const SEMANA_ANTERIOR = "seg_sex";  // semana anterior = segunda a sexta
 
 // ────────────────────────── helpers de data ──────────────────────────
 function fmt(d) {
@@ -98,11 +98,15 @@ function periodo(regra, hoje) {
     const fim = SEMANA_ANTERIOR === "seg_sex" ? addDias(segAnterior, 4) : addDias(segAnterior, 6);
     return [segAnterior, fim];
   }
-  if (regra === "mes_ate_ultima_sexta") {
-    return [new Date(hoje.getFullYear(), hoje.getMonth(), 1), ultimoDiaSemanaAntes(hoje, 5)];
-  }
-  if (regra === "mes_ate_ultima_quarta") {
-    return [new Date(hoje.getFullYear(), hoje.getMonth(), 1), ultimoDiaSemanaAntes(hoje, 3)];
+  if (regra === "mes_ate_ultima_sexta" || regra === "mes_ate_ultima_quarta") {
+    const weekday = regra === "mes_ate_ultima_sexta" ? 5 : 3; // 5=sexta, 3=quarta
+    const dia1 = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const fim = ultimoDiaSemanaAntes(hoje, weekday); // ocorrência mais recente antes de hoje
+    if (fim >= dia1) return [dia1, fim];             // caso normal: 1º do mês → última sexta/quarta
+    // Borda (1ª segunda/quinta do mês, sem essa data ainda no mês vigente):
+    // usa a semana que antecede hoje = última semana do mês passado (seg → sexta/quarta).
+    const segDestaSemana = addDias(hoje, -((hoje.getDay() + 6) % 7));
+    return [addDias(segDestaSemana, -7), fim];
   }
   return [null, null];
 }
