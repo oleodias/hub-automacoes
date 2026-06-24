@@ -54,7 +54,8 @@ const RESPONSAVEIS_BCC = [];
 // Para ir a PRODUÇÃO, basta trocar MODO_TESTE para false.
 const MODO_TESTE = true;
 const EMAIL_TESTE = "leonardodiascaumo@gmail.com";  // destino dos relatórios em teste
-const EMAIL_AVISOS = "ti6@ciamedrs.com.br";         // avisos de conclusão/erro
+const EMAIL_AVISOS = "ti6@ciamedrs.com.br";         // avisos de conclusão/erro (robô)
+const EMAIL_COLEGA = "leonardodiascaumo@gmail.com"; // colega que confere os envios (aviso por lab)
 
 // ── FORÇAR TESTE ────────────────────────────────────────────────
 // Enquanto true, ignora as regras de data e emite 1 envio fixo (Bayer,
@@ -177,6 +178,7 @@ return [{
     modo_teste: MODO_TESTE,
     forcar_teste: FORCAR_TESTE,
     email_avisos: EMAIL_AVISOS,
+    email_colega: EMAIL_COLEGA,
     tem_disparo: envios.length > 0,
     tipos: { tipo1: ehTipo1, tipo2: ehTipo2, tipo3: ehTipo3 },
     qtd_envios: envios.length,
