@@ -85,7 +85,8 @@ mais claro que 10 nós nativos encadeados:
 | 15 | **Download** | HTTP Request | `GET {{hub}}/relatorios/download?exec={{$json.exec}}&arquivo={{$json.arquivos}}` · header token · **Response Format: File** (binário em `data`) |
 | 16 | **Juntar binários** | Code | cola `juntar_binarios.js` (reagrupa por lab; aponta para o nó **`Arquivos do lab`**) |
 | 17 | **Rotear por lab** | Switch | regra por `{{$json.lab_id}}` (uma saída por laboratório) → cada saída vai pro Gmail do lab |
-| 17a | **Gmail: Bayer / CSL / … / United** | **Gmail** (send), 1 por lab | To `{{$json.to}}` · BCC (options→bccList) `{{$json.bcc}}` · Subject `{{$json.subject}}` · **Attachments** (Attachment Binary→property) `{{ Object.keys($binary).join(',') }}` |
+| 17a | **Gmail: Bayer / CSL / … / United** | **Gmail** (send), 1 por lab | To `{{$json.to}}` · BCC (options→bccList) `{{$json.bcc}}` · Subject `{{$json.subject}}` · **Attachments** (Attachment Binary→property) `{{ Object.keys($binary).join(',') }}` · **On Error: Continue (using error output)** |
+| 17b | **Aviso: Bayer / … / United** | **Gmail** (send), 1 por lab | Avisa a colega (`leonardodiascaumo@gmail.com`) do resultado. Recebe as **duas saídas** (sucesso+erro) do Gmail do lab; Subject `[OK]/[FALHA] Relatório — <lab>` e corpo adaptam via `{{ $json.error ? … : … }}` |
 
 ### Bloco 5 — Aviso interno
 | # | Nó | Tipo | Config |

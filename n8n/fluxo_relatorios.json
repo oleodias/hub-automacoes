@@ -617,6 +617,34 @@
           "id": "GMAIL_CRED_ID",
           "name": "Gmail account"
         }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — Bayer",
+        "emailType": "text",
+        "message": "={{ $json.error ? ('❌ Erro ao enviar o relatório de Bayer: ' + ($json.error.message || JSON.stringify($json.error))) : '✅ Relatório de Bayer enviado com sucesso aos destinatários.' }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "Aviso: Bayer",
+      "name": "Aviso: Bayer",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        4140,
+        80
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_CRED_ID",
+          "name": "Gmail account"
+        }
       }
     },
     {
@@ -645,6 +673,34 @@
       "typeVersion": 2.1,
       "position": [
         3880,
+        175
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_CRED_ID",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — CSL",
+        "emailType": "text",
+        "message": "={{ $json.error ? ('❌ Erro ao enviar o relatório de CSL: ' + ($json.error.message || JSON.stringify($json.error))) : '✅ Relatório de CSL enviado com sucesso aos destinatários.' }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "Aviso: CSL",
+      "name": "Aviso: CSL",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        4140,
         175
       ],
       "credentials": {
@@ -687,6 +743,34 @@
           "id": "GMAIL_CRED_ID",
           "name": "Gmail account"
         }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — Fresenius",
+        "emailType": "text",
+        "message": "={{ $json.error ? ('❌ Erro ao enviar o relatório de Fresenius: ' + ($json.error.message || JSON.stringify($json.error))) : '✅ Relatório de Fresenius enviado com sucesso aos destinatários.' }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "Aviso: Fresenius",
+      "name": "Aviso: Fresenius",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        4140,
+        270
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_CRED_ID",
+          "name": "Gmail account"
+        }
       }
     },
     {
@@ -715,6 +799,34 @@
       "typeVersion": 2.1,
       "position": [
         3880,
+        365
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_CRED_ID",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — Glaxo",
+        "emailType": "text",
+        "message": "={{ $json.error ? ('❌ Erro ao enviar o relatório de Glaxo: ' + ($json.error.message || JSON.stringify($json.error))) : '✅ Relatório de Glaxo enviado com sucesso aos destinatários.' }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "Aviso: Glaxo",
+      "name": "Aviso: Glaxo",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        4140,
         365
       ],
       "credentials": {
@@ -757,6 +869,34 @@
           "id": "GMAIL_CRED_ID",
           "name": "Gmail account"
         }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — Organon",
+        "emailType": "text",
+        "message": "={{ $json.error ? ('❌ Erro ao enviar o relatório de Organon: ' + ($json.error.message || JSON.stringify($json.error))) : '✅ Relatório de Organon enviado com sucesso aos destinatários.' }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "Aviso: Organon",
+      "name": "Aviso: Organon",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        4140,
+        460
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_CRED_ID",
+          "name": "Gmail account"
+        }
       }
     },
     {
@@ -785,6 +925,34 @@
       "typeVersion": 2.1,
       "position": [
         3880,
+        555
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_CRED_ID",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — Roche",
+        "emailType": "text",
+        "message": "={{ $json.error ? ('❌ Erro ao enviar o relatório de Roche: ' + ($json.error.message || JSON.stringify($json.error))) : '✅ Relatório de Roche enviado com sucesso aos destinatários.' }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "Aviso: Roche",
+      "name": "Aviso: Roche",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        4140,
         555
       ],
       "credentials": {
@@ -827,6 +995,34 @@
           "id": "GMAIL_CRED_ID",
           "name": "Gmail account"
         }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — Sandoz RS-SC",
+        "emailType": "text",
+        "message": "={{ $json.error ? ('❌ Erro ao enviar o relatório de Sandoz RS-SC: ' + ($json.error.message || JSON.stringify($json.error))) : '✅ Relatório de Sandoz RS-SC enviado com sucesso aos destinatários.' }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "Aviso: Sandoz RS-SC",
+      "name": "Aviso: Sandoz RS-SC",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        4140,
+        650
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_CRED_ID",
+          "name": "Gmail account"
+        }
       }
     },
     {
@@ -855,6 +1051,34 @@
       "typeVersion": 2.1,
       "position": [
         3880,
+        745
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_CRED_ID",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — Sandoz SP",
+        "emailType": "text",
+        "message": "={{ $json.error ? ('❌ Erro ao enviar o relatório de Sandoz SP: ' + ($json.error.message || JSON.stringify($json.error))) : '✅ Relatório de Sandoz SP enviado com sucesso aos destinatários.' }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "Aviso: Sandoz SP",
+      "name": "Aviso: Sandoz SP",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        4140,
         745
       ],
       "credentials": {
@@ -897,6 +1121,34 @@
           "id": "GMAIL_CRED_ID",
           "name": "Gmail account"
         }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — Sankyo",
+        "emailType": "text",
+        "message": "={{ $json.error ? ('❌ Erro ao enviar o relatório de Sankyo: ' + ($json.error.message || JSON.stringify($json.error))) : '✅ Relatório de Sankyo enviado com sucesso aos destinatários.' }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "Aviso: Sankyo",
+      "name": "Aviso: Sankyo",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        4140,
+        840
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_CRED_ID",
+          "name": "Gmail account"
+        }
       }
     },
     {
@@ -925,6 +1177,34 @@
       "typeVersion": 2.1,
       "position": [
         3880,
+        935
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_CRED_ID",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — Sun Geral",
+        "emailType": "text",
+        "message": "={{ $json.error ? ('❌ Erro ao enviar o relatório de Sun Geral: ' + ($json.error.message || JSON.stringify($json.error))) : '✅ Relatório de Sun Geral enviado com sucesso aos destinatários.' }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "Aviso: Sun Geral",
+      "name": "Aviso: Sun Geral",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        4140,
         935
       ],
       "credentials": {
@@ -967,6 +1247,34 @@
           "id": "GMAIL_CRED_ID",
           "name": "Gmail account"
         }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — Sun 13082",
+        "emailType": "text",
+        "message": "={{ $json.error ? ('❌ Erro ao enviar o relatório de Sun 13082: ' + ($json.error.message || JSON.stringify($json.error))) : '✅ Relatório de Sun 13082 enviado com sucesso aos destinatários.' }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "Aviso: Sun 13082",
+      "name": "Aviso: Sun 13082",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        4140,
+        1030
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_CRED_ID",
+          "name": "Gmail account"
+        }
       }
     },
     {
@@ -995,6 +1303,34 @@
       "typeVersion": 2.1,
       "position": [
         3880,
+        1125
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_CRED_ID",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — United",
+        "emailType": "text",
+        "message": "={{ $json.error ? ('❌ Erro ao enviar o relatório de United: ' + ($json.error.message || JSON.stringify($json.error))) : '✅ Relatório de United enviado com sucesso aos destinatários.' }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "Aviso: United",
+      "name": "Aviso: United",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        4140,
         1125
       ],
       "credentials": {
@@ -1265,6 +1601,222 @@
         [
           {
             "node": "Gmail: United",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: Bayer": {
+      "main": [
+        [
+          {
+            "node": "Aviso: Bayer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aviso: Bayer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: CSL": {
+      "main": [
+        [
+          {
+            "node": "Aviso: CSL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aviso: CSL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: Fresenius": {
+      "main": [
+        [
+          {
+            "node": "Aviso: Fresenius",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aviso: Fresenius",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: Glaxo": {
+      "main": [
+        [
+          {
+            "node": "Aviso: Glaxo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aviso: Glaxo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: Organon": {
+      "main": [
+        [
+          {
+            "node": "Aviso: Organon",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aviso: Organon",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: Roche": {
+      "main": [
+        [
+          {
+            "node": "Aviso: Roche",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aviso: Roche",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: Sandoz RS-SC": {
+      "main": [
+        [
+          {
+            "node": "Aviso: Sandoz RS-SC",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aviso: Sandoz RS-SC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: Sandoz SP": {
+      "main": [
+        [
+          {
+            "node": "Aviso: Sandoz SP",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aviso: Sandoz SP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: Sankyo": {
+      "main": [
+        [
+          {
+            "node": "Aviso: Sankyo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aviso: Sankyo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: Sun Geral": {
+      "main": [
+        [
+          {
+            "node": "Aviso: Sun Geral",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aviso: Sun Geral",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: Sun 13082": {
+      "main": [
+        [
+          {
+            "node": "Aviso: Sun 13082",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aviso: Sun 13082",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: United": {
+      "main": [
+        [
+          {
+            "node": "Aviso: United",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aviso: United",
             "type": "main",
             "index": 0
           }
