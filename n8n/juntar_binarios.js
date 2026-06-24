@@ -24,24 +24,24 @@ function montarHtml(g) {
     .map((a) => `<li style="margin:2px 0;">${a}</li>`)
     .join("");
   return `<!doctype html>
-<html><body style="margin:0;padding:0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#333;">
+<html><body style="margin:0;padding:0;background:#f4f6f8;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#333;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:24px 0;">
     <tr><td align="center">
       <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e6e9ec;">
-        <tr><td align="center" style="background:#0a7d7d;padding:20px 24px;">
+        <tr><td align="center" style="background:#00B3B2;padding:20px 24px;">
           <img src="${LOGO_URL}" alt="Ciamed" height="48" style="display:block;border:0;">
         </td></tr>
         <tr><td style="padding:28px 24px 8px;">
-          <h2 style="margin:0 0 12px;font-size:18px;color:#0a7d7d;">Relatório de Vendas / Estoque</h2>
+          <h2 style="margin:0 0 12px;font-size:18px;color:#00B3B2;">Relatório de Vendas / Estoque</h2>
           <p style="margin:0 0 12px;font-size:14px;line-height:1.5;">Prezados(as),</p>
           <p style="margin:0 0 16px;font-size:14px;line-height:1.5;">
             Segue em anexo o relatório referente a <strong>${g.lab_nome}</strong>.
           </p>
-          <p style="margin:0 0 6px;font-size:13px;color:#666;">Arquivos anexados:</p>
+          <p style="margin:0 0 6px;font-size:13px;color:#6E6E6E;">Arquivos anexados:</p>
           <ul style="margin:0 0 16px;padding-left:20px;font-size:13px;color:#444;">${itens}</ul>
         </td></tr>
         <tr><td style="padding:16px 24px 24px;border-top:1px solid #eee;">
-          <p style="margin:0;font-size:12px;color:#999;line-height:1.5;">
+          <p style="margin:0;font-size:12px;color:#8A8A8A;line-height:1.5;">
             Mensagem automática do Hub de Automações — Ciamed.<br>
             Por favor, não responda a este e-mail.
           </p>
