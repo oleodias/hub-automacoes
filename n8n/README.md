@@ -73,12 +73,19 @@ mais claro que 10 nós nativos encadeados:
 | 13 | **Dados do e-mail** | Set/Edit Fields | `to`=`{{$json.emails.join('; ')}}` · `bcc`=`{{$json.bcc.join('; ')}}` · `subject`=`Relatório Vendas/Estoque — {{$json.lab_nome}} ({{$json.periodo_ini}} a {{$json.periodo_fim}})` · `exec`=`{{$('Robô: Iniciar').first().json.resultado.exec}}` · `arquivos`=`{{$json.arquivos}}` |
 
 ### Bloco 4 — Baixar arquivos e enviar
+> **Um Gmail por laboratório:** depois de juntar os anexos, um **Switch**
+> roteia por `lab_id` e cada laboratório tem o **seu próprio node Gmail**
+> (Bayer, CSL, …). Isso isola falhas (um lab não derruba os outros) e
+> permite personalizar o e-mail de cada lab individualmente. Só dispara o
+> Gmail do(s) lab(s) que vieram no dia.
+
 | # | Nó | Tipo | Config |
 |---|----|------|--------|
 | 14 | **Arquivos do lab** | Split Out | campo `arquivos` · **Include Other Fields = All** → 1 item por arquivo (mantém `to/bcc/subject/exec/lab_id`) |
 | 15 | **Download** | HTTP Request | `GET {{hub}}/relatorios/download?exec={{$json.exec}}&arquivo={{$json.arquivos}}` · header token · **Response Format: File** (binário em `data`) |
 | 16 | **Juntar binários** | Code | cola `juntar_binarios.js` (reagrupa por lab; aponta para o nó **`Arquivos do lab`**) |
-| 17 | **Enviar ao lab** | **Gmail** (send) | To `{{$json.to}}` · BCC (options→bccList) `{{$json.bcc}}` · Subject `{{$json.subject}}` · **Attachments** (options→Attachment Binary, property) `{{ Object.keys($binary).join(',') }}` |
+| 17 | **Rotear por lab** | Switch | regra por `{{$json.lab_id}}` (uma saída por laboratório) → cada saída vai pro Gmail do lab |
+| 17a | **Gmail: Bayer / CSL / … / United** | **Gmail** (send), 1 por lab | To `{{$json.to}}` · BCC (options→bccList) `{{$json.bcc}}` · Subject `{{$json.subject}}` · **Attachments** (Attachment Binary→property) `{{ Object.keys($binary).join(',') }}` |
 
 ### Bloco 5 — Aviso interno
 | # | Nó | Tipo | Config |
