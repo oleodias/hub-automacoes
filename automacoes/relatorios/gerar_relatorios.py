@@ -386,6 +386,15 @@ def _slug(texto):
     return re.sub(r"[^A-Za-z0-9]+", "", str(texto))
 
 
+def _slug_nome(texto):
+    """Slug legível p/ nome de arquivo: troca espaços por '_' e remove só os
+    caracteres proibidos em nome de arquivo. Ex.: 'MAPA VENDA ROCHE' →
+    'MAPA_VENDA_ROCHE'."""
+    s = re.sub(r'[\\/:*?"<>|.,;]+', " ", str(texto))
+    s = re.sub(r"\s+", "_", s.strip())
+    return s or "relatorio"
+
+
 # ─────────────────────── Geração de cada relatório ───────────────────────
 def gerar_analise_estoque(driver, setor, pasta):
     """Tela A — gera a Análise de Estoque para um setor (privado/publico)."""
@@ -397,11 +406,22 @@ def gerar_analise_estoque(driver, setor, pasta):
     _sleep(0.5)
     _set_valor(driver, ESTOQUE["saved_reports"], ESTOQUE["modelo_value"])
     _sleep(0.8)
+
+    # Captura o NOME do relatório salvo ativo (vira o nome do arquivo + setor,
+    # já que ambos os setores usam o mesmo modelo de estoque).
+    modelo_nome = None
+    try:
+        modelo_nome = Select(driver.find_element(By.ID, ESTOQUE["saved_reports"])).first_selected_option.text.strip()
+        print(f"> 🔖 Relatório salvo ativo agora: '{modelo_nome}'")
+    except Exception as e:  # noqa: BLE001
+        print(f"> ⚠️ Não consegui ler o relatório salvo ativo: {e}")
+
     _js_click(driver, driver.find_element(By.ID, ESTOQUE["btn_consultar"]))
     _esperar_apex_pronto(driver)
     _sleep(1.5)
 
-    return _baixar_csv(driver, ESTOQUE, pasta, f"estoque_{setor}")
+    base = _slug_nome(modelo_nome) if modelo_nome else "estoque"
+    return _baixar_csv(driver, ESTOQUE, pasta, f"{base}_{setor}")
 
 
 def gerar_demanda(driver, modelo_value, modelo_label, operacao, data_ini, data_fim, pasta):
@@ -424,10 +444,12 @@ def gerar_demanda(driver, modelo_value, modelo_label, operacao, data_ini, data_f
     _esperar_apex_pronto(driver)
     _sleep(1.0)
 
-    # Diagnóstico: confirma qual relatório salvo REALMENTE ficou ativo.
+    # Diagnóstico + captura o NOME do relatório salvo ativo (vira o nome do arquivo).
+    modelo_nome = None
     try:
         sel = Select(driver.find_element(By.ID, DEMANDA["saved_reports"]))
-        print(f"> 🔖 Relatório salvo ativo agora: '{sel.first_selected_option.text}'"
+        modelo_nome = sel.first_selected_option.text.strip()
+        print(f"> 🔖 Relatório salvo ativo agora: '{modelo_nome}'"
               f" (value={sel.first_selected_option.get_attribute('value')})")
     except Exception as e:  # noqa: BLE001
         print(f"> ⚠️ Não consegui ler o relatório salvo ativo: {e}")
@@ -437,7 +459,10 @@ def gerar_demanda(driver, modelo_value, modelo_label, operacao, data_ini, data_f
     _esperar_apex_pronto(driver)
     _sleep(1.5)
 
-    nome = f"venda_{_slug(rotulo)}_{operacao}_{_slug(data_ini)}_{_slug(data_fim)}"
+    # Nome do arquivo = NOME do relatório selecionado (+ operação e período
+    # para manter unicidade, já que a Sun usa o mesmo modelo em 11 e 17).
+    base = _slug_nome(modelo_nome) if modelo_nome else f"venda_{_slug(rotulo)}"
+    nome = f"{base}_{operacao}_{_slug(data_ini)}_{_slug(data_fim)}"
     return _baixar_csv(driver, DEMANDA, pasta, nome)
 
 
