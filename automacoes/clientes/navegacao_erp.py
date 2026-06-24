@@ -80,7 +80,7 @@ def fazer_login(driver):
                 campo_motivo.clear()
                 campo_motivo.send_keys("d")
                 botoes_finalizar[0].click()
-                time.sleep(1.5) 
+                time.sleep(1.0) 
             
             xpath_continuar = "//button[contains(., 'Continuar')]"
             wait.until(EC.element_to_be_clickable((By.XPATH, xpath_continuar))).click()
@@ -106,13 +106,13 @@ def navegar_via_favoritos(driver):
         # Clica na estrela
         btn_estrela = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(@onclick, 'tab-header-menu-favoritos')]")))
         btn_estrela.click()
-        time.sleep(1.5)
+        time.sleep(1.0)
         
         # Clica no atalho de Clientes
         xpath_link = "//ul[@id='header-menu-favoritos']//a[contains(text(), 'Pessoas geral')]"
         link_pessoasgeral = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_link)))
         link_pessoasgeral.click()
-        time.sleep(1.5) 
+        time.sleep(1.0) 
         
         print("📍 Chegamos na tela de Pessoas Geral!")
         return True
