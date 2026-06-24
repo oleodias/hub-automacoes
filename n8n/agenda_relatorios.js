@@ -56,6 +56,12 @@ const MODO_TESTE = true;
 const EMAIL_TESTE = "leonardodiascaumo@gmail.com";  // destino dos relatórios em teste
 const EMAIL_AVISOS = "ti6@ciamedrs.com.br";         // avisos de conclusão/erro
 
+// ── FORÇAR TESTE ────────────────────────────────────────────────
+// Enquanto true, ignora as regras de data e emite 1 envio fixo (Bayer,
+// mês anterior) — serve para testar o WORKFLOW INTEIRO no n8n em qualquer
+// dia. Voltar para false em produção (aí volta a respeitar o calendário).
+const FORCAR_TESTE = false;
+
 // ── Quem dispara em cada tipo + qual a regra de período da VENDA ──
 // regra_periodo ∈ {mes_anterior, semana_anterior, mes_ate_ultima_sexta, mes_ate_ultima_quarta}
 const TIPO1_PRIMEIRO_DIA_UTIL = [   // todos os 12, venda = todo mês anterior
@@ -152,9 +158,14 @@ const ehTipo2 = w === 1; // segunda
 const ehTipo3 = w === 4; // quinta
 
 const candidatos = [];
-if (ehTipo1) for (const lab of TIPO1_PRIMEIRO_DIA_UTIL) candidatos.push(novoEnvio(lab, 1, "mes_anterior", hoje));
-if (ehTipo2) for (const [lab, regra] of Object.entries(TIPO2_SEGUNDA)) candidatos.push(novoEnvio(lab, 2, regra, hoje));
-if (ehTipo3) for (const [lab, regra] of Object.entries(TIPO3_QUINTA)) candidatos.push(novoEnvio(lab, 3, regra, hoje));
+if (FORCAR_TESTE) {
+  // Teste manual do workflow: 1 envio fixo, independente do dia.
+  candidatos.push(novoEnvio("bayer", 1, "mes_anterior", hoje));
+} else {
+  if (ehTipo1) for (const lab of TIPO1_PRIMEIRO_DIA_UTIL) candidatos.push(novoEnvio(lab, 1, "mes_anterior", hoje));
+  if (ehTipo2) for (const [lab, regra] of Object.entries(TIPO2_SEGUNDA)) candidatos.push(novoEnvio(lab, 2, regra, hoje));
+  if (ehTipo3) for (const [lab, regra] of Object.entries(TIPO3_QUINTA)) candidatos.push(novoEnvio(lab, 3, regra, hoje));
+}
 
 // Só seguem os envios com período válido; os inválidos ficam reportados à parte.
 const envios = candidatos.filter((e) => e.valido);
@@ -164,6 +175,7 @@ return [{
   json: {
     data_ref: fmt(hoje),
     modo_teste: MODO_TESTE,
+    forcar_teste: FORCAR_TESTE,
     email_avisos: EMAIL_AVISOS,
     tem_disparo: envios.length > 0,
     tipos: { tipo1: ehTipo1, tipo2: ehTipo2, tipo3: ehTipo3 },
