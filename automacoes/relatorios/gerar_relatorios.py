@@ -107,11 +107,16 @@ def _set_valor(driver, item_id, valor):
 
 
 def _selecionar_modelo(driver, item_id, value=None, label=None):
-    """Seleciona o 'saved report' por VALUE (preferido) ou por NOME (label).
+    """Troca o 'saved report' (modelo) por VALUE (preferido) ou por NOME (label).
 
     Por label: procura a <option> cujo texto contenha o trecho informado e
     resolve o value real em tempo de execução — útil quando o relatório foi
     criado depois (não temos o value) ou quando o número visível muda.
+
+    A APLICAÇÃO usa o _set_valor robusto (apex.item + jQuery 'change' +
+    ativação por mouse). É ESSENCIAL: trocar o relatório salvo é o que define
+    o laboratório; com o dispatchEvent cru o APEX não recarregava a IR e o
+    relatório ficava preso no anterior.
     """
     el = WebDriverWait(driver, TIMEOUT_PADRAO).until(
         EC.presence_of_element_located((By.ID, item_id))
@@ -124,11 +129,7 @@ def _selecionar_modelo(driver, item_id, value=None, label=None):
         if alvo is None:
             raise ValueError(f"Modelo '{label}' não encontrado no select {item_id}.")
         value = alvo.get_attribute("value")
-    driver.execute_script(
-        "arguments[0].value = arguments[1];"
-        "arguments[0].dispatchEvent(new Event('change', {bubbles: true}));",
-        el, value,
-    )
+    _set_valor(driver, item_id, value)
     return value
 
 
@@ -352,12 +353,19 @@ def gerar_demanda(driver, modelo_value, modelo_label, operacao, data_ini, data_f
     wait = WebDriverWait(driver, TIMEOUT_PADRAO)
     wait.until(EC.presence_of_element_located((By.ID, DEMANDA["item_marcador"])))
 
+    # 1) Troca o relatório salvo (modelo) PRIMEIRO — é o que define o lab —
+    #    e espera a IR recarregar antes de aplicar os filtros.
+    _selecionar_modelo(driver, DEMANDA["saved_reports"], value=modelo_value, label=modelo_label)
+    _esperar_apex_pronto(driver)
+    time.sleep(1.0)
+
+    # 2) Filtros da pesquisa (período + operação) já no relatório certo.
     _set_valor(driver, DEMANDA["data_ini"], data_ini)
     _set_valor(driver, DEMANDA["data_fim"], data_fim)
     _set_valor(driver, DEMANDA["operacao"], operacao)
     time.sleep(0.4)
-    _selecionar_modelo(driver, DEMANDA["saved_reports"], value=modelo_value, label=modelo_label)
-    time.sleep(0.8)
+
+    # 3) Consulta.
     _js_click(driver, driver.find_element(By.ID, DEMANDA["btn_consultar"]))
     _esperar_apex_pronto(driver)
     time.sleep(1.5)
