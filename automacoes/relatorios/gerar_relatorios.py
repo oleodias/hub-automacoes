@@ -118,6 +118,37 @@ def _set_valor(driver, item_id, valor):
     return el
 
 
+def _definir_operacao(driver, item_id, valor_alvo):
+    """Garante que a Operação (Público/Privado) termine no VALOR ALVO.
+
+    O robô "nunca se perde": lê o que está selecionado e força uma transição
+    REAL para o alvo. Se já estiver no alvo, dá um 'wiggle' (seleciona a outra
+    opção e volta) para garantir que o change/refresh da IR dispare — caso
+    contrário, reaplicar o mesmo valor poderia não disparar nada. Verifica o
+    resultado no fim.
+    """
+    valor_alvo = str(valor_alvo)
+    el = WebDriverWait(driver, TIMEOUT_PADRAO).until(
+        EC.presence_of_element_located((By.ID, item_id))
+    )
+    atual = Select(el).first_selected_option.get_attribute("value")
+    if atual == valor_alvo:
+        # Já está no alvo → "wiggle" p/ forçar uma troca real (vai na outra e volta).
+        outra = next(
+            (o.get_attribute("value") for o in Select(el).options
+             if o.get_attribute("value") and o.get_attribute("value") != valor_alvo),
+            None,
+        )
+        if outra:
+            _set_valor(driver, item_id, outra)
+            _sleep(0.4)
+    _set_valor(driver, item_id, valor_alvo)
+    _sleep(0.3)
+    final = Select(driver.find_element(By.ID, item_id)).first_selected_option.get_attribute("value")
+    print(f"> 🔀 Operação: alvo {valor_alvo} (estava {atual}) → selecionada {final}")
+    return final
+
+
 def _selecionar_modelo(driver, item_id, value=None, label=None):
     """Troca o 'saved report' (modelo) por VALUE (preferido) ou por NOME (label).
 
@@ -380,10 +411,11 @@ def gerar_demanda(driver, modelo_value, modelo_label, operacao, data_ini, data_f
     wait = WebDriverWait(driver, TIMEOUT_PADRAO)
     wait.until(EC.presence_of_element_located((By.ID, DEMANDA["item_marcador"])))
 
-    # 1) PRIMEIRO os filtros de período (regra do lab) + operação.
+    # 1) PRIMEIRO as datas (regra do lab); DEPOIS a operação (com transição
+    #    real até o alvo, para Público/Privado nunca ficar "preso").
     _set_valor(driver, DEMANDA["data_ini"], data_ini)
     _set_valor(driver, DEMANDA["data_fim"], data_fim)
-    _set_valor(driver, DEMANDA["operacao"], operacao)
+    _definir_operacao(driver, DEMANDA["operacao"], operacao)
     _sleep(0.5)
 
     # 2) DEPOIS troca o relatório salvo (modelo) — última ação antes do
