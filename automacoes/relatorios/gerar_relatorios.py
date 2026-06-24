@@ -51,6 +51,18 @@ PASTA_BASE = os.getenv("RELATORIOS_DOWNLOAD_DIR", os.path.join(os.getcwd(), "dow
 TIMEOUT_PADRAO = 30
 TIMEOUT_DOWNLOAD = 180
 
+# Fator de lentidão p/ observar o robô. 1.0 = normal; 3.0 = bem lento.
+# Vem do env RELATORIOS_SLOWMO ou do job ("modo_lento": true → 3.0).
+try:
+    _FATOR_LENTIDAO = float(os.getenv("RELATORIOS_SLOWMO", "1") or "1")
+except ValueError:
+    _FATOR_LENTIDAO = 1.0
+
+
+def _sleep(segundos):
+    """Pausa multiplicada pelo fator de lentidão (modo observação)."""
+    time.sleep(segundos * _FATOR_LENTIDAO)
+
 
 # ─────────────────────────── Helpers de UI ───────────────────────────
 def _js_click(driver, elemento):
@@ -160,7 +172,7 @@ def _entrar_na_tela(driver, marker_id, timeout=TIMEOUT_PADRAO):
             if driver.find_elements(By.ID, marker_id):
                 return "iframe"
         driver.switch_to.default_content()
-        time.sleep(0.5)
+        _sleep(0.5)
     raise TimeoutException(
         f"Marcador '{marker_id}' não encontrado no documento principal nem em iframes."
     )
@@ -174,12 +186,12 @@ def _abrir_favorito(driver, invoker_code, marker_id):
     estrela = wait.until(EC.element_to_be_clickable(
         (By.XPATH, "//a[contains(@onclick, 'tab-header-menu-favoritos')]")))
     _js_click(driver, estrela)
-    time.sleep(1.5)
+    _sleep(1.5)
     # Localiza o <a> do favorito pelo trecho do href: invoker(1,'N&L@....')
     link = wait.until(EC.presence_of_element_located(
         (By.XPATH, f"//a[contains(@href, \"{invoker_code}\")]")))
     _js_click(driver, link)
-    time.sleep(2.5)
+    _sleep(2.5)
     onde = _entrar_na_tela(driver, marker_id)
     print(f"> 🧭 Tela carregada (marcador em: {onde}).")
 
@@ -195,7 +207,7 @@ def _esperar_apex_pronto(driver, timeout=TIMEOUT_PADRAO):
             visiveis = []
         if not visiveis:
             return
-        time.sleep(0.5)
+        _sleep(0.5)
 
 
 def _clicar_real(driver, el):
@@ -240,7 +252,7 @@ def _fechar_dialogo(driver):
         for botao in driver.find_elements(By.CSS_SELECTOR, "button.ui-dialog-titlebar-close"):
             if botao.is_displayed():
                 _clicar_real(driver, botao)
-                time.sleep(0.4)
+                _sleep(0.4)
                 return True
     except Exception:  # noqa: BLE001
         pass
@@ -259,11 +271,11 @@ def _baixar_csv(driver, cfg, pasta, destino_basename):
     botao_acoes = wait.until(EC.presence_of_element_located((By.ID, cfg["actions_button"])))
     _js_click(driver, botao_acoes)
     menu = wait.until(EC.visibility_of_element_located((By.ID, cfg["actions_menu"])))
-    time.sleep(0.3)
+    _sleep(0.3)
 
     # 2) Download — pelo texto (id numérico muda), com sequência de mouse.
     _clicar_item_menu(driver, menu, "Download", cfg.get("download_menu_item"))
-    time.sleep(0.6)
+    _sleep(0.6)
 
     # 3) Formato CSV no diálogo de download.
     link_csv = wait.until(EC.visibility_of_element_located((By.ID, cfg["download_csv"])))
@@ -307,13 +319,13 @@ def _esperar_download(pasta, arquivos_antes, timeout=TIMEOUT_DOWNLOAD):
             caminho = os.path.join(pasta, novos[0])
             try:
                 tamanho_1 = os.path.getsize(caminho)
-                time.sleep(1.2)
+                _sleep(1.2)
                 ainda_baixando = any(x.endswith(".crdownload") for x in os.listdir(pasta))
                 if not ainda_baixando and os.path.getsize(caminho) == tamanho_1 and tamanho_1 > 0:
                     return caminho
             except OSError:
                 pass  # candidato sumiu/renomeou — segue tentando
-        time.sleep(0.5)
+        _sleep(0.5)
     raise TimeoutError("Download (.csv) não foi concluído dentro do tempo limite.")
 
 
@@ -351,12 +363,12 @@ def gerar_analise_estoque(driver, setor, pasta):
     wait.until(EC.presence_of_element_located((By.ID, ESTOQUE["item_marcador"])))
 
     _set_valor(driver, ESTOQUE["item_filtro"], ESTOQUE["filtro_setor"][setor])
-    time.sleep(0.5)
+    _sleep(0.5)
     _set_valor(driver, ESTOQUE["saved_reports"], ESTOQUE["modelo_value"])
-    time.sleep(0.8)
+    _sleep(0.8)
     _js_click(driver, driver.find_element(By.ID, ESTOQUE["btn_consultar"]))
     _esperar_apex_pronto(driver)
-    time.sleep(1.5)
+    _sleep(1.5)
 
     return _baixar_csv(driver, ESTOQUE, pasta, f"estoque_{setor}")
 
@@ -372,18 +384,26 @@ def gerar_demanda(driver, modelo_value, modelo_label, operacao, data_ini, data_f
     #    e espera a IR recarregar antes de aplicar os filtros.
     _selecionar_modelo(driver, DEMANDA["saved_reports"], value=modelo_value, label=modelo_label)
     _esperar_apex_pronto(driver)
-    time.sleep(1.0)
+    _sleep(1.0)
+
+    # Diagnóstico: confirma qual relatório salvo REALMENTE ficou ativo.
+    try:
+        sel = Select(driver.find_element(By.ID, DEMANDA["saved_reports"]))
+        print(f"> 🔖 Relatório salvo ativo agora: '{sel.first_selected_option.text}'"
+              f" (value={sel.first_selected_option.get_attribute('value')})")
+    except Exception as e:  # noqa: BLE001
+        print(f"> ⚠️ Não consegui ler o relatório salvo ativo: {e}")
 
     # 2) Filtros da pesquisa (período + operação) já no relatório certo.
     _set_valor(driver, DEMANDA["data_ini"], data_ini)
     _set_valor(driver, DEMANDA["data_fim"], data_fim)
     _set_valor(driver, DEMANDA["operacao"], operacao)
-    time.sleep(0.4)
+    _sleep(0.4)
 
     # 3) Consulta.
     _js_click(driver, driver.find_element(By.ID, DEMANDA["btn_consultar"]))
     _esperar_apex_pronto(driver)
-    time.sleep(1.5)
+    _sleep(1.5)
 
     nome = f"venda_{_slug(rotulo)}_{operacao}_{_slug(data_ini)}_{_slug(data_fim)}"
     return _baixar_csv(driver, DEMANDA, pasta, nome)
@@ -407,6 +427,12 @@ def executar(job):
     envios = job.get("envios", []) or []
     modo_fantasma = job.get("modo_fantasma", True)
     avisos = []
+
+    # Modo observação: deixa os cliques/pausas mais lentos para acompanhar.
+    if job.get("modo_lento"):
+        global _FATOR_LENTIDAO
+        _FATOR_LENTIDAO = max(_FATOR_LENTIDAO, 3.0)
+        print(f"> 🐢 Modo lento ligado (fator {_FATOR_LENTIDAO}x).")
 
     # Valida lab_ids cedo (evita abrir navegador à toa).
     desconhecidos = [e.get("lab_id") for e in envios if e.get("lab_id") not in LABS]
@@ -488,7 +514,7 @@ def executar(job):
         return {"status": "Erro", "msg": f"{tipo}: {detalhe}", "pasta": pasta,
                 "itens": [], "avisos": avisos}
     finally:
-        time.sleep(2)
+        _sleep(2)
         driver.quit()
 
 
