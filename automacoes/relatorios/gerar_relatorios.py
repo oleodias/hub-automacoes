@@ -230,6 +230,22 @@ def _clicar_item_menu(driver, menu_el, texto, id_fallback=None):
     _clicar_real(driver, alvo)
 
 
+def _fechar_dialogo(driver):
+    """Fecha o diálogo de download (jQuery UI) clicando no 'X' do titlebar.
+
+    Best-effort: o diálogo precisa sumir para não atrapalhar o próximo
+    download. Não falha se não houver diálogo aberto."""
+    try:
+        for botao in driver.find_elements(By.CSS_SELECTOR, "button.ui-dialog-titlebar-close"):
+            if botao.is_displayed():
+                _clicar_real(driver, botao)
+                time.sleep(0.4)
+                return True
+    except Exception:  # noqa: BLE001
+        pass
+    return False
+
+
 def _baixar_csv(driver, cfg, pasta, destino_basename):
     """Abre Ações → Download → CSV, espera baixar e converte para .xlsx.
 
@@ -251,6 +267,11 @@ def _baixar_csv(driver, cfg, pasta, destino_basename):
     # 3) Formato CSV no diálogo de download.
     link_csv = wait.until(EC.visibility_of_element_located((By.ID, cfg["download_csv"])))
     _clicar_real(driver, link_csv)
+
+    # 4) Fecha o diálogo (X) — o download já foi disparado; assim não fica
+    #    uma aba/modal aberta atrapalhando o próximo relatório.
+    time.sleep(0.5)
+    _fechar_dialogo(driver)
 
     caminho_csv = _esperar_download(pasta, antes)
     destino_xlsx = os.path.join(pasta, destino_basename + ".xlsx")
