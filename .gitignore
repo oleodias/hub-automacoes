@@ -62,3 +62,6 @@ desktop.ini
 
 # ── ARQUIVOS DE BACKUPS ──────────────────────────────────────────
 *.rar
+
+# Saidas do robo de relatorios (planilhas geradas em runtime — nao versionar)
+downloads_relatorios/
