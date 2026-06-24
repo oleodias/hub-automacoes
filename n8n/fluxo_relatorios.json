@@ -17,8 +17,8 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
-        260,
-        300
+        0,
+        480
       ]
     },
     {
@@ -30,8 +30,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        520,
-        300
+        280,
+        480
       ]
     },
     {
@@ -60,8 +60,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        780,
-        300
+        560,
+        480
       ]
     },
     {
@@ -95,8 +95,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1040,
-        300
+        860,
+        480
       ]
     },
     {
@@ -121,8 +121,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1300,
-        300
+        1140,
+        480
       ]
     },
     {
@@ -135,8 +135,8 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        1560,
-        300
+        1420,
+        480
       ]
     },
     {
@@ -164,8 +164,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1820,
-        300
+        1700,
+        480
       ]
     },
     {
@@ -187,8 +187,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2080,
-        300
+        1980,
+        480
       ]
     },
     {
@@ -216,8 +216,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        2340,
-        300
+        2260,
+        480
       ]
     },
     {
@@ -229,8 +229,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2600,
-        220
+        2560,
+        480
       ]
     },
     {
@@ -242,8 +242,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2860,
-        220
+        2840,
+        480
       ]
     },
     {
@@ -287,7 +287,7 @@
       "typeVersion": 4.2,
       "position": [
         3120,
-        220
+        480
       ]
     },
     {
@@ -299,8 +299,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3380,
-        220
+        3400,
+        480
       ]
     },
     {
@@ -580,8 +580,8 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
-        3640,
-        220
+        3700,
+        480
       ]
     },
     {
@@ -609,8 +609,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        3880,
-        80
+        4040,
+        140
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -637,8 +637,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4140,
-        80
+        4380,
+        140
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -672,8 +672,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        3880,
-        175
+        4040,
+        290
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -700,8 +700,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4140,
-        175
+        4380,
+        290
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -735,8 +735,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        3880,
-        270
+        4040,
+        440
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -763,8 +763,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4140,
-        270
+        4380,
+        440
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -798,8 +798,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        3880,
-        365
+        4040,
+        590
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -826,8 +826,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4140,
-        365
+        4380,
+        590
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -861,8 +861,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        3880,
-        460
+        4040,
+        740
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -889,8 +889,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4140,
-        460
+        4380,
+        740
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -924,8 +924,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        3880,
-        555
+        4040,
+        890
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -952,8 +952,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4140,
-        555
+        4380,
+        890
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -987,8 +987,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        3880,
-        650
+        4040,
+        1040
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -1015,8 +1015,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4140,
-        650
+        4380,
+        1040
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -1050,8 +1050,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        3880,
-        745
+        4040,
+        1190
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -1078,8 +1078,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4140,
-        745
+        4380,
+        1190
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -1113,8 +1113,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        3880,
-        840
+        4040,
+        1340
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -1141,8 +1141,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4140,
-        840
+        4380,
+        1340
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -1176,8 +1176,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        3880,
-        935
+        4040,
+        1490
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -1204,8 +1204,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4140,
-        935
+        4380,
+        1490
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -1239,8 +1239,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        3880,
-        1030
+        4040,
+        1640
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -1267,8 +1267,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4140,
-        1030
+        4380,
+        1640
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -1302,8 +1302,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        3880,
-        1125
+        4040,
+        1790
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -1330,8 +1330,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4140,
-        1125
+        4380,
+        1790
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -1357,8 +1357,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        2600,
-        560
+        2260,
+        800
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -1366,6 +1366,102 @@
           "name": "Gmail account"
         }
       }
+    },
+    {
+      "parameters": {
+        "content": "# 📊 Relatórios aos Laboratórios\nAgenda decide os labs do dia → robô do Hub gera os relatórios → e-mail por laboratório (com aviso à colega).\n\n⚙️ **Ajustes ficam na Agenda:** `MODO_TESTE` · `FORCAR_TESTE` · `EMAIL_COLEGA` · `EMAIL_AVISOS`.\n🔑 Nos 4 HTTP: trocar a **URL do Hub** e o **X-Hub-Token**.",
+        "height": 150,
+        "width": 920,
+        "color": 7
+      },
+      "id": "nota_titulo",
+      "name": "nota_titulo",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 1 · Decisão\n**Schedule** ~06:30 → **Agenda** (regras: quais labs e períodos hoje) → **Tem disparo?** só segue se houver envio.",
+        "height": 240,
+        "width": 880,
+        "color": 5
+      },
+      "id": "nota_b1",
+      "name": "nota_b1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 2 · Roda o robô (fila + Wait)\nEntra na fila → **Wait** acorda quando é a vez (igual ao Cadastro) → **Iniciar Robo** gera os relatórios e devolve o manifesto → **libera** a fila.\n**Robô OK?** separa sucesso × erro.",
+        "height": 240,
+        "width": 1660,
+        "color": 4
+      },
+      "id": "nota_b2",
+      "name": "nota_b2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        820,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 3 · Monta os e-mails\nCasa manifesto × e-mails (**Preparar**), 1 item por arquivo (**Arquivos do lab**), **baixa** cada um e **junta** os anexos + HTML por lab.",
+        "height": 240,
+        "width": 1100,
+        "color": 3
+      },
+      "id": "nota_b3",
+      "name": "nota_b3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2520,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 4 · Envio por laboratório\n**Switch** roteia por `lab_id`.\n\nCada **Gmail: <lab>** envia (HTML + anexos). Tem 2 saídas: ✅ sucesso e ❌ erro (*On Error: Continue*).\n\nCada **Aviso: <lab>** avisa a colega (`email_colega`): `[OK]` enviado ou `[FALHA]` com o motivo.",
+        "height": 1900,
+        "width": 940,
+        "color": 6
+      },
+      "id": "nota_b4",
+      "name": "nota_b4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3660,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 5 · Erro do robô\nSe o robô falhar (não gerou nada), avisa a TI (`email_avisos`) com o detalhe.",
+        "height": 220,
+        "width": 420,
+        "color": 2
+      },
+      "id": "nota_b5",
+      "name": "nota_b5",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2180,
+        720
+      ]
     }
   ],
   "connections": {
