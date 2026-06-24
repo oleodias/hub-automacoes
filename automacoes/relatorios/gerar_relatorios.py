@@ -269,12 +269,10 @@ def _baixar_csv(driver, cfg, pasta, destino_basename):
     link_csv = wait.until(EC.visibility_of_element_located((By.ID, cfg["download_csv"])))
     _clicar_real(driver, link_csv)
 
-    # 4) Fecha o diálogo (X) — o download já foi disparado; assim não fica
-    #    uma aba/modal aberta atrapalhando o próximo relatório.
-    time.sleep(0.5)
-    _fechar_dialogo(driver)
-
+    # 4) Espera o .csv baixar e SÓ ENTÃO fecha o diálogo (X), para o clique
+    #    no 'X' nunca interferir no download em andamento.
     caminho_csv = _esperar_download(pasta, antes)
+    _fechar_dialogo(driver)
     destino_xlsx = os.path.join(pasta, destino_basename + ".xlsx")
     _csv_para_xlsx(caminho_csv, destino_xlsx)
     try:
@@ -286,20 +284,37 @@ def _baixar_csv(driver, cfg, pasta, destino_basename):
 
 
 def _esperar_download(pasta, arquivos_antes, timeout=TIMEOUT_DOWNLOAD):
-    """Espera surgir um arquivo novo e estável (sem .crdownload)."""
+    """Espera surgir o ARQUIVO DE RESULTADO (.csv) novo e estável.
+
+    Considera só extensões de resultado e ignora artefatos transitórios do
+    Chrome (downloads.htm, .tmp, .crdownload). É à prova de corrida: se o
+    arquivo candidato sumir/renomear entre uma medição e outra, apenas
+    continua tentando em vez de estourar FileNotFoundError.
+    """
+    EXT_RESULTADO = (".csv", ".xlsx", ".xls")
     fim = time.time() + timeout
     while time.time() < fim:
-        atuais = set(os.listdir(pasta))
-        novos = [a for a in (atuais - arquivos_antes) if not a.endswith(".crdownload")]
-        if novos:
+        try:
+            atuais = set(os.listdir(pasta))
+        except OSError:
+            atuais = set()
+        baixando = any(a.endswith(".crdownload") for a in atuais)
+        novos = [
+            a for a in (atuais - arquivos_antes)
+            if a.lower().endswith(EXT_RESULTADO)
+        ]
+        if novos and not baixando:
             caminho = os.path.join(pasta, novos[0])
-            tamanho_1 = os.path.getsize(caminho)
-            time.sleep(1.2)
-            ainda_baixando = any(x.endswith(".crdownload") for x in os.listdir(pasta))
-            if not ainda_baixando and os.path.getsize(caminho) == tamanho_1 and tamanho_1 > 0:
-                return caminho
+            try:
+                tamanho_1 = os.path.getsize(caminho)
+                time.sleep(1.2)
+                ainda_baixando = any(x.endswith(".crdownload") for x in os.listdir(pasta))
+                if not ainda_baixando and os.path.getsize(caminho) == tamanho_1 and tamanho_1 > 0:
+                    return caminho
+            except OSError:
+                pass  # candidato sumiu/renomeou — segue tentando
         time.sleep(0.5)
-    raise TimeoutError("Download não foi concluído dentro do tempo limite.")
+    raise TimeoutError("Download (.csv) não foi concluído dentro do tempo limite.")
 
 
 def _csv_para_xlsx(caminho_csv, destino_xlsx):
