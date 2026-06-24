@@ -380,8 +380,14 @@ def gerar_demanda(driver, modelo_value, modelo_label, operacao, data_ini, data_f
     wait = WebDriverWait(driver, TIMEOUT_PADRAO)
     wait.until(EC.presence_of_element_located((By.ID, DEMANDA["item_marcador"])))
 
-    # 1) Troca o relatório salvo (modelo) PRIMEIRO — é o que define o lab —
-    #    e espera a IR recarregar antes de aplicar os filtros.
+    # 1) PRIMEIRO os filtros de período (regra do lab) + operação.
+    _set_valor(driver, DEMANDA["data_ini"], data_ini)
+    _set_valor(driver, DEMANDA["data_fim"], data_fim)
+    _set_valor(driver, DEMANDA["operacao"], operacao)
+    _sleep(0.5)
+
+    # 2) DEPOIS troca o relatório salvo (modelo) — última ação antes do
+    #    Consultar — e espera a IR recarregar.
     _selecionar_modelo(driver, DEMANDA["saved_reports"], value=modelo_value, label=modelo_label)
     _esperar_apex_pronto(driver)
     _sleep(1.0)
@@ -394,13 +400,7 @@ def gerar_demanda(driver, modelo_value, modelo_label, operacao, data_ini, data_f
     except Exception as e:  # noqa: BLE001
         print(f"> ⚠️ Não consegui ler o relatório salvo ativo: {e}")
 
-    # 2) Filtros da pesquisa (período + operação) já no relatório certo.
-    _set_valor(driver, DEMANDA["data_ini"], data_ini)
-    _set_valor(driver, DEMANDA["data_fim"], data_fim)
-    _set_valor(driver, DEMANDA["operacao"], operacao)
-    _sleep(0.4)
-
-    # 3) Consulta.
+    # 3) SÓ ENTÃO Consulta.
     _js_click(driver, driver.find_element(By.ID, DEMANDA["btn_consultar"]))
     _esperar_apex_pronto(driver)
     _sleep(1.5)
