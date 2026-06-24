@@ -305,55 +305,63 @@
     },
     {
       "parameters": {
-        "fromEmail": "robo@ciamedrs.com.br",
-        "toEmail": "={{ $json.to }}",
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $json.to }}",
         "subject": "={{ $json.subject }}",
-        "emailFormat": "text",
-        "text": "=Segue em anexo o relatório de {{ $json.lab_nome }}.\\n\\n(Envio automático — Hub de Automações)",
+        "emailType": "text",
+        "message": "=Segue em anexo o relatório de {{ $json.lab_nome }}.\\n\\n(Envio automático — Hub de Automações)",
         "options": {
-          "bccEmail": "={{ $json.bcc }}",
-          "attachments": "={{ Object.keys($binary).join(',') }}",
+          "bccList": "={{ $json.bcc }}",
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+                "property": "={{ Object.keys($binary).join(',') }}"
+              }
+            ]
+          },
           "appendAttribution": false
         }
       },
       "id": "Enviar ao lab",
       "name": "Enviar ao lab",
-      "type": "n8n-nodes-base.emailSend",
+      "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
         3640,
         220
       ],
       "credentials": {
-        "smtp": {
-          "id": "SMTP_CRED_ID",
-          "name": "SMTP account"
+        "gmailOAuth2": {
+          "id": "GMAIL_CRED_ID",
+          "name": "Gmail account"
         }
       }
     },
     {
       "parameters": {
-        "fromEmail": "robo@ciamedrs.com.br",
-        "toEmail": "={{ $(\"Agenda\").first().json.email_avisos }}",
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $(\"Agenda\").first().json.email_avisos }}",
         "subject": "=⚠️ Robô de relatórios falhou — {{ $(\"Agenda\").first().json.data_ref }}",
-        "emailFormat": "text",
-        "text": "={{ JSON.stringify($(\"Iniciar Robo\").item.json.resultado || $(\"Iniciar Robo\").item.json, null, 2) }}",
+        "emailType": "text",
+        "message": "={{ JSON.stringify($(\"Iniciar Robo\").item.json.resultado || $(\"Iniciar Robo\").item.json, null, 2) }}",
         "options": {
           "appendAttribution": false
         }
       },
       "id": "Avisos (erro)",
       "name": "Avisos (erro)",
-      "type": "n8n-nodes-base.emailSend",
+      "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
         2600,
         440
       ],
       "credentials": {
-        "smtp": {
-          "id": "SMTP_CRED_ID",
-          "name": "SMTP account"
+        "gmailOAuth2": {
+          "id": "GMAIL_CRED_ID",
+          "name": "Gmail account"
         }
       }
     }

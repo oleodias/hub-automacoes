@@ -5,11 +5,12 @@ padrão do fluxo de **Cadastro de Clientes** (fila + Wait/resume + token).
 
 ## 🚀 Importar pronto (`fluxo_relatorios.json`)
 Há um workflow **importável** no diretório: `n8n/fluxo_relatorios.json`.
-No n8n: *Workflows → Import from File*. Depois ajuste **4 coisas**:
+No n8n: *Workflows → Import from File*. Depois ajuste **3 coisas**:
 1. **URL do Hub** — trocar `http://localhost:5000` nos 4 nós HTTP.
 2. **Token** — trocar `TROQUE_PELO_N8N_HUB_TOKEN` no header `X-Hub-Token` (= `N8N_HUB_TOKEN`).
-3. **Credencial SMTP** — religar os nós de e-mail à sua "SMTP account".
-4. **Remetente** — ajustar o `fromEmail` (hoje `robo@ciamedrs.com.br`).
+3. **Credencial Gmail (OAuth2)** — religar os nós **"Enviar ao lab"** e
+   **"Avisos (erro)"** (tipo `Gmail`) à sua conta Gmail. O remetente é a
+   própria conta autenticada (não há `fromEmail` a setar).
 
 > O importável usa os **Code nodes já testados** (`preparar_envios` /
 > `explodir_arquivos` / `juntar_binarios`) para o encanamento de dados —
@@ -31,7 +32,7 @@ Para ir a **produção**: trocar `MODO_TESTE` para `false` (e preencher `RESPONS
 ## Variáveis / credenciais a configurar no n8n
 - **Config Hub**: `hub_url` (ex.: `http://localhost:5000`) — como no cadastro.
 - **Header `X-Hub-Token`** em todas as chamadas ao Hub = `N8N_HUB_TOKEN` do `.env` do Hub.
-- **Credencial SMTP** (a mesma "SMTP account" do cadastro).
+- **Credencial Gmail (OAuth2)** nos nós "Enviar ao lab" e "Avisos (erro)".
 - **BCC** dos responsáveis: definido em `RESPONSAVEIS_BCC` no Code "Agenda".
 
 ## Filosofia: nós separados e visíveis
@@ -77,12 +78,12 @@ mais claro que 10 nós nativos encadeados:
 | 14 | **Arquivos do lab** | Split Out | campo `arquivos` · **Include Other Fields = All** → 1 item por arquivo (mantém `to/bcc/subject/exec/lab_id`) |
 | 15 | **Download** | HTTP Request | `GET {{hub}}/relatorios/download?exec={{$json.exec}}&arquivo={{$json.arquivos}}` · header token · **Response Format: File** (binário em `data`) |
 | 16 | **Juntar binários** | Code | cola `juntar_binarios.js` (reagrupa por lab; aponta para o nó **`Arquivos do lab`**) |
-| 17 | **Enviar ao lab** | Send Email (SMTP) | To `{{$json.to}}` · BCC `{{$json.bcc}}` · Subject `{{$json.subject}}` · **Attachments** `{{ Object.keys($binary).join(',') }}` |
+| 17 | **Enviar ao lab** | **Gmail** (send) | To `{{$json.to}}` · BCC (options→bccList) `{{$json.bcc}}` · Subject `{{$json.subject}}` · **Attachments** (options→Attachment Binary, property) `{{ Object.keys($binary).join(',') }}` |
 
 ### Bloco 5 — Aviso interno
 | # | Nó | Tipo | Config |
 |---|----|------|--------|
-| 18 | **Avisos** | Send Email | To `{{$('Agenda (regras)').first().json.email_avisos}}` · Subject `Relatórios — {{$('Agenda (regras)').first().json.data_ref}}` · corpo com qtd/labs/erros |
+| 18 | **Avisos** | **Gmail** (send) | To `{{$('Agenda').first().json.email_avisos}}` · Subject `Relatórios — {{$('Agenda').first().json.data_ref}}` · corpo com qtd/labs/erros |
 
 ### Observações
 - **Ordem 5→6→7→8**: igual ao cadastro — entra na fila, o Wait acorda quando é
