@@ -51,7 +51,7 @@ uma colega interna recebe um aviso de cada envio (sucesso/erro).
 |---|---|
 | `gerar_relatorios.py` | Robô principal (Selenium). Gera Estoque + Demanda, baixa CSV, converte p/ `.xlsx`, devolve manifesto. |
 | `labs_config.py` | Mapa dos 12 labs + seletores das telas APEX. |
-| `pos_processamento.py` | Hooks de pós-processamento por lab (ex.: `fresenius_desconto` — hoje stub, **não** ligado). |
+| `pos_processamento.py` | Hooks de pós-processamento por lab. **Fresenius ligado** (`fresenius_desconto`) — ver §4.1. |
 | `testar_endpoint.py` | Testa `POST /relatorios/iniciar` via HTTP. |
 | `job_teste.json` / `job_sun_geral.json` / `job_fresenius.json` / `job_multi.json` | Jobs de teste. |
 
@@ -93,7 +93,7 @@ Cada combinação única é gerada **uma vez**:
 | `_slug_nome` | Slug **legível** (espaços→`_`, remove chars proibidos) — nome do arquivo. |
 | `gerar_analise_estoque` | Tela A: filtro setor → modelo → Consultar → baixa. Nome = `<modelo>_<setor>`. |
 | `gerar_demanda` | Tela B: **datas → operação → modelo → Consultar** → baixa. Nome = `<modelo>_<op>_<ini>_<fim>`. |
-| `aplicar_pos_processamento` | Roda hooks do lab (ex.: Fresenius). |
+| `aplicar_pos_processamento` | Roda hooks do lab **in-place** sobre o .xlsx de venda (preserva o nome), 1x por combo. Ver §4.1. |
 | `executar(job)` | Orquestra: login → estoques (dedup) → vendas (dedup) → manifesto. |
 | `main()` | Standalone: aceita **arquivo .json**, **JSON inline** ou **stdin**. |
 
@@ -125,6 +125,30 @@ Cada combinação única é gerada **uma vez**:
 - **Estoque:** modelo fixo `153738614031239522` ("1. ESTOQUE PARA MAPA") p/ todos; setor é diferenciado pelo filtro Público/Privado.
 - **Sun Geral = 4 arquivos** (estoque priv+pub + venda 11+17). Demais = 2.
 - **Fresenius**: `modelo_venda=None`, selecionado por **nome** (`modelo_label`) em runtime.
+
+### 4.1 Ajustes por laboratório — pós-processamento (`pos_processamento.py`)
+
+Alguns labs precisam de uma **edição na planilha após a extração**. Isso é
+declarado no `labs_config.py` pela chave `"pos": [...]` (lista de hooks) e
+aplicado pelo robô **in-place** sobre o `.xlsx` de venda — o anexo mantém o nome
+do relatório. Roda **1x por combo** (guarda `pos_feito` em `executar`), e é
+seguro porque um lab com hook usa modelo de venda **exclusivo** (o dedup nunca
+compartilha esse arquivo com outro lab).
+
+| Lab | Hook | Regra |
+|---|---|---|
+| `fresenius` | `fresenius_desconto` | Soma a coluna **`Vlr Desconto`** de volta na coluna **`Pr Cx`**, linha a linha (o relatório traz o `Pr Cx` *líquido* do desconto; a Fresenius quer o preço *cheio*). Linhas com desconto `0` ficam intactas. |
+
+**Cuidados técnicos** (já tratados no hook):
+- Números são **texto pt-BR** no xlsx (`2.898,5729`). O hook converte pt-BR →
+  float p/ somar e devolve em pt-BR (4 casas), só nas linhas alteradas.
+- Colunas achadas por nome (ignora caixa/espaços). Se não achar `Vlr Desconto`/
+  `Pr Cx`, **não arrisca**: copia sem alterar e loga `⚠️`.
+- Log na execução: `✏️ [pos] fresenius_desconto: desconto somado em 'Pr Cx' em N de M linha(s)`.
+- **Validado** contra arquivo real (16/112 linhas com desconto, somas conferidas).
+
+> Para adicionar um ajuste a outro lab: crie a função em `pos_processamento.py`,
+> registre em `HOOKS`, e some o nome em `"pos": [...]` do lab no `labs_config.py`.
 
 ## 5. Seletores das telas APEX (`labs_config.py`)
 
@@ -386,7 +410,8 @@ b06a6ff refactor(n8n): centraliza e-mail da colega (email_colega na Agenda)
 
 ## 17. Pontos a confirmar / observações
 - **Fresenius**: `modelo_label="MAPA DE VENDA FRESENIUS"`; quando tiverem o
-  `value`, preencher `modelo_venda` (mais estável). Pós-processamento **não** ligado.
+  `value`, preencher `modelo_venda` (mais estável). Pós-processamento **ligado**
+  (`fresenius_desconto` — soma `Vlr Desconto` em `Pr Cx`; ver §4.1).
 - **Sandoz RS/SC vs SP**: mesmo `modelo_venda` → venda gerada 1x (dedup).
 - **Pasta `exec`** no Hub persiste até limpeza — necessária p/ reenvio só-e-mail.
 - **Histórico**: as 45 planilhas saíram do tip, mas **continuam no histórico** do

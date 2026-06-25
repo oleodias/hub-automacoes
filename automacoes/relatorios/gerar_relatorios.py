@@ -466,16 +466,20 @@ def gerar_demanda(driver, modelo_value, modelo_label, operacao, data_ini, data_f
     return _baixar_csv(driver, DEMANDA, pasta, nome)
 
 
-def aplicar_pos_processamento(caminho_venda, lab, pasta):
-    """Aplica os hooks do lab (ex.: Fresenius) gerando um arquivo próprio."""
-    caminho = caminho_venda
+def aplicar_pos_processamento(caminho_venda, lab):
+    """Aplica os hooks do lab SOBRE o próprio arquivo de venda (in-place),
+    preservando o nome do relatório. Escreve num temporário e troca o original
+    (evita corromper o arquivo se o hook falhar no meio)."""
     for nome_hook in lab.get("pos", []):
         func = pos_processamento.HOOKS.get(nome_hook)
         if not func:
+            print(f"> ⚠️ [pos] hook desconhecido: {nome_hook} (ignorado).")
             continue
-        destino = os.path.join(pasta, f"venda_{_slug(lab['nome'])}_{nome_hook}.xlsx")
-        caminho = func(caminho, destino)
-    return caminho
+        raiz, ext = os.path.splitext(caminho_venda)
+        tmp = f"{raiz}.__pos_{nome_hook}{ext}"
+        func(caminho_venda, tmp)
+        os.replace(tmp, caminho_venda)
+    return caminho_venda
 
 
 # ─────────────────────────── Orquestração ───────────────────────────
@@ -541,6 +545,7 @@ def executar(job):
 
         # ---- 3) MANIFESTO (lab -> arquivos), com pós-processamento ----
         itens = []
+        pos_feito = set()  # combos já pós-processados (evita somar 2x no mesmo arquivo)
         for e in envios:
             lab = LABS[e["lab_id"]]
             modelo_id = lab["modelo_venda"] or lab.get("modelo_label")
@@ -548,8 +553,12 @@ def executar(job):
             for operacao in lab["operacoes"]:
                 chave = (modelo_id, operacao, e["periodo_ini"], e["periodo_fim"])
                 caminho_venda = combos[chave]
-                if lab.get("pos"):
-                    caminho_venda = aplicar_pos_processamento(caminho_venda, lab, pasta)
+                # Pós-processa o arquivo de venda IN-PLACE, uma única vez por combo.
+                # Seguro: um lab com hook usa modelo exclusivo (ex.: Fresenius), então
+                # nenhum outro lab reaproveita esse combo no dedup.
+                if lab.get("pos") and chave not in pos_feito:
+                    aplicar_pos_processamento(caminho_venda, lab)
+                    pos_feito.add(chave)
                 arquivos.append(os.path.basename(caminho_venda))
             itens.append({
                 "id": e.get("id"),
