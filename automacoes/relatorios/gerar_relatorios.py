@@ -395,6 +395,101 @@ def _slug_nome(texto):
     return s or "relatorio"
 
 
+def _estilizar_xlsx(caminho, titulo="", subtitulo=""):
+    """Aplica o estilo-padrão Ciamed ao .xlsx, in-place (best-effort):
+    faixa-título CIAMED + subtítulo, cabeçalho teal, congelamento, filtro,
+    larguras automáticas, linhas zebradas e números alinhados à direita.
+    Os VALORES não são alterados (seguem texto pt-BR) — só a aparência."""
+    from openpyxl import load_workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.utils import get_column_letter
+
+    TEAL, TEAL_HDR, ZEBRA, BRANCO, SUB = "00B3B2", "0A9D9C", "F4F6F8", "FFFFFF", "E6F7F7"
+    re_num = re.compile(r"^-?\d{1,3}(\.\d{3})*(,\d+)?$|^-?\d+(,\d+)?$")
+
+    wb = load_workbook(caminho)
+    ws = wb.active
+    ncols, nrows = ws.max_column, ws.max_row
+    if ncols == 0 or nrows == 0:
+        return
+
+    # Larguras pelo conteúdo (mín. 10, máx. 60) — inclui o header (linha 1).
+    larguras = {}
+    for col in range(1, ncols + 1):
+        m = 0
+        for row in range(1, nrows + 1):
+            v = ws.cell(row=row, column=col).value
+            if v is not None:
+                m = max(m, len(str(v)))
+        larguras[col] = min(max(m + 5, 12), 65)  # +respiro nas colunas
+
+    # Colunas numéricas (amostra das 1ªs linhas de dados) → alinhar à direita.
+    col_num = {}
+    for col in range(1, ncols + 1):
+        amostra = num = 0
+        for row in range(2, min(nrows, 41) + 1):
+            s = (ws.cell(row=row, column=col).value or "")
+            s = str(s).strip()
+            if not s:
+                continue
+            amostra += 1
+            num += 1 if re_num.match(s) else 0
+        col_num[col] = amostra > 0 and num / amostra >= 0.8
+
+    # Faixa-título (2 linhas no topo).
+    ws.insert_rows(1, amount=2)
+    fill_teal = PatternFill("solid", fgColor=TEAL)
+    for col in range(1, ncols + 1):
+        ws.cell(row=1, column=col).fill = fill_teal
+        ws.cell(row=2, column=col).fill = fill_teal
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=ncols)
+    ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=ncols)
+    t1 = ws.cell(row=1, column=1)
+    t1.value = "CIAMED"
+    t1.font = Font(name="Calibri", bold=True, size=18, color=BRANCO)
+    t1.alignment = Alignment(horizontal="left", vertical="center", indent=1)
+    t2 = ws.cell(row=2, column=1)
+    t2.value = " · ".join(x for x in (titulo, subtitulo) if x)
+    t2.font = Font(name="Calibri", size=10, color=SUB)
+    t2.alignment = Alignment(horizontal="left", vertical="center", indent=1)
+    ws.row_dimensions[1].height = 26
+    ws.row_dimensions[2].height = 18
+
+    # Cabeçalho da tabela (agora na linha 3).
+    HDR = 3
+    fill_hdr = PatternFill("solid", fgColor=TEAL_HDR)
+    font_hdr = Font(name="Calibri", bold=True, color=BRANCO)
+    al_l = Alignment(horizontal="left", vertical="center")
+    al_r = Alignment(horizontal="right", vertical="center")
+    al_c = Alignment(horizontal="center", vertical="center")
+    for col in range(1, ncols + 1):
+        c = ws.cell(row=HDR, column=col)
+        c.fill, c.font = fill_hdr, font_hdr
+        c.alignment = al_c  # títulos das colunas centralizados
+    ws.row_dimensions[HDR].height = 20
+
+    # Corpo: zebra + alinhamento.
+    fill_zebra = PatternFill("solid", fgColor=ZEBRA)
+    font_body = Font(name="Calibri", size=11)
+    inicio, ult = HDR + 1, ws.max_row
+    for row in range(inicio, ult + 1):
+        zebra = (row - inicio) % 2 == 1
+        for col in range(1, ncols + 1):
+            c = ws.cell(row=row, column=col)
+            if zebra:
+                c.fill = fill_zebra
+            c.font = font_body
+            c.alignment = al_r if col_num[col] else al_l
+
+    # Larguras, filtro e congelamento (mantém faixa + cabeçalho fixos ao rolar).
+    for col, w in larguras.items():
+        ws.column_dimensions[get_column_letter(col)].width = w
+    ws.auto_filter.ref = f"A{HDR}:{get_column_letter(ncols)}{ult}"
+    ws.freeze_panes = f"A{inicio}"
+
+    wb.save(caminho)
+
+
 # ─────────────────────── Geração de cada relatório ───────────────────────
 def gerar_analise_estoque(driver, setor, pasta):
     """Tela A — gera a Análise de Estoque para um setor (privado/publico)."""
@@ -463,7 +558,8 @@ def gerar_demanda(driver, modelo_value, modelo_label, operacao, data_ini, data_f
     # para manter unicidade, já que a Sun usa o mesmo modelo em 11 e 17).
     base = _slug_nome(modelo_nome) if modelo_nome else f"venda_{_slug(rotulo)}"
     nome = f"{base}_{operacao}_{_slug(data_ini)}_{_slug(data_fim)}"
-    return _baixar_csv(driver, DEMANDA, pasta, nome)
+    # Retorna o caminho + o nome do relatório salvo (usado no título da planilha).
+    return _baixar_csv(driver, DEMANDA, pasta, nome), modelo_nome
 
 
 def aplicar_pos_processamento(caminho_venda, lab):
@@ -482,12 +578,120 @@ def aplicar_pos_processamento(caminho_venda, lab):
     return caminho_venda
 
 
+# ─────────────────────── Tradução de erros (avisos) ───────────────────────
+def _explicar_erro(exc):
+    """Traduz a exceção em (explicação, sugestão) no português, para o e-mail de
+    aviso. Casa primeiro pela MENSAGEM (mais específico) e depois pelo TIPO."""
+    nome = type(exc).__name__
+    msg = (str(exc) or "").lower()
+
+    # 1) Por mensagem (casos mais específicos primeiro)
+    if "only supports chrome version" in msg or "this version of chromedriver" in msg:
+        return ("A versão do Chrome e a do ChromeDriver estão incompatíveis.",
+                "TI: atualizar o ChromeDriver para a mesma versão do Chrome da máquina do robô.")
+    if "chrome not reachable" in msg or "cannot connect to chrome" in msg:
+        return ("O robô não conseguiu falar com o Chrome (o navegador não respondeu/não abriu).",
+                "Rode novamente. Se persistir, reinicie a máquina do robô e confira a instalação do Chrome.")
+    if "disconnected" in msg or "session deleted" in msg:
+        return ("A sessão do navegador caiu durante a execução.",
+                "Rode novamente. Se persistir, reinicie a máquina do robô.")
+    if "net::err" in msg or "timed out receiving message from renderer" in msg:
+        return ("Houve uma falha de rede/carregamento ao acessar o NL.",
+                "Verifique a conexão/VPN com o NL e rode novamente.")
+
+    # 2) Por tipo da exceção
+    DIC = {
+        "NoSuchWindowException": (
+            "A janela do Chrome foi fechada durante a execução — o robô perdeu o controle do navegador.",
+            "Rode novamente. No modo visível, não feche a janela do Chrome até o robô terminar."),
+        "InvalidSessionIdException": (
+            "A sessão do navegador foi perdida no meio da execução.",
+            "Rode novamente. Se persistir, reinicie a máquina do robô."),
+        "SessionNotCreatedException": (
+            "Não foi possível iniciar o navegador (Chrome/ChromeDriver).",
+            "TI: conferir a compatibilidade entre o Chrome e o ChromeDriver."),
+        "WebDriverException": (
+            "Falha de comunicação com o navegador (Chrome/ChromeDriver).",
+            "Rode novamente. Se persistir, a TI deve conferir o Chrome/ChromeDriver."),
+        "TimeoutException": (
+            "Uma tela do NL demorou demais para responder (lentidão/queda do NL, VPN, ou um elemento não apareceu).",
+            "Tente novamente em alguns minutos. Se travar sempre na mesma etapa, o NL pode ter mudado de tela — avisar o desenvolvedor."),
+        "NoSuchElementException": (
+            "Um campo ou botão esperado não foi encontrado na tela do NL.",
+            "Tente novamente. Se persistir, o layout do NL provavelmente mudou — avisar o desenvolvedor."),
+        "ElementClickInterceptedException": (
+            "Algo ficou na frente do elemento que o robô tentou clicar (pop-up/sobreposição do NL).",
+            "Tente novamente."),
+        "ElementNotInteractableException": (
+            "Um elemento ainda não estava pronto (visível/clicável) quando o robô tentou usá-lo.",
+            "Tente novamente."),
+        "StaleElementReferenceException": (
+            "A página recarregou e o robô perdeu a referência de um elemento.",
+            "Tente novamente."),
+        "UnexpectedAlertPresentException": (
+            "Apareceu um alerta do navegador que interrompeu o robô.",
+            "Tente novamente. Se persistir, avisar o desenvolvedor."),
+        "JavascriptException": (
+            "Houve um erro ao executar um comando interno na página do NL.",
+            "Tente novamente. Se persistir, avisar o desenvolvedor."),
+        "FileNotFoundError": (
+            "O arquivo baixado do NL não foi encontrado (o download falhou ou não concluiu).",
+            "Tente novamente. Se persistir, verifique a conexão com o NL e a pasta de downloads."),
+        "TimeoutError": (
+            "O download de um relatório não concluiu no tempo esperado.",
+            "Tente novamente em alguns minutos (pode ser lentidão do NL)."),
+        "PermissionError": (
+            "Um arquivo de planilha estava bloqueado (provavelmente aberto no Excel).",
+            "Feche a planilha aberta e rode novamente."),
+        "ValueError": (
+            "Um arquivo baixado veio vazio ou em formato inesperado.",
+            "Tente novamente. Se persistir, avisar o desenvolvedor."),
+        "KeyError": (
+            "Faltou uma informação esperada na configuração de um laboratório.",
+            "Avisar o desenvolvedor (possível erro de configuração de lab)."),
+    }
+    if nome in DIC:
+        return DIC[nome]
+    return ("Ocorreu um erro inesperado durante a execução do robô.",
+            "Rode novamente. Se persistir, encaminhe o detalhe técnico ao desenvolvedor.")
+
+
+def _resultado_erro(ctx, pasta, avisos, exc=None, explicacao=None, sugestao=None, detalhe=None, msg=None):
+    """Monta o resultado de erro ESTRUTURADO que o n8n usa para o e-mail de aviso:
+    o quê (explicação), onde (etapa/lab/período/progresso) e o detalhe técnico."""
+    if exc is not None:
+        nome = type(exc).__name__
+        det = (str(exc) or "").strip().splitlines()[0] if str(exc).strip() else "(sem mensagem)"
+        detalhe = f"{nome}: {det}"
+        explicacao, sugestao = _explicar_erro(exc)
+        msg = detalhe
+    return {
+        "status": "Erro",
+        "msg": msg or detalhe or "Erro na execução.",
+        "etapa": ctx.get("etapa", ""),
+        "lab": ctx.get("lab", ""),
+        "periodo": ctx.get("periodo", ""),
+        "progresso": ctx.get("progresso", ""),
+        "explicacao": explicacao or "Ocorreu um erro inesperado durante a execução do robô.",
+        "sugestao": sugestao or "Rode novamente; se persistir, avise o desenvolvedor.",
+        "detalhe_tecnico": detalhe or msg or "",
+        "pasta": pasta,
+        "itens": [],
+        "avisos": avisos,
+    }
+
+
 # ─────────────────────────── Orquestração ───────────────────────────
 def executar(job):
     """Ponto de entrada chamado pelo Hub (síncrono). Ver contrato no topo."""
     envios = job.get("envios", []) or []
-    modo_fantasma = job.get("modo_fantasma", True)
+    # Padrão FALSE p/ observar o robô durante os testes (Chrome visível).
+    # ⚠️ PRODUÇÃO/servidor sem tela: volte para True (headless) ou mande
+    # "modo_fantasma": true no job — senão o Chrome não sobe sem display.
+    modo_fantasma = job.get("modo_fantasma", False)
     avisos = []
+    # Contexto da execução: alimenta o aviso de erro com ONDE o robô parou.
+    ctx = {"etapa": "Inicialização", "lab": "", "periodo": "", "progresso": ""}
 
     # Modo observação: deixa os cliques/pausas mais lentos para acompanhar.
     if job.get("modo_lento"):
@@ -498,9 +702,17 @@ def executar(job):
     # Valida lab_ids cedo (evita abrir navegador à toa).
     desconhecidos = [e.get("lab_id") for e in envios if e.get("lab_id") not in LABS]
     if desconhecidos:
-        return {"status": "Erro", "msg": f"lab_id desconhecido(s): {desconhecidos}", "itens": []}
+        return _resultado_erro(ctx, "", avisos,
+            msg=f"lab_id desconhecido(s): {desconhecidos}",
+            detalhe=f"lab_id desconhecido(s): {desconhecidos}",
+            explicacao=f"O(s) laboratório(s) {desconhecidos} não existe(m) na configuração.",
+            sugestao="Confira o lab_id no Disparo Manual/Agenda (precisa casar com a lista de labs).")
     if not envios:
-        return {"status": "Erro", "msg": "Nenhum envio informado no job.", "itens": []}
+        return _resultado_erro(ctx, "", avisos,
+            msg="Nenhum envio informado no job.",
+            detalhe="Nenhum envio informado no job.",
+            explicacao="O robô foi acionado sem nenhum envio para processar.",
+            sugestao="Verifique se a Agenda/Disparo Manual gerou algum envio válido para hoje.")
 
     pasta = os.path.join(PASTA_BASE, datetime.now().strftime("exec_%Y%m%d_%H%M%S"))
     os.makedirs(pasta, exist_ok=True)
@@ -514,8 +726,13 @@ def executar(job):
         avisos.append(f"Não foi possível fixar a pasta de download via CDP: {e}")
 
     try:
+        ctx["etapa"] = "Login no NL"
         if not fazer_login(driver):
-            return {"status": "Erro", "msg": "Falha no login do NL.", "itens": [], "pasta": pasta}
+            return _resultado_erro(ctx, pasta, avisos,
+                msg="Falha no login do NL.",
+                detalhe="fazer_login(driver) retornou False.",
+                explicacao="O robô não conseguiu entrar no NL (login não concluído).",
+                sugestao="Confira usuário/senha do NL e se o sistema está no ar; depois rode novamente.")
 
         # ---- 1) ANÁLISE DE ESTOQUE (gera cada setor 1x) ----
         setores = []
@@ -523,13 +740,30 @@ def executar(job):
             for s in LABS[e["lab_id"]]["estoque"]:
                 if s not in setores:
                     setores.append(s)
+        total_est, feito_est = len(setores), 0
         estoque_paths = {}
+        estilos = {}  # caminho -> (titulo, subtitulo) p/ a estilização final
         if setores:
             _abrir_favorito(driver, ESTOQUE["favorito_invoker"], ESTOQUE["item_marcador"])
             for setor in setores:
-                estoque_paths[setor] = gerar_analise_estoque(driver, setor, pasta)
+                ctx["etapa"] = f"Análise de Estoque — {setor}"
+                ctx["lab"], ctx["periodo"] = "", ""
+                p = gerar_analise_estoque(driver, setor, pasta)
+                estoque_paths[setor] = p
+                estilos[p] = ("Análise de Estoque", f"{setor.capitalize()} · posição atual")
+                feito_est += 1
+                ctx["progresso"] = f"Estoque {feito_est}/{total_est}"
 
         # ---- 2) DEMANDA FORNECEDOR (gera cada combo único 1x) ----
+        # Conta os combos únicos só para o "progresso" no aviso de erro.
+        combos_alvo = set()
+        for e in envios:
+            lab = LABS[e["lab_id"]]
+            modelo_id = lab["modelo_venda"] or lab.get("modelo_label")
+            for operacao in lab["operacoes"]:
+                combos_alvo.add((modelo_id, operacao, e["periodo_ini"], e["periodo_fim"]))
+        total_venda, feito_venda = len(combos_alvo), 0
+
         combos = {}  # (modelo_id, operacao, ini, fim) -> caminho
         _abrir_favorito(driver, DEMANDA["favorito_invoker"], DEMANDA["item_marcador"])
         for e in envios:
@@ -538,12 +772,22 @@ def executar(job):
             for operacao in lab["operacoes"]:
                 chave = (modelo_id, operacao, e["periodo_ini"], e["periodo_fim"])
                 if chave not in combos:
-                    combos[chave] = gerar_demanda(
+                    ctx["etapa"] = "Demanda Fornecedor (venda)"
+                    ctx["lab"] = lab["nome"]
+                    ctx["periodo"] = f'{e["periodo_ini"]} a {e["periodo_fim"]}'
+                    caminho, modelo_nome = gerar_demanda(
                         driver, lab["modelo_venda"], lab.get("modelo_label"), operacao,
                         e["periodo_ini"], e["periodo_fim"], pasta,
                     )
+                    combos[chave] = caminho
+                    estilos[caminho] = ("Mapa de Venda",
+                        f"{modelo_nome or lab['nome']} · {e['periodo_ini']} a {e['periodo_fim']}")
+                    feito_venda += 1
+                    ctx["progresso"] = f"Estoque {total_est}/{total_est} · Venda {feito_venda}/{total_venda}"
 
         # ---- 3) MANIFESTO (lab -> arquivos), com pós-processamento ----
+        ctx["etapa"] = "Montagem dos arquivos / pós-processamento"
+        ctx["lab"], ctx["periodo"] = "", ""
         itens = []
         pos_feito = set()  # combos já pós-processados (evita somar 2x no mesmo arquivo)
         for e in envios:
@@ -557,6 +801,8 @@ def executar(job):
                 # Seguro: um lab com hook usa modelo exclusivo (ex.: Fresenius), então
                 # nenhum outro lab reaproveita esse combo no dedup.
                 if lab.get("pos") and chave not in pos_feito:
+                    ctx["etapa"] = f"Pós-processamento — {lab['nome']}"
+                    ctx["lab"] = lab["nome"]
                     aplicar_pos_processamento(caminho_venda, lab)
                     pos_feito.add(chave)
                 arquivos.append(os.path.basename(caminho_venda))
@@ -567,6 +813,15 @@ def executar(job):
                 "arquivos": arquivos,
             })
 
+        # ---- 4) ESTILIZAÇÃO (passo final, DEPOIS do pós-processamento) ----
+        # Padroniza todos os arquivos (faixa CIAMED, cabeçalho teal, freeze,
+        # filtro, larguras, zebra). Best-effort: falha aqui não derruba o envio.
+        for caminho, (titulo, subtitulo) in estilos.items():
+            try:
+                _estilizar_xlsx(caminho, titulo, subtitulo)
+            except Exception as ex:  # noqa: BLE001
+                avisos.append(f"Não consegui estilizar {os.path.basename(caminho)}: {ex}")
+
         status = "Sucesso com avisos" if avisos else "Sucesso"
         print("> ✅ Concluído.")
         return {"status": status, "msg": "Relatórios gerados.", "pasta": pasta,
@@ -575,10 +830,9 @@ def executar(job):
     except Exception as e:  # noqa: BLE001
         tipo = type(e).__name__
         detalhe = (str(e) or "").strip().splitlines()[0] if str(e).strip() else "(sem mensagem)"
-        print(f"> ❌ Erro durante a geração [{tipo}]: {detalhe}")
+        print(f"> ❌ Erro [{tipo}] na etapa '{ctx.get('etapa')}': {detalhe}")
         traceback.print_exc()  # mostra a LINHA do robô que estourou
-        return {"status": "Erro", "msg": f"{tipo}: {detalhe}", "pasta": pasta,
-                "itens": [], "avisos": avisos}
+        return _resultado_erro(ctx, pasta, avisos, exc=e)
     finally:
         _sleep(2)
         driver.quit()
