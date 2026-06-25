@@ -149,6 +149,61 @@ function novoEnvio(lab_id, tipo, regra, hoje) {
 
 // ─────────────────────────────── main ───────────────────────────────
 // Atenção ao fuso: assume o servidor do n8n em America/Sao_Paulo.
+// ── DISPARO MANUAL (Form Trigger "Disparo Manual") ────────────────────
+// Se o workflow foi iniciado pelo formulário, chega um lab_id no input:
+// monta UM envio para o lab escolhido e ignora o calendário. Reusa os
+// mapas EMAILS/NOMES e RESPEITA o MODO_TESTE (mesma segurança do automático).
+// Período em branco => mês anterior inteiro.
+let _manual = null;
+try {
+  const _itens = $input.all();
+  if (_itens.length && _itens[0].json && _itens[0].json.lab_id) _manual = _itens[0].json;
+} catch (_e) { _manual = null; }
+
+if (_manual) {
+  const hojeM = new Date();
+  const lab_id = String(_manual.lab_id || "").trim();
+  const conhecido = Object.prototype.hasOwnProperty.call(NOMES, lab_id);
+  let pini = String(_manual.periodo_ini || "").trim();
+  let pfim = String(_manual.periodo_fim || "").trim();
+  if (!pini && !pfim) {                       // vazio => mês anterior inteiro
+    const [a, b] = periodo("mes_anterior", hojeM);
+    pini = fmt(a); pfim = fmt(b);
+  }
+  const reData = /^\d{2}\/\d{2}\/\d{4}$/;
+  const valido = conhecido && reData.test(pini) && reData.test(pfim);
+  const envio = {
+    id: `${lab_id}__M`,
+    lab_id,
+    lab_nome: NOMES[lab_id] || lab_id,
+    tipo: "M",
+    regra_periodo: "manual",
+    periodo_ini: valido ? pini : "",
+    periodo_fim: valido ? pfim : "",
+    valido,
+    emails: MODO_TESTE ? [EMAIL_TESTE] : (EMAILS[lab_id] || []),
+    bcc: MODO_TESTE ? [] : RESPONSAVEIS_BCC,
+    emails_producao: EMAILS[lab_id] || [],
+  };
+  const enviosM = valido ? [envio] : [];
+  const ignoradosM = valido ? [] : [{ id: envio.id, motivo: conhecido ? "periodo_invalido" : "lab_desconhecido" }];
+  return [{
+    json: {
+      data_ref: fmt(hojeM),
+      modo_teste: MODO_TESTE,
+      forcar_teste: false,
+      disparo_manual: true,
+      email_avisos: EMAIL_AVISOS,
+      email_colega: EMAIL_COLEGA,
+      tem_disparo: enviosM.length > 0,
+      tipos: { manual: true },
+      qtd_envios: enviosM.length,
+      envios: enviosM,
+      ignorados: ignoradosM,
+    },
+  }];
+}
+
 const hoje = new Date();
 const w = hoje.getDay(); // 0=Dom..6=Sab
 
@@ -160,8 +215,9 @@ const ehTipo3 = w === 4; // quinta
 
 const candidatos = [];
 if (FORCAR_TESTE) {
-  // Teste manual do workflow: 1 envio fixo, independente do dia.
-  candidatos.push(novoEnvio("bayer", 1, "mes_anterior", hoje));
+  // Teste manual do workflow: força TODOS os 12 labs (Tipo 1, mês anterior),
+  // independente do dia — serve para testar o fluxo inteiro de uma vez.
+  for (const lab of TIPO1_PRIMEIRO_DIA_UTIL) candidatos.push(novoEnvio(lab, 1, "mes_anterior", hoje));
 } else {
   if (ehTipo1) for (const lab of TIPO1_PRIMEIRO_DIA_UTIL) candidatos.push(novoEnvio(lab, 1, "mes_anterior", hoje));
   if (ehTipo2) for (const [lab, regra] of Object.entries(TIPO2_SEGUNDA)) candidatos.push(novoEnvio(lab, 2, regra, hoje));

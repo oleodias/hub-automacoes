@@ -15,9 +15,8 @@
 // para anexar dinamicamente todos os binários do item.
 // ══════════════════════════════════════════════════════════════
 
-// ⚠️ Trocar pela URL PÚBLICA da logo (precisa ser acessível pela internet,
-// pois quem abre o e-mail está fora da rede). Ex.: logo no site da empresa.
-const LOGO_URL = "https://SUA-LOGO-PUBLICA-AQUI/logo.png";
+// Logo: wordmark em TEXTO "CIAMED" (sem imagem) — não depende de host
+// público nem de anexo inline, aparece em qualquer cliente de e-mail.
 
 function montarHtml(g) {
   const itens = (g.arquivos || [])
@@ -29,7 +28,8 @@ function montarHtml(g) {
     <tr><td align="center">
       <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e6e9ec;">
         <tr><td align="center" style="background:#00B3B2;padding:20px 24px;">
-          <img src="${LOGO_URL}" alt="Ciamed" height="48" style="display:block;border:0;">
+          <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#ffffff;font-size:30px;font-weight:bold;letter-spacing:6px;line-height:1;">CIAMED</div>
+          <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#e6f7f7;font-size:10px;letter-spacing:3px;text-transform:uppercase;margin-top:7px;">Distribuidora de Medicamentos</div>
         </td></tr>
         <tr><td style="padding:28px 24px 8px;">
           <h2 style="margin:0 0 12px;font-size:18px;color:#00B3B2;">Relatório de Vendas / Estoque</h2>

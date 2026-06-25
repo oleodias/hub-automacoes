@@ -12,26 +12,26 @@
           ]
         }
       },
-      "id": "Schedule 06:30",
+      "id": "3422200c-7d1c-45ae-b053-70d42d7a6a75",
       "name": "Schedule 06:30",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
-        0,
-        480
+        -3584,
+        592
       ]
     },
     {
       "parameters": {
-        "jsCode": "// ══════════════════════════════════════════════════════════════\n// agenda_relatorios.js — Code node do n8n (o \"cérebro\" da agenda)\n// ──────────────────────────────────────────────────────────────\n// Roda no início do workflow (depois do Schedule Trigger). Decide\n// QUAIS laboratórios disparam HOJE, com QUAL período de venda, e já\n// anexa os E-MAILS de cada um. A saída alimenta:\n//   1) POST {hub}/relatorios/iniciar  → { envios: [...] }\n//   2) o loop de e-mail (emailSend SMTP) por lab, usando o manifesto.\n//\n// Fonte da verdade: planilha \"ENVIO DE RELATÓRIOS - VENDAS/ESTOQUE\".\n//\n// ⚠️ DOIS PONTOS A CONFIRMAR (ver constantes abaixo):\n//   • REGRA_TIPO1: a planilha diz \"1º DIA ÚTIL\"; antes tínhamos falado\n//     \"todo dia 1º (mesmo fim de semana)\". Default aqui = 1º dia útil.\n//   • SEMANA_ANTERIOR: seg→dom (default) ou seg→sex? (Bayer/Roche)\n//\n// OBS.: o ESTOQUE não tem filtro de data — é a foto atual. A coluna\n// \"PERÍODO ESTOQUE\" da planilha só explica POR QUE se envia naquele dia\n// (rodar no 1º dia útil ≈ \"como o mês fechou\"). Por isso o robô não\n// recebe período de estoque, só o período de VENDA.\n// ══════════════════════════════════════════════════════════════\n\n// ── Config: e-mails por laboratório (lab_id casa com o Hub/LABS) ──\nconst EMAILS = {\n  bayer:        [\"operacoescomerciaisbhp@bayer.com\", \"elias.zanatta@bayer.com\", \"paula.yokomizo@bayer.com\"],\n  csl:          [\"csl@wfbconsultoria.com.br\", \"Rafael.Esteves@csl.com.au\"],\n  fresenius:    [\"jailton.silva@fresenius-kabi.com\"],\n  glaxo:        [\"alexandre.x.mitsuda@gsk.com\"],\n  organon:      [\"rodrigo.blas@organon.com\"],\n  roche:        [\"brasil.operacoescomerciais@roche.com\", \"joao.pessoa@roche.com\"],\n  sandoz_rs_sc: [\"marcelo.novelli@sandoz.com\", \"isaque.fedrigo@sandoz.com\"],\n  sandoz_sp:    [\"roger.damian@sandoz.com\"],\n  sankyo:       [\"marcio.honorati@daiichisankyo.com\", \"pedro.mota@daiichisankyo.com\", \"alexandre.jesus@daiichisankyo.com\"],\n  sun_geral:    [\"Gisele.Lemos@sunpharma.com\", \"Ana.ferreira@sunpharma.com\"],\n  sun_13082:    [\"Cecilia.Castro@sunpharma.com\", \"Edgar.Lopes@sunpharma.com\"],\n  united:       [\"leonardo.rossi@knighttx.com\"],\n};\n\nconst NOMES = {\n  bayer: \"Bayer\", csl: \"CSL\", fresenius: \"Fresenius\", glaxo: \"Glaxo\",\n  organon: \"Organon\", roche: \"Roche\", sandoz_rs_sc: \"Sandoz RS/SC\",\n  sandoz_sp: \"Sandoz SP\", sankyo: \"Sankyo\", sun_geral: \"Sun Geral\",\n  sun_13082: \"Sun Item 13082\", united: \"United\",\n};\n\n// Responsáveis internos que recebem CÓPIA OCULTA (BCC) de cada envio.\n// ⚠️ PREENCHER (ex.: a colega que gera hoje + quem monitora).\nconst RESPONSAVEIS_BCC = [];\n\n// ── MODO TESTE ──────────────────────────────────────────────────\n// Enquanto MODO_TESTE = true, NENHUM e-mail vai aos laboratórios:\n// todos os relatórios são redirecionados para EMAIL_TESTE (sem BCC).\n// Os avisos de conclusão/erro vão para EMAIL_AVISOS.\n// Para ir a PRODUÇÃO, basta trocar MODO_TESTE para false.\nconst MODO_TESTE = true;\nconst EMAIL_TESTE = \"leonardodiascaumo@gmail.com\";  // destino dos relatórios em teste\nconst EMAIL_AVISOS = \"ti6@ciamedrs.com.br\";         // avisos de conclusão/erro (robô)\nconst EMAIL_COLEGA = \"leonardodiascaumo@gmail.com\"; // colega que confere os envios (aviso por lab)\n\n// ── FORÇAR TESTE ────────────────────────────────────────────────\n// Enquanto true, ignora as regras de data e emite 1 envio fixo (Bayer,\n// mês anterior) — serve para testar o WORKFLOW INTEIRO no n8n em qualquer\n// dia. Voltar para false em produção (aí volta a respeitar o calendário).\nconst FORCAR_TESTE = false;\n\n// ── Quem dispara em cada tipo + qual a regra de período da VENDA ──\n// regra_periodo ∈ {mes_anterior, semana_anterior, mes_ate_ultima_sexta, mes_ate_ultima_quarta}\nconst TIPO1_PRIMEIRO_DIA_UTIL = [   // todos os 12, venda = todo mês anterior\n  \"bayer\", \"csl\", \"fresenius\", \"glaxo\", \"organon\", \"roche\",\n  \"sandoz_rs_sc\", \"sandoz_sp\", \"sankyo\", \"sun_geral\", \"sun_13082\", \"united\",\n];\nconst TIPO2_SEGUNDA = {\n  bayer: \"semana_anterior\", roche: \"semana_anterior\",\n  csl: \"mes_ate_ultima_sexta\", fresenius: \"mes_ate_ultima_sexta\",\n  glaxo: \"mes_ate_ultima_sexta\", sun_geral: \"mes_ate_ultima_sexta\",\n};\nconst TIPO3_QUINTA = { sun_13082: \"mes_ate_ultima_quarta\" };\n\n// ── PARÂMETROS (decididos com o Leonardo) ──\nconst REGRA_TIPO1 = \"dia_1\";        // dispara sempre no dia 1º, mesmo fim de semana\nconst SEMANA_ANTERIOR = \"seg_sex\";  // semana anterior = segunda a sexta\n\n// ────────────────────────── helpers de data ──────────────────────────\nfunction fmt(d) {\n  const dd = String(d.getDate()).padStart(2, \"0\");\n  const mm = String(d.getMonth() + 1).padStart(2, \"0\");\n  return `${dd}/${mm}/${d.getFullYear()}`;\n}\nfunction addDias(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }\nfunction ehFimDeSemana(d) { const w = d.getDay(); return w === 0 || w === 6; }\n\nfunction primeiroDiaUtilDoMes(ref) {\n  let d = new Date(ref.getFullYear(), ref.getMonth(), 1);\n  while (ehFimDeSemana(d)) d = addDias(d, 1); // sem feriados, conforme combinado\n  return d;\n}\nfunction ultimoDiaSemanaAntes(ref, weekday) {\n  // weekday: 1=seg ... 5=sex, 3=qua. Retorna a ocorrência mais recente ANTES de ref.\n  let d = addDias(ref, -1);\n  while (d.getDay() !== weekday) d = addDias(d, -1);\n  return d;\n}\n\nfunction periodo(regra, hoje) {\n  if (regra === \"mes_anterior\") {\n    const ini = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);\n    const fim = new Date(hoje.getFullYear(), hoje.getMonth(), 0); // último dia do mês anterior\n    return [ini, fim];\n  }\n  if (regra === \"semana_anterior\") {\n    // segunda desta semana → volta 7 dias = segunda passada\n    const segDestaSemana = addDias(hoje, -((hoje.getDay() + 6) % 7));\n    const segAnterior = addDias(segDestaSemana, -7);\n    const fim = SEMANA_ANTERIOR === \"seg_sex\" ? addDias(segAnterior, 4) : addDias(segAnterior, 6);\n    return [segAnterior, fim];\n  }\n  if (regra === \"mes_ate_ultima_sexta\" || regra === \"mes_ate_ultima_quarta\") {\n    const weekday = regra === \"mes_ate_ultima_sexta\" ? 5 : 3; // 5=sexta, 3=quarta\n    const dia1 = new Date(hoje.getFullYear(), hoje.getMonth(), 1);\n    const fim = ultimoDiaSemanaAntes(hoje, weekday); // ocorrência mais recente antes de hoje\n    if (fim >= dia1) return [dia1, fim];             // caso normal: 1º do mês → última sexta/quarta\n    // Borda (1ª segunda/quinta do mês, sem essa data ainda no mês vigente):\n    // usa a semana que antecede hoje = última semana do mês passado (seg → sexta/quarta).\n    const segDestaSemana = addDias(hoje, -((hoje.getDay() + 6) % 7));\n    return [addDias(segDestaSemana, -7), fim];\n  }\n  return [null, null];\n}\n\nfunction novoEnvio(lab_id, tipo, regra, hoje) {\n  const [ini, fim] = periodo(regra, hoje);\n  // Blindagem: período inválido (ex.: 1ª segunda do mês, sem sexta ainda no mês vigente).\n  const valido = ini && fim && fim >= ini;\n  return {\n    id: `${lab_id}__T${tipo}`,            // chave p/ casar o manifesto do Hub com o e-mail\n    lab_id,\n    lab_nome: NOMES[lab_id],\n    tipo,\n    regra_periodo: regra,\n    periodo_ini: valido ? fmt(ini) : \"\",\n    periodo_fim: valido ? fmt(fim) : \"\",\n    valido,\n    emails: MODO_TESTE ? [EMAIL_TESTE] : (EMAILS[lab_id] || []),\n    bcc: MODO_TESTE ? [] : RESPONSAVEIS_BCC,\n    // referência: para quem iria em produção (útil p/ conferir no teste)\n    emails_producao: EMAILS[lab_id] || [],\n  };\n}\n\n// ─────────────────────────────── main ───────────────────────────────\n// Atenção ao fuso: assume o servidor do n8n em America/Sao_Paulo.\nconst hoje = new Date();\nconst w = hoje.getDay(); // 0=Dom..6=Sab\n\nconst ehTipo1 = REGRA_TIPO1 === \"dia_1\"\n  ? hoje.getDate() === 1\n  : fmt(hoje) === fmt(primeiroDiaUtilDoMes(hoje));\nconst ehTipo2 = w === 1; // segunda\nconst ehTipo3 = w === 4; // quinta\n\nconst candidatos = [];\nif (FORCAR_TESTE) {\n  // Teste manual do workflow: 1 envio fixo, independente do dia.\n  candidatos.push(novoEnvio(\"bayer\", 1, \"mes_anterior\", hoje));\n} else {\n  if (ehTipo1) for (const lab of TIPO1_PRIMEIRO_DIA_UTIL) candidatos.push(novoEnvio(lab, 1, \"mes_anterior\", hoje));\n  if (ehTipo2) for (const [lab, regra] of Object.entries(TIPO2_SEGUNDA)) candidatos.push(novoEnvio(lab, 2, regra, hoje));\n  if (ehTipo3) for (const [lab, regra] of Object.entries(TIPO3_QUINTA)) candidatos.push(novoEnvio(lab, 3, regra, hoje));\n}\n\n// Só seguem os envios com período válido; os inválidos ficam reportados à parte.\nconst envios = candidatos.filter((e) => e.valido);\nconst ignorados = candidatos.filter((e) => !e.valido).map((e) => ({ id: e.id, motivo: \"periodo_invalido\" }));\n\nreturn [{\n  json: {\n    data_ref: fmt(hoje),\n    modo_teste: MODO_TESTE,\n    forcar_teste: FORCAR_TESTE,\n    email_avisos: EMAIL_AVISOS,\n    email_colega: EMAIL_COLEGA,\n    tem_disparo: envios.length > 0,\n    tipos: { tipo1: ehTipo1, tipo2: ehTipo2, tipo3: ehTipo3 },\n    qtd_envios: envios.length,\n    envios,\n    ignorados,\n  },\n}];\n"
+        "jsCode": "// ══════════════════════════════════════════════════════════════\n// agenda_relatorios.js — Code node do n8n (o \"cérebro\" da agenda)\n// ──────────────────────────────────────────────────────────────\n// Roda no início do workflow (depois do Schedule Trigger). Decide\n// QUAIS laboratórios disparam HOJE, com QUAL período de venda, e já\n// anexa os E-MAILS de cada um. A saída alimenta:\n//   1) POST {hub}/relatorios/iniciar  → { envios: [...] }\n//   2) o loop de e-mail (emailSend SMTP) por lab, usando o manifesto.\n//\n// Fonte da verdade: planilha \"ENVIO DE RELATÓRIOS - VENDAS/ESTOQUE\".\n//\n// ⚠️ DOIS PONTOS A CONFIRMAR (ver constantes abaixo):\n//   • REGRA_TIPO1: a planilha diz \"1º DIA ÚTIL\"; antes tínhamos falado\n//     \"todo dia 1º (mesmo fim de semana)\". Default aqui = 1º dia útil.\n//   • SEMANA_ANTERIOR: seg→dom (default) ou seg→sex? (Bayer/Roche)\n//\n// OBS.: o ESTOQUE não tem filtro de data — é a foto atual. A coluna\n// \"PERÍODO ESTOQUE\" da planilha só explica POR QUE se envia naquele dia\n// (rodar no 1º dia útil ≈ \"como o mês fechou\"). Por isso o robô não\n// recebe período de estoque, só o período de VENDA.\n// ══════════════════════════════════════════════════════════════\n\n// ── Config: e-mails por laboratório (lab_id casa com o Hub/LABS) ──\nconst EMAILS = {\n  bayer:        [\"operacoescomerciaisbhp@bayer.com\", \"elias.zanatta@bayer.com\", \"paula.yokomizo@bayer.com\"],\n  csl:          [\"csl@wfbconsultoria.com.br\", \"Rafael.Esteves@csl.com.au\"],\n  fresenius:    [\"jailton.silva@fresenius-kabi.com\"],\n  glaxo:        [\"alexandre.x.mitsuda@gsk.com\"],\n  organon:      [\"rodrigo.blas@organon.com\"],\n  roche:        [\"brasil.operacoescomerciais@roche.com\", \"joao.pessoa@roche.com\"],\n  sandoz_rs_sc: [\"marcelo.novelli@sandoz.com\", \"isaque.fedrigo@sandoz.com\"],\n  sandoz_sp:    [\"roger.damian@sandoz.com\"],\n  sankyo:       [\"marcio.honorati@daiichisankyo.com\", \"pedro.mota@daiichisankyo.com\", \"alexandre.jesus@daiichisankyo.com\"],\n  sun_geral:    [\"Gisele.Lemos@sunpharma.com\", \"Ana.ferreira@sunpharma.com\"],\n  sun_13082:    [\"Cecilia.Castro@sunpharma.com\", \"Edgar.Lopes@sunpharma.com\"],\n  united:       [\"leonardo.rossi@knighttx.com\"],\n};\n\nconst NOMES = {\n  bayer: \"Bayer\", csl: \"CSL\", fresenius: \"Fresenius\", glaxo: \"Glaxo\",\n  organon: \"Organon\", roche: \"Roche\", sandoz_rs_sc: \"Sandoz RS/SC\",\n  sandoz_sp: \"Sandoz SP\", sankyo: \"Sankyo\", sun_geral: \"Sun Geral\",\n  sun_13082: \"Sun Item 13082\", united: \"United\",\n};\n\n// Responsáveis internos que recebem CÓPIA OCULTA (BCC) de cada envio.\n// ⚠️ PREENCHER (ex.: a colega que gera hoje + quem monitora).\nconst RESPONSAVEIS_BCC = [];\n\n// ── MODO TESTE ──────────────────────────────────────────────────\n// Enquanto MODO_TESTE = true, NENHUM e-mail vai aos laboratórios:\n// todos os relatórios são redirecionados para EMAIL_TESTE (sem BCC).\n// Os avisos de conclusão/erro vão para EMAIL_AVISOS.\n// Para ir a PRODUÇÃO, basta trocar MODO_TESTE para false.\nconst MODO_TESTE = true;\nconst EMAIL_TESTE = \"leonardodiascaumo@gmail.com\";  // destino dos relatórios em teste\nconst EMAIL_AVISOS = \"ti6@ciamedrs.com.br\";         // avisos de conclusão/erro (robô)\nconst EMAIL_COLEGA = \"leonardodiascaumo@gmail.com\"; // colega que confere os envios (aviso por lab)\n\n// ── FORÇAR TESTE ────────────────────────────────────────────────\n// Enquanto true, ignora as regras de data e emite 1 envio fixo (Bayer,\n// mês anterior) — serve para testar o WORKFLOW INTEIRO no n8n em qualquer\n// dia. Voltar para false em produção (aí volta a respeitar o calendário).\nconst FORCAR_TESTE = false;\n\n// ── Quem dispara em cada tipo + qual a regra de período da VENDA ──\n// regra_periodo ∈ {mes_anterior, semana_anterior, mes_ate_ultima_sexta, mes_ate_ultima_quarta}\nconst TIPO1_PRIMEIRO_DIA_UTIL = [   // todos os 12, venda = todo mês anterior\n  \"bayer\", \"csl\", \"fresenius\", \"glaxo\", \"organon\", \"roche\",\n  \"sandoz_rs_sc\", \"sandoz_sp\", \"sankyo\", \"sun_geral\", \"sun_13082\", \"united\",\n];\nconst TIPO2_SEGUNDA = {\n  bayer: \"semana_anterior\", roche: \"semana_anterior\",\n  csl: \"mes_ate_ultima_sexta\", fresenius: \"mes_ate_ultima_sexta\",\n  glaxo: \"mes_ate_ultima_sexta\", sun_geral: \"mes_ate_ultima_sexta\",\n};\nconst TIPO3_QUINTA = { sun_13082: \"mes_ate_ultima_quarta\" };\n\n// ── PARÂMETROS (decididos com o Leonardo) ──\nconst REGRA_TIPO1 = \"dia_1\";        // dispara sempre no dia 1º, mesmo fim de semana\nconst SEMANA_ANTERIOR = \"seg_sex\";  // semana anterior = segunda a sexta\n\n// ────────────────────────── helpers de data ──────────────────────────\nfunction fmt(d) {\n  const dd = String(d.getDate()).padStart(2, \"0\");\n  const mm = String(d.getMonth() + 1).padStart(2, \"0\");\n  return `${dd}/${mm}/${d.getFullYear()}`;\n}\nfunction addDias(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }\nfunction ehFimDeSemana(d) { const w = d.getDay(); return w === 0 || w === 6; }\n\nfunction primeiroDiaUtilDoMes(ref) {\n  let d = new Date(ref.getFullYear(), ref.getMonth(), 1);\n  while (ehFimDeSemana(d)) d = addDias(d, 1); // sem feriados, conforme combinado\n  return d;\n}\nfunction ultimoDiaSemanaAntes(ref, weekday) {\n  // weekday: 1=seg ... 5=sex, 3=qua. Retorna a ocorrência mais recente ANTES de ref.\n  let d = addDias(ref, -1);\n  while (d.getDay() !== weekday) d = addDias(d, -1);\n  return d;\n}\n\nfunction periodo(regra, hoje) {\n  if (regra === \"mes_anterior\") {\n    const ini = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);\n    const fim = new Date(hoje.getFullYear(), hoje.getMonth(), 0); // último dia do mês anterior\n    return [ini, fim];\n  }\n  if (regra === \"semana_anterior\") {\n    // segunda desta semana → volta 7 dias = segunda passada\n    const segDestaSemana = addDias(hoje, -((hoje.getDay() + 6) % 7));\n    const segAnterior = addDias(segDestaSemana, -7);\n    const fim = SEMANA_ANTERIOR === \"seg_sex\" ? addDias(segAnterior, 4) : addDias(segAnterior, 6);\n    return [segAnterior, fim];\n  }\n  if (regra === \"mes_ate_ultima_sexta\" || regra === \"mes_ate_ultima_quarta\") {\n    const weekday = regra === \"mes_ate_ultima_sexta\" ? 5 : 3; // 5=sexta, 3=quarta\n    const dia1 = new Date(hoje.getFullYear(), hoje.getMonth(), 1);\n    const fim = ultimoDiaSemanaAntes(hoje, weekday); // ocorrência mais recente antes de hoje\n    if (fim >= dia1) return [dia1, fim];             // caso normal: 1º do mês → última sexta/quarta\n    // Borda (1ª segunda/quinta do mês, sem essa data ainda no mês vigente):\n    // usa a semana que antecede hoje = última semana do mês passado (seg → sexta/quarta).\n    const segDestaSemana = addDias(hoje, -((hoje.getDay() + 6) % 7));\n    return [addDias(segDestaSemana, -7), fim];\n  }\n  return [null, null];\n}\n\nfunction novoEnvio(lab_id, tipo, regra, hoje) {\n  const [ini, fim] = periodo(regra, hoje);\n  // Blindagem: período inválido (ex.: 1ª segunda do mês, sem sexta ainda no mês vigente).\n  const valido = ini && fim && fim >= ini;\n  return {\n    id: `${lab_id}__T${tipo}`,            // chave p/ casar o manifesto do Hub com o e-mail\n    lab_id,\n    lab_nome: NOMES[lab_id],\n    tipo,\n    regra_periodo: regra,\n    periodo_ini: valido ? fmt(ini) : \"\",\n    periodo_fim: valido ? fmt(fim) : \"\",\n    valido,\n    emails: MODO_TESTE ? [EMAIL_TESTE] : (EMAILS[lab_id] || []),\n    bcc: MODO_TESTE ? [] : RESPONSAVEIS_BCC,\n    // referência: para quem iria em produção (útil p/ conferir no teste)\n    emails_producao: EMAILS[lab_id] || [],\n  };\n}\n\n// ─────────────────────────────── main ───────────────────────────────\n// Atenção ao fuso: assume o servidor do n8n em America/Sao_Paulo.\n// ── DISPARO MANUAL (Form Trigger \"Disparo Manual\") ────────────────────\n// Se o workflow foi iniciado pelo formulário, chega um lab_id no input:\n// monta UM envio para o lab escolhido e ignora o calendário. Reusa os\n// mapas EMAILS/NOMES e RESPEITA o MODO_TESTE (mesma segurança do automático).\n// Período em branco => mês anterior inteiro.\nlet _manual = null;\ntry {\n  const _itens = $input.all();\n  if (_itens.length && _itens[0].json && _itens[0].json.lab_id) _manual = _itens[0].json;\n} catch (_e) { _manual = null; }\n\nif (_manual) {\n  const hojeM = new Date();\n  const lab_id = String(_manual.lab_id || \"\").trim();\n  const conhecido = Object.prototype.hasOwnProperty.call(NOMES, lab_id);\n  let pini = String(_manual.periodo_ini || \"\").trim();\n  let pfim = String(_manual.periodo_fim || \"\").trim();\n  if (!pini && !pfim) {                       // vazio => mês anterior inteiro\n    const [a, b] = periodo(\"mes_anterior\", hojeM);\n    pini = fmt(a); pfim = fmt(b);\n  }\n  const reData = /^\\d{2}\\/\\d{2}\\/\\d{4}$/;\n  const valido = conhecido && reData.test(pini) && reData.test(pfim);\n  const envio = {\n    id: `${lab_id}__M`,\n    lab_id,\n    lab_nome: NOMES[lab_id] || lab_id,\n    tipo: \"M\",\n    regra_periodo: \"manual\",\n    periodo_ini: valido ? pini : \"\",\n    periodo_fim: valido ? pfim : \"\",\n    valido,\n    emails: MODO_TESTE ? [EMAIL_TESTE] : (EMAILS[lab_id] || []),\n    bcc: MODO_TESTE ? [] : RESPONSAVEIS_BCC,\n    emails_producao: EMAILS[lab_id] || [],\n  };\n  const enviosM = valido ? [envio] : [];\n  const ignoradosM = valido ? [] : [{ id: envio.id, motivo: conhecido ? \"periodo_invalido\" : \"lab_desconhecido\" }];\n  return [{\n    json: {\n      data_ref: fmt(hojeM),\n      modo_teste: MODO_TESTE,\n      forcar_teste: false,\n      disparo_manual: true,\n      email_avisos: EMAIL_AVISOS,\n      email_colega: EMAIL_COLEGA,\n      tem_disparo: enviosM.length > 0,\n      tipos: { manual: true },\n      qtd_envios: enviosM.length,\n      envios: enviosM,\n      ignorados: ignoradosM,\n    },\n  }];\n}\n\nconst hoje = new Date();\nconst w = hoje.getDay(); // 0=Dom..6=Sab\n\nconst ehTipo1 = REGRA_TIPO1 === \"dia_1\"\n  ? hoje.getDate() === 1\n  : fmt(hoje) === fmt(primeiroDiaUtilDoMes(hoje));\nconst ehTipo2 = w === 1; // segunda\nconst ehTipo3 = w === 4; // quinta\n\nconst candidatos = [];\nif (FORCAR_TESTE) {\n  // Teste manual do workflow: força TODOS os 12 labs (Tipo 1, mês anterior),\n  // independente do dia — serve para testar o fluxo inteiro de uma vez.\n  for (const lab of TIPO1_PRIMEIRO_DIA_UTIL) candidatos.push(novoEnvio(lab, 1, \"mes_anterior\", hoje));\n} else {\n  if (ehTipo1) for (const lab of TIPO1_PRIMEIRO_DIA_UTIL) candidatos.push(novoEnvio(lab, 1, \"mes_anterior\", hoje));\n  if (ehTipo2) for (const [lab, regra] of Object.entries(TIPO2_SEGUNDA)) candidatos.push(novoEnvio(lab, 2, regra, hoje));\n  if (ehTipo3) for (const [lab, regra] of Object.entries(TIPO3_QUINTA)) candidatos.push(novoEnvio(lab, 3, regra, hoje));\n}\n\n// Só seguem os envios com período válido; os inválidos ficam reportados à parte.\nconst envios = candidatos.filter((e) => e.valido);\nconst ignorados = candidatos.filter((e) => !e.valido).map((e) => ({ id: e.id, motivo: \"periodo_invalido\" }));\n\nreturn [{\n  json: {\n    data_ref: fmt(hoje),\n    modo_teste: MODO_TESTE,\n    forcar_teste: FORCAR_TESTE,\n    email_avisos: EMAIL_AVISOS,\n    email_colega: EMAIL_COLEGA,\n    tem_disparo: envios.length > 0,\n    tipos: { tipo1: ehTipo1, tipo2: ehTipo2, tipo3: ehTipo3 },\n    qtd_envios: envios.length,\n    envios,\n    ignorados,\n  },\n}];\n"
       },
-      "id": "Agenda",
+      "id": "d087d539-d507-49bd-9ca7-9c97aa5994c3",
       "name": "Agenda",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        280,
-        480
+        -3296,
+        592
       ]
     },
     {
@@ -39,7 +39,9 @@
         "conditions": {
           "options": {
             "caseSensitive": true,
-            "typeValidation": "loose"
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
           },
           "combinator": "and",
           "conditions": [
@@ -53,15 +55,16 @@
               }
             }
           ]
-        }
+        },
+        "options": {}
       },
-      "id": "Tem disparo?",
+      "id": "132d3bda-5d5e-4fed-8569-915697f3b981",
       "name": "Tem disparo?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        560,
-        480
+        -3024,
+        592
       ]
     },
     {
@@ -90,22 +93,19 @@
         },
         "options": {}
       },
-      "id": "Payload do robô",
+      "id": "edc6dc18-096d-4c08-be9b-18082524fba3",
       "name": "Payload do robô",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        860,
-        480
+        -2688,
+        592
       ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "http://localhost:5000/relatorios/fila/entrar",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ { \"resume_url\": $execution.resumeUrl } }}",
+        "url": "http://192.168.210.215:5000/relatorios/fila/entrar",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -114,15 +114,19 @@
               "value": "TROQUE_PELO_N8N_HUB_TOKEN"
             }
           ]
-        }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"resume_url\": $execution.resumeUrl } }}",
+        "options": {}
       },
-      "id": "Fila Entrar",
+      "id": "a1ca4c2d-af24-4772-93a0-fb76c04f9c58",
       "name": "Fila Entrar",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1140,
-        480
+        -2416,
+        576
       ]
     },
     {
@@ -130,48 +134,49 @@
         "resume": "webhook",
         "options": {}
       },
-      "id": "Vez na fila",
+      "id": "f19bc739-fcef-45f5-bd22-14a579237255",
       "name": "Vez na fila",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        1420,
-        480
-      ]
+        -2160,
+        576
+      ],
+      "webhookId": "e91fe844-f9bc-4a25-8d68-4b2764bb7fea"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "http://localhost:5000/relatorios/iniciar",
+        "url": "http://192.168.210.215:5000/relatorios/iniciar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Hub-Token",
+              "value": "TROQUE_PELO_N8N_HUB_TOKEN"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { \"tipo\": $(\"Payload do robô\").item.json.tipo, \"envios\": $(\"Payload do robô\").item.json.envios } }}",
         "options": {
           "timeout": 600000
-        },
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "X-Hub-Token",
-              "value": "TROQUE_PELO_N8N_HUB_TOKEN"
-            }
-          ]
         }
       },
-      "id": "Iniciar Robo",
+      "id": "4977ea61-7661-45a3-8a8e-7f8cb7b62030",
       "name": "Iniciar Robo",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1700,
-        480
+        -1888,
+        576
       ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "http://localhost:5000/relatorios/fila/liberar_proximo",
+        "url": "http://192.168.210.215:5000/relatorios/fila/liberar_proximo",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -180,15 +185,16 @@
               "value": "TROQUE_PELO_N8N_HUB_TOKEN"
             }
           ]
-        }
+        },
+        "options": {}
       },
-      "id": "Fila Liberar",
+      "id": "0c9be3be-4e26-4a36-b073-a0c3191c1ab3",
       "name": "Fila Liberar",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1980,
-        480
+        -1600,
+        560
       ]
     },
     {
@@ -196,7 +202,9 @@
         "conditions": {
           "options": {
             "caseSensitive": true,
-            "typeValidation": "loose"
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
           },
           "combinator": "and",
           "conditions": [
@@ -209,47 +217,47 @@
               }
             }
           ]
-        }
+        },
+        "options": {}
       },
-      "id": "Robô OK?",
+      "id": "72e9ac7b-4955-4156-8fe1-e60872a6b5fd",
       "name": "Robô OK?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        2260,
-        480
+        -1328,
+        560
       ]
     },
     {
       "parameters": {
         "jsCode": "// ══════════════════════════════════════════════════════════════\n// preparar_envios.js — Code node do n8n (pós /relatorios/iniciar)\n// ──────────────────────────────────────────────────────────────\n// Junta o MANIFESTO do robô (itens: id, lab_id, arquivos) com os\n// ENVIOS da agenda (emails, período) pelo campo \"id\". Produz UM item\n// por laboratório, pronto para o loop de download + emailSend.\n//\n// Requisitos de nomes dos nós (ajuste se os seus tiverem outro nome):\n//   • \"Agenda\"      → Code node agenda_relatorios.js\n//   • \"Iniciar Robo\"→ HTTP Request que chamou POST /relatorios/iniciar\n//\n// Saída (1 item por lab):\n//   { id, lab_id, lab_nome, to, bcc, subject, exec, arquivos: [...] }\n//   → o exec + cada \"arquivo\" alimentam GET /relatorios/download\n// ══════════════════════════════════════════════════════════════\n\nconst agenda = $('Agenda').first().json;\nconst resp = $('Iniciar Robo').first().json || {};\nconst manifesto = resp.resultado || {};\nconst itens = manifesto.itens || [];\nconst exec = manifesto.exec || '';\n\n// Indexa os envios da agenda por id (para pegar emails/período de cada lab).\nconst porId = {};\nfor (const e of (agenda.envios || [])) porId[e.id] = e;\n\nconst saida = [];\nfor (const it of itens) {\n  const env = porId[it.id] || {};\n  const periodo = env.periodo_ini\n    ? `${env.periodo_ini} a ${env.periodo_fim}`\n    : 'estoque atual';\n  saida.push({\n    json: {\n      id: it.id,\n      lab_id: it.lab_id,\n      lab_nome: it.nome || env.lab_nome || it.lab_id,\n      to: (env.emails || []).join('; '),\n      bcc: (env.bcc || []).join('; '),\n      subject: `Relatório Vendas/Estoque — ${it.nome || env.lab_nome || it.lab_id} (${periodo})`,\n      exec,\n      arquivos: it.arquivos || [],\n    },\n  });\n}\n\nreturn saida;\n"
       },
-      "id": "Preparar Envios",
+      "id": "246f5117-f273-4848-9ab1-8582aa75142d",
       "name": "Preparar Envios",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2560,
-        480
+        -976,
+        592
       ]
     },
     {
       "parameters": {
         "jsCode": "// ══════════════════════════════════════════════════════════════\n// explodir_arquivos.js — Code node do n8n (antes do Download)\n// ──────────────────────────────────────────────────────────────\n// Recebe 1 item por laboratório (de \"Preparar Envios\") e emite 1 item\n// por ARQUIVO, carregando os metadados do e-mail. Cada item alimenta o\n// HTTP \"Download\": GET /relatorios/download?exec=<exec>&arquivo=<arquivo>\n// ══════════════════════════════════════════════════════════════\n\nconst saida = [];\nfor (const it of $input.all()) {\n  const j = it.json;\n  for (let idx = 0; idx < (j.arquivos || []).length; idx++) {\n    saida.push({\n      json: {\n        lab_id: j.lab_id,\n        lab_nome: j.lab_nome,\n        id: j.id,\n        to: j.to,\n        bcc: j.bcc,\n        subject: j.subject,\n        exec: j.exec,\n        arquivo: j.arquivos[idx],\n        idx,\n      },\n    });\n  }\n}\nreturn saida;\n"
       },
-      "id": "Arquivos do lab",
+      "id": "59cffa94-1d19-44bc-9d58-70fb426963f4",
       "name": "Arquivos do lab",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2840,
-        480
+        -688,
+        592
       ]
     },
     {
       "parameters": {
-        "method": "GET",
-        "url": "http://localhost:5000/relatorios/download",
+        "url": "http://192.168.210.215:5000/relatorios/download",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -263,14 +271,6 @@
             }
           ]
         },
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "file",
-              "outputPropertyName": "data"
-            }
-          }
-        },
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -279,28 +279,35 @@
               "value": "TROQUE_PELO_N8N_HUB_TOKEN"
             }
           ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
         }
       },
-      "id": "Download",
+      "id": "3861ded6-d0f3-4fc4-bb14-3755890df473",
       "name": "Download",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3120,
-        480
+        -416,
+        592
       ]
     },
     {
       "parameters": {
-        "jsCode": "// ══════════════════════════════════════════════════════════════\n// juntar_binarios.js — Code node do n8n (depois do Download)\n// ──────────────────────────────────────────────────────────────\n// Reagrupa os arquivos baixados por laboratório: junta todos os\n// binários de um mesmo lab num ÚNICO item, para o emailSend mandar\n// um e-mail por lab com TODOS os anexos.\n//\n// Pareia cada download (na ordem) com o item correspondente do nó\n// \"Arquivos do lab\" (Split Out) — n8n preserva ordem e contagem. Assim os\n// metadados (to/bcc/subject) não dependem do HTTP repassar o json.\n// (Se você usar o atalho com o Code \"Explodir Arquivos\", troque o nome abaixo.)\n//\n// No emailSend, configure o campo \"Attachments\" com a expressão:\n//   {{ Object.keys($binary).join(',') }}\n// para anexar dinamicamente todos os binários do item.\n// ══════════════════════════════════════════════════════════════\n\n// ⚠️ Trocar pela URL PÚBLICA da logo (precisa ser acessível pela internet,\n// pois quem abre o e-mail está fora da rede). Ex.: logo no site da empresa.\nconst LOGO_URL = \"https://SUA-LOGO-PUBLICA-AQUI/logo.png\";\n\nfunction montarHtml(g) {\n  const itens = (g.arquivos || [])\n    .map((a) => `<li style=\"margin:2px 0;\">${a}</li>`)\n    .join(\"\");\n  return `<!doctype html>\n<html><body style=\"margin:0;padding:0;background:#f4f6f8;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#333;\">\n  <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f4f6f8;padding:24px 0;\">\n    <tr><td align=\"center\">\n      <table role=\"presentation\" width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e6e9ec;\">\n        <tr><td align=\"center\" style=\"background:#00B3B2;padding:20px 24px;\">\n          <img src=\"${LOGO_URL}\" alt=\"Ciamed\" height=\"48\" style=\"display:block;border:0;\">\n        </td></tr>\n        <tr><td style=\"padding:28px 24px 8px;\">\n          <h2 style=\"margin:0 0 12px;font-size:18px;color:#00B3B2;\">Relatório de Vendas / Estoque</h2>\n          <p style=\"margin:0 0 12px;font-size:14px;line-height:1.5;\">Prezados(as),</p>\n          <p style=\"margin:0 0 16px;font-size:14px;line-height:1.5;\">\n            Segue em anexo o relatório referente a <strong>${g.lab_nome}</strong>.\n          </p>\n          <p style=\"margin:0 0 6px;font-size:13px;color:#6E6E6E;\">Arquivos anexados:</p>\n          <ul style=\"margin:0 0 16px;padding-left:20px;font-size:13px;color:#444;\">${itens}</ul>\n        </td></tr>\n        <tr><td style=\"padding:16px 24px 24px;border-top:1px solid #eee;\">\n          <p style=\"margin:0;font-size:12px;color:#8A8A8A;line-height:1.5;\">\n            Mensagem automática do Hub de Automações — Ciamed.<br>\n            Por favor, não responda a este e-mail.\n          </p>\n        </td></tr>\n      </table>\n    </td></tr>\n  </table>\n</body></html>`;\n}\n\nconst downloads = $input.all();\nconst explodidos = $('Arquivos do lab').all();\n\nconst grupos = {};\nfor (let i = 0; i < downloads.length; i++) {\n  const meta = explodidos[i].json;\n  const labId = meta.lab_id;\n\n  if (!grupos[labId]) {\n    grupos[labId] = {\n      json: {\n        lab_id: labId,\n        lab_nome: meta.lab_nome,\n        to: meta.to,\n        bcc: meta.bcc,\n        subject: meta.subject,\n        arquivos: [],\n      },\n      binary: {},\n    };\n  }\n\n  const g = grupos[labId];\n  const bin = downloads[i].binary || {};\n  for (const k of Object.keys(bin)) {\n    const nome = `anexo_${Object.keys(g.binary).length}`;\n    g.binary[nome] = bin[k];\n    g.json.arquivos.push(meta.arquivo);\n  }\n}\n\n// Monta o corpo HTML (com a lista de anexos completa) para cada lab.\nconst saida = Object.values(grupos);\nfor (const g of saida) {\n  g.json.html = montarHtml(g.json);\n}\nreturn saida;\n"
+        "jsCode": "// ══════════════════════════════════════════════════════════════\n// juntar_binarios.js — Code node do n8n (depois do Download)\n// ──────────────────────────────────────────────────────────────\n// Reagrupa os arquivos baixados por laboratório: junta todos os\n// binários de um mesmo lab num ÚNICO item, para o emailSend mandar\n// um e-mail por lab com TODOS os anexos.\n//\n// Pareia cada download (na ordem) com o item correspondente do nó\n// \"Arquivos do lab\" (Split Out) — n8n preserva ordem e contagem. Assim os\n// metadados (to/bcc/subject) não dependem do HTTP repassar o json.\n// (Se você usar o atalho com o Code \"Explodir Arquivos\", troque o nome abaixo.)\n//\n// No emailSend, configure o campo \"Attachments\" com a expressão:\n//   {{ Object.keys($binary).join(',') }}\n// para anexar dinamicamente todos os binários do item.\n// ══════════════════════════════════════════════════════════════\n\n// Logo: wordmark em TEXTO \"CIAMED\" (sem imagem) — não depende de host\n// público nem de anexo inline, aparece em qualquer cliente de e-mail.\n\nfunction montarHtml(g) {\n  const itens = (g.arquivos || [])\n    .map((a) => `<li style=\"margin:2px 0;\">${a}</li>`)\n    .join(\"\");\n  return `<!doctype html>\n<html><body style=\"margin:0;padding:0;background:#f4f6f8;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#333;\">\n  <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f4f6f8;padding:24px 0;\">\n    <tr><td align=\"center\">\n      <table role=\"presentation\" width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e6e9ec;\">\n        <tr><td align=\"center\" style=\"background:#00B3B2;padding:20px 24px;\">\n          <div style=\"font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#ffffff;font-size:30px;font-weight:bold;letter-spacing:6px;line-height:1;\">CIAMED</div>\n          <div style=\"font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#e6f7f7;font-size:10px;letter-spacing:3px;text-transform:uppercase;margin-top:7px;\">Distribuidora de Medicamentos</div>\n        </td></tr>\n        <tr><td style=\"padding:28px 24px 8px;\">\n          <h2 style=\"margin:0 0 12px;font-size:18px;color:#00B3B2;\">Relatório de Vendas / Estoque</h2>\n          <p style=\"margin:0 0 12px;font-size:14px;line-height:1.5;\">Prezados(as),</p>\n          <p style=\"margin:0 0 16px;font-size:14px;line-height:1.5;\">\n            Segue em anexo o relatório referente a <strong>${g.lab_nome}</strong>.\n          </p>\n          <p style=\"margin:0 0 6px;font-size:13px;color:#6E6E6E;\">Arquivos anexados:</p>\n          <ul style=\"margin:0 0 16px;padding-left:20px;font-size:13px;color:#444;\">${itens}</ul>\n        </td></tr>\n        <tr><td style=\"padding:16px 24px 24px;border-top:1px solid #eee;\">\n          <p style=\"margin:0;font-size:12px;color:#8A8A8A;line-height:1.5;\">\n            Mensagem automática do Hub de Automações — Ciamed.<br>\n            Por favor, não responda a este e-mail.\n          </p>\n        </td></tr>\n      </table>\n    </td></tr>\n  </table>\n</body></html>`;\n}\n\nconst downloads = $input.all();\nconst explodidos = $('Arquivos do lab').all();\n\nconst grupos = {};\nfor (let i = 0; i < downloads.length; i++) {\n  const meta = explodidos[i].json;\n  const labId = meta.lab_id;\n\n  if (!grupos[labId]) {\n    grupos[labId] = {\n      json: {\n        lab_id: labId,\n        lab_nome: meta.lab_nome,\n        to: meta.to,\n        bcc: meta.bcc,\n        subject: meta.subject,\n        arquivos: [],\n      },\n      binary: {},\n    };\n  }\n\n  const g = grupos[labId];\n  const bin = downloads[i].binary || {};\n  for (const k of Object.keys(bin)) {\n    const nome = `anexo_${Object.keys(g.binary).length}`;\n    g.binary[nome] = bin[k];\n    g.json.arquivos.push(meta.arquivo);\n  }\n}\n\n// Monta o corpo HTML (com a lista de anexos completa) para cada lab.\nconst saida = Object.values(grupos);\nfor (const g of saida) {\n  g.json.html = montarHtml(g.json);\n}\nreturn saida;\n"
       },
-      "id": "Juntar Binários",
+      "id": "62d5c6c4-21d0-48ac-9853-b40ae759e076",
       "name": "Juntar Binários",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3400,
-        480
+        -144,
+        560
       ]
     },
     {
@@ -311,7 +318,8 @@
               "conditions": {
                 "options": {
                   "caseSensitive": true,
-                  "typeValidation": "loose",
+                  "leftValue": "",
+                  "typeValidation": "strict",
                   "version": 2
                 },
                 "conditions": [
@@ -321,7 +329,8 @@
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    }
+                    },
+                    "id": "62e2279c-3adf-4849-8fa3-cbdf3b089915"
                   }
                 ],
                 "combinator": "and"
@@ -333,7 +342,8 @@
               "conditions": {
                 "options": {
                   "caseSensitive": true,
-                  "typeValidation": "loose",
+                  "leftValue": "",
+                  "typeValidation": "strict",
                   "version": 2
                 },
                 "conditions": [
@@ -343,7 +353,8 @@
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    }
+                    },
+                    "id": "ebf4c998-c9b3-4e0f-aeca-3c39f45b5def"
                   }
                 ],
                 "combinator": "and"
@@ -355,7 +366,8 @@
               "conditions": {
                 "options": {
                   "caseSensitive": true,
-                  "typeValidation": "loose",
+                  "leftValue": "",
+                  "typeValidation": "strict",
                   "version": 2
                 },
                 "conditions": [
@@ -365,7 +377,8 @@
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    }
+                    },
+                    "id": "4ab27062-68ff-4e03-ada3-fcf60a5ed9d0"
                   }
                 ],
                 "combinator": "and"
@@ -377,7 +390,8 @@
               "conditions": {
                 "options": {
                   "caseSensitive": true,
-                  "typeValidation": "loose",
+                  "leftValue": "",
+                  "typeValidation": "strict",
                   "version": 2
                 },
                 "conditions": [
@@ -387,7 +401,8 @@
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    }
+                    },
+                    "id": "2d24ff53-a7f2-4699-bacb-2376e57af936"
                   }
                 ],
                 "combinator": "and"
@@ -399,7 +414,8 @@
               "conditions": {
                 "options": {
                   "caseSensitive": true,
-                  "typeValidation": "loose",
+                  "leftValue": "",
+                  "typeValidation": "strict",
                   "version": 2
                 },
                 "conditions": [
@@ -409,7 +425,8 @@
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    }
+                    },
+                    "id": "691e6f69-f9cf-4680-ba0e-dd52a783ab3e"
                   }
                 ],
                 "combinator": "and"
@@ -421,7 +438,8 @@
               "conditions": {
                 "options": {
                   "caseSensitive": true,
-                  "typeValidation": "loose",
+                  "leftValue": "",
+                  "typeValidation": "strict",
                   "version": 2
                 },
                 "conditions": [
@@ -431,7 +449,8 @@
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    }
+                    },
+                    "id": "12c5c2a7-3802-429e-8106-ae0c96e89006"
                   }
                 ],
                 "combinator": "and"
@@ -443,7 +462,8 @@
               "conditions": {
                 "options": {
                   "caseSensitive": true,
-                  "typeValidation": "loose",
+                  "leftValue": "",
+                  "typeValidation": "strict",
                   "version": 2
                 },
                 "conditions": [
@@ -453,7 +473,8 @@
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    }
+                    },
+                    "id": "c76d03cc-6426-42d8-b54d-66f3b092fdb4"
                   }
                 ],
                 "combinator": "and"
@@ -465,7 +486,8 @@
               "conditions": {
                 "options": {
                   "caseSensitive": true,
-                  "typeValidation": "loose",
+                  "leftValue": "",
+                  "typeValidation": "strict",
                   "version": 2
                 },
                 "conditions": [
@@ -475,7 +497,8 @@
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    }
+                    },
+                    "id": "6e424385-2ce9-4fb3-945e-d4b76d75ebf8"
                   }
                 ],
                 "combinator": "and"
@@ -487,7 +510,8 @@
               "conditions": {
                 "options": {
                   "caseSensitive": true,
-                  "typeValidation": "loose",
+                  "leftValue": "",
+                  "typeValidation": "strict",
                   "version": 2
                 },
                 "conditions": [
@@ -497,7 +521,8 @@
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    }
+                    },
+                    "id": "b3cac0d0-6155-4e75-bd80-8575cabd0d56"
                   }
                 ],
                 "combinator": "and"
@@ -509,7 +534,8 @@
               "conditions": {
                 "options": {
                   "caseSensitive": true,
-                  "typeValidation": "loose",
+                  "leftValue": "",
+                  "typeValidation": "strict",
                   "version": 2
                 },
                 "conditions": [
@@ -519,7 +545,8 @@
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    }
+                    },
+                    "id": "e29d518d-4f12-4211-ac8e-aeb6405ed06e"
                   }
                 ],
                 "combinator": "and"
@@ -531,7 +558,8 @@
               "conditions": {
                 "options": {
                   "caseSensitive": true,
-                  "typeValidation": "loose",
+                  "leftValue": "",
+                  "typeValidation": "strict",
                   "version": 2
                 },
                 "conditions": [
@@ -541,7 +569,8 @@
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    }
+                    },
+                    "id": "ac7910ff-eb92-4ca7-829e-41ce88c920e0"
                   }
                 ],
                 "combinator": "and"
@@ -553,7 +582,8 @@
               "conditions": {
                 "options": {
                   "caseSensitive": true,
-                  "typeValidation": "loose",
+                  "leftValue": "",
+                  "typeValidation": "strict",
                   "version": 2
                 },
                 "conditions": [
@@ -563,7 +593,8 @@
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    }
+                    },
+                    "id": "9b1eda72-831f-46bb-87cb-118c4d1cd6c9"
                   }
                 ],
                 "combinator": "and"
@@ -575,25 +606,22 @@
         },
         "options": {}
       },
-      "id": "Rotear por lab",
+      "id": "d6ce39da-2f47-4f70-b4cd-efb68b9dccd6",
       "name": "Rotear por lab",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
-        3700,
-        480
+        128,
+        896
       ]
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $json.to }}",
         "subject": "={{ $json.subject }}",
-        "emailType": "html",
         "message": "={{ $json.html }}",
         "options": {
-          "bccList": "={{ $json.bcc }}",
+          "appendAttribution": false,
           "attachmentsUi": {
             "attachmentsBinary": [
               {
@@ -601,20 +629,21 @@
               }
             ]
           },
-          "appendAttribution": false
+          "bccList": "={{ $json.bcc }}"
         }
       },
-      "id": "Gmail: Bayer",
+      "id": "42429209-49b2-48b9-a168-73ebb75dc7fe",
       "name": "Gmail: Bayer",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4040,
-        140
+        464,
+        224
       ],
+      "webhookId": "6ededc13-b507-458f-b544-5c278d9201f2",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       },
@@ -622,8 +651,6 @@
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $(\"Agenda\").first().json.email_colega }}",
         "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — Bayer",
         "emailType": "text",
@@ -632,31 +659,29 @@
           "appendAttribution": false
         }
       },
-      "id": "Aviso: Bayer",
+      "id": "03f1fc28-9941-43a2-828e-41d3694f4fb5",
       "name": "Aviso: Bayer",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4380,
-        140
+        800,
+        224
       ],
+      "webhookId": "9ea0f322-fb0d-4cd1-8b35-316bc70cf855",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       }
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $json.to }}",
         "subject": "={{ $json.subject }}",
-        "emailType": "html",
         "message": "={{ $json.html }}",
         "options": {
-          "bccList": "={{ $json.bcc }}",
+          "appendAttribution": false,
           "attachmentsUi": {
             "attachmentsBinary": [
               {
@@ -664,20 +689,21 @@
               }
             ]
           },
-          "appendAttribution": false
+          "bccList": "={{ $json.bcc }}"
         }
       },
-      "id": "Gmail: CSL",
+      "id": "55201a53-027c-4e0f-ace0-a606408b8c15",
       "name": "Gmail: CSL",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4040,
-        290
+        464,
+        384
       ],
+      "webhookId": "8c52589f-f549-4677-9bda-2bbf5c8fef44",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       },
@@ -685,8 +711,6 @@
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $(\"Agenda\").first().json.email_colega }}",
         "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — CSL",
         "emailType": "text",
@@ -695,31 +719,29 @@
           "appendAttribution": false
         }
       },
-      "id": "Aviso: CSL",
+      "id": "25ceb970-74d9-4cc6-9ba9-a80937fecb33",
       "name": "Aviso: CSL",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4380,
-        290
+        800,
+        384
       ],
+      "webhookId": "21b88b9e-088a-44fa-9806-d95813398251",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       }
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $json.to }}",
         "subject": "={{ $json.subject }}",
-        "emailType": "html",
         "message": "={{ $json.html }}",
         "options": {
-          "bccList": "={{ $json.bcc }}",
+          "appendAttribution": false,
           "attachmentsUi": {
             "attachmentsBinary": [
               {
@@ -727,20 +749,21 @@
               }
             ]
           },
-          "appendAttribution": false
+          "bccList": "={{ $json.bcc }}"
         }
       },
-      "id": "Gmail: Fresenius",
+      "id": "7124504b-05c2-420f-bfb8-d21c19d0ff5d",
       "name": "Gmail: Fresenius",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4040,
-        440
+        464,
+        528
       ],
+      "webhookId": "e476e0a9-0769-400f-9286-7624c894844e",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       },
@@ -748,8 +771,6 @@
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $(\"Agenda\").first().json.email_colega }}",
         "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — Fresenius",
         "emailType": "text",
@@ -758,31 +779,29 @@
           "appendAttribution": false
         }
       },
-      "id": "Aviso: Fresenius",
+      "id": "ee09ebbf-4a76-4c5e-842b-a5bdf2d4af71",
       "name": "Aviso: Fresenius",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4380,
-        440
+        800,
+        528
       ],
+      "webhookId": "efdb444c-3b02-4435-a69d-98efb3639543",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       }
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $json.to }}",
         "subject": "={{ $json.subject }}",
-        "emailType": "html",
         "message": "={{ $json.html }}",
         "options": {
-          "bccList": "={{ $json.bcc }}",
+          "appendAttribution": false,
           "attachmentsUi": {
             "attachmentsBinary": [
               {
@@ -790,20 +809,21 @@
               }
             ]
           },
-          "appendAttribution": false
+          "bccList": "={{ $json.bcc }}"
         }
       },
-      "id": "Gmail: Glaxo",
+      "id": "bae6043f-65a0-44a3-994d-730c17fe18a7",
       "name": "Gmail: Glaxo",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4040,
-        590
+        464,
+        688
       ],
+      "webhookId": "b7bf8fa9-e5a1-48e5-88cd-9698943ff9e7",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       },
@@ -811,8 +831,6 @@
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $(\"Agenda\").first().json.email_colega }}",
         "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — Glaxo",
         "emailType": "text",
@@ -821,31 +839,29 @@
           "appendAttribution": false
         }
       },
-      "id": "Aviso: Glaxo",
+      "id": "b677bc91-c647-465b-b7cb-ddd0c98240c4",
       "name": "Aviso: Glaxo",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4380,
-        590
+        800,
+        688
       ],
+      "webhookId": "b46d0b37-4e65-4e2d-9c5f-6365564361fc",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       }
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $json.to }}",
         "subject": "={{ $json.subject }}",
-        "emailType": "html",
         "message": "={{ $json.html }}",
         "options": {
-          "bccList": "={{ $json.bcc }}",
+          "appendAttribution": false,
           "attachmentsUi": {
             "attachmentsBinary": [
               {
@@ -853,20 +869,21 @@
               }
             ]
           },
-          "appendAttribution": false
+          "bccList": "={{ $json.bcc }}"
         }
       },
-      "id": "Gmail: Organon",
+      "id": "c1907ba6-eeac-4892-809e-f63463597c93",
       "name": "Gmail: Organon",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4040,
-        740
+        464,
+        832
       ],
+      "webhookId": "655dfbbc-ff3b-4162-bdf7-9d7f17dd6a07",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       },
@@ -874,8 +891,6 @@
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $(\"Agenda\").first().json.email_colega }}",
         "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — Organon",
         "emailType": "text",
@@ -884,31 +899,29 @@
           "appendAttribution": false
         }
       },
-      "id": "Aviso: Organon",
+      "id": "6495de7c-abbc-467a-903a-d6a91886137e",
       "name": "Aviso: Organon",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4380,
-        740
+        800,
+        832
       ],
+      "webhookId": "2cc23ba6-ab80-461e-ba68-6097441f6bca",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       }
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $json.to }}",
         "subject": "={{ $json.subject }}",
-        "emailType": "html",
         "message": "={{ $json.html }}",
         "options": {
-          "bccList": "={{ $json.bcc }}",
+          "appendAttribution": false,
           "attachmentsUi": {
             "attachmentsBinary": [
               {
@@ -916,20 +929,21 @@
               }
             ]
           },
-          "appendAttribution": false
+          "bccList": "={{ $json.bcc }}"
         }
       },
-      "id": "Gmail: Roche",
+      "id": "1a6f2da0-b5aa-4f22-a980-004d2ee78b4a",
       "name": "Gmail: Roche",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4040,
-        890
+        464,
+        976
       ],
+      "webhookId": "50e3b956-eb57-4349-bb8e-7dacde646af6",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       },
@@ -937,8 +951,6 @@
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $(\"Agenda\").first().json.email_colega }}",
         "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — Roche",
         "emailType": "text",
@@ -947,31 +959,29 @@
           "appendAttribution": false
         }
       },
-      "id": "Aviso: Roche",
+      "id": "2a34f622-acbf-4173-b1cb-c411c084ff19",
       "name": "Aviso: Roche",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4380,
-        890
+        800,
+        976
       ],
+      "webhookId": "7d4ef685-6c46-47bc-a028-209f1d0485b5",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       }
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $json.to }}",
         "subject": "={{ $json.subject }}",
-        "emailType": "html",
         "message": "={{ $json.html }}",
         "options": {
-          "bccList": "={{ $json.bcc }}",
+          "appendAttribution": false,
           "attachmentsUi": {
             "attachmentsBinary": [
               {
@@ -979,20 +989,21 @@
               }
             ]
           },
-          "appendAttribution": false
+          "bccList": "={{ $json.bcc }}"
         }
       },
-      "id": "Gmail: Sandoz RS-SC",
+      "id": "cbbdc44c-9dae-440a-96f9-5ce1cf1203ca",
       "name": "Gmail: Sandoz RS-SC",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4040,
-        1040
+        464,
+        1136
       ],
+      "webhookId": "8752b4e8-599a-468d-85b9-dc81d77d45dc",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       },
@@ -1000,8 +1011,6 @@
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $(\"Agenda\").first().json.email_colega }}",
         "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — Sandoz RS-SC",
         "emailType": "text",
@@ -1010,31 +1019,29 @@
           "appendAttribution": false
         }
       },
-      "id": "Aviso: Sandoz RS-SC",
+      "id": "f069f4e4-228e-494b-bb5d-d29bdf3fa873",
       "name": "Aviso: Sandoz RS-SC",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4380,
-        1040
+        800,
+        1136
       ],
+      "webhookId": "e37f1fcd-0285-43e8-a005-570cfb40a2d9",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       }
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $json.to }}",
         "subject": "={{ $json.subject }}",
-        "emailType": "html",
         "message": "={{ $json.html }}",
         "options": {
-          "bccList": "={{ $json.bcc }}",
+          "appendAttribution": false,
           "attachmentsUi": {
             "attachmentsBinary": [
               {
@@ -1042,20 +1049,21 @@
               }
             ]
           },
-          "appendAttribution": false
+          "bccList": "={{ $json.bcc }}"
         }
       },
-      "id": "Gmail: Sandoz SP",
+      "id": "c106a176-3f87-46ca-92be-1139a880b3ef",
       "name": "Gmail: Sandoz SP",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4040,
-        1190
+        464,
+        1296
       ],
+      "webhookId": "a943052e-7305-4a05-b8f3-06ac6f533e13",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       },
@@ -1063,8 +1071,6 @@
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $(\"Agenda\").first().json.email_colega }}",
         "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — Sandoz SP",
         "emailType": "text",
@@ -1073,31 +1079,29 @@
           "appendAttribution": false
         }
       },
-      "id": "Aviso: Sandoz SP",
+      "id": "e73019ef-ff13-4afd-84a4-68bf650fa83f",
       "name": "Aviso: Sandoz SP",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4380,
-        1190
+        800,
+        1296
       ],
+      "webhookId": "147f008f-8629-44ad-8e6a-c479feef1841",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       }
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $json.to }}",
         "subject": "={{ $json.subject }}",
-        "emailType": "html",
         "message": "={{ $json.html }}",
         "options": {
-          "bccList": "={{ $json.bcc }}",
+          "appendAttribution": false,
           "attachmentsUi": {
             "attachmentsBinary": [
               {
@@ -1105,20 +1109,21 @@
               }
             ]
           },
-          "appendAttribution": false
+          "bccList": "={{ $json.bcc }}"
         }
       },
-      "id": "Gmail: Sankyo",
+      "id": "4561874c-ceb3-455c-8c78-0aa2abea96c5",
       "name": "Gmail: Sankyo",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4040,
-        1340
+        464,
+        1472
       ],
+      "webhookId": "51bffdd7-c8dd-4cc0-ae75-912f8b905790",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       },
@@ -1126,8 +1131,6 @@
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $(\"Agenda\").first().json.email_colega }}",
         "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — Sankyo",
         "emailType": "text",
@@ -1136,31 +1139,29 @@
           "appendAttribution": false
         }
       },
-      "id": "Aviso: Sankyo",
+      "id": "cec7b539-1ecc-4cef-9943-9c0d9b645cdf",
       "name": "Aviso: Sankyo",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4380,
-        1340
+        800,
+        1472
       ],
+      "webhookId": "8c76b534-1106-4b51-8ab7-be8996a50674",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       }
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $json.to }}",
         "subject": "={{ $json.subject }}",
-        "emailType": "html",
         "message": "={{ $json.html }}",
         "options": {
-          "bccList": "={{ $json.bcc }}",
+          "appendAttribution": false,
           "attachmentsUi": {
             "attachmentsBinary": [
               {
@@ -1168,20 +1169,21 @@
               }
             ]
           },
-          "appendAttribution": false
+          "bccList": "={{ $json.bcc }}"
         }
       },
-      "id": "Gmail: Sun Geral",
+      "id": "308fe671-0daf-493f-bb5e-ffd103bb9e95",
       "name": "Gmail: Sun Geral",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4040,
-        1490
+        464,
+        1664
       ],
+      "webhookId": "3d1831af-1680-45d7-81de-48c61b2c1162",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       },
@@ -1189,8 +1191,6 @@
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $(\"Agenda\").first().json.email_colega }}",
         "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — Sun Geral",
         "emailType": "text",
@@ -1199,31 +1199,29 @@
           "appendAttribution": false
         }
       },
-      "id": "Aviso: Sun Geral",
+      "id": "c54e7664-8433-45c3-8163-f8f50c88234d",
       "name": "Aviso: Sun Geral",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4380,
-        1490
+        800,
+        1664
       ],
+      "webhookId": "f6cde9ca-1c0d-4f2a-97e5-69a0a75161d8",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       }
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $json.to }}",
         "subject": "={{ $json.subject }}",
-        "emailType": "html",
         "message": "={{ $json.html }}",
         "options": {
-          "bccList": "={{ $json.bcc }}",
+          "appendAttribution": false,
           "attachmentsUi": {
             "attachmentsBinary": [
               {
@@ -1231,20 +1229,21 @@
               }
             ]
           },
-          "appendAttribution": false
+          "bccList": "={{ $json.bcc }}"
         }
       },
-      "id": "Gmail: Sun 13082",
+      "id": "24aa0916-ea26-49c6-b5ca-2333d2cde6d4",
       "name": "Gmail: Sun 13082",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4040,
-        1640
+        464,
+        1872
       ],
+      "webhookId": "db19ce45-7148-44a0-85ff-08930342bd45",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       },
@@ -1252,8 +1251,6 @@
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $(\"Agenda\").first().json.email_colega }}",
         "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — Sun 13082",
         "emailType": "text",
@@ -1262,31 +1259,29 @@
           "appendAttribution": false
         }
       },
-      "id": "Aviso: Sun 13082",
+      "id": "6162fa34-7927-4cda-b360-a2656e26c295",
       "name": "Aviso: Sun 13082",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4380,
-        1640
+        800,
+        1872
       ],
+      "webhookId": "3ea451c9-a9d5-4189-84e5-05a654a6d349",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       }
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $json.to }}",
         "subject": "={{ $json.subject }}",
-        "emailType": "html",
         "message": "={{ $json.html }}",
         "options": {
-          "bccList": "={{ $json.bcc }}",
+          "appendAttribution": false,
           "attachmentsUi": {
             "attachmentsBinary": [
               {
@@ -1294,20 +1289,21 @@
               }
             ]
           },
-          "appendAttribution": false
+          "bccList": "={{ $json.bcc }}"
         }
       },
-      "id": "Gmail: United",
+      "id": "1c173e67-2e8e-4d5c-89a3-1f894e88b229",
       "name": "Gmail: United",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4040,
-        1790
+        464,
+        2048
       ],
+      "webhookId": "e1cec6fd-a501-48cd-8472-057c7e85eefc",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       },
@@ -1315,8 +1311,6 @@
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
         "sendTo": "={{ $(\"Agenda\").first().json.email_colega }}",
         "subject": "={{ $json.error ? '[FALHA] ' : '[OK] ' }}Relatório — United",
         "emailType": "text",
@@ -1325,145 +1319,249 @@
           "appendAttribution": false
         }
       },
-      "id": "Aviso: United",
+      "id": "ca3280c1-3d86-4fcc-8718-98d135e63fad",
       "name": "Aviso: United",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4380,
-        1790
+        800,
+        2048
       ],
+      "webhookId": "cfcba587-e785-429c-a8f0-370238160d93",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       }
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
-        "sendTo": "={{ $(\"Agenda\").first().json.email_avisos }}",
-        "subject": "=⚠️ Robô de relatórios falhou — {{ $(\"Agenda\").first().json.data_ref }}",
-        "emailType": "text",
-        "message": "={{ JSON.stringify($(\"Iniciar Robo\").item.json.resultado || $(\"Iniciar Robo\").item.json, null, 2) }}",
+        "sendTo": "={{ $json.to }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.html }}",
         "options": {
           "appendAttribution": false
         }
       },
-      "id": "Avisos (erro)",
+      "id": "c933d40d-14d3-4a96-937b-13aaca567112",
       "name": "Avisos (erro)",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        2260,
-        800
+        -624,
+        960
       ],
+      "webhookId": "b3ea3637-bd57-4b38-8996-f467c1b92284",
       "credentials": {
         "gmailOAuth2": {
-          "id": "GMAIL_CRED_ID",
+          "id": "Yl1yGNp14Nz77zEJ",
           "name": "Gmail account"
         }
       }
     },
     {
       "parameters": {
-        "content": "# 📊 Relatórios aos Laboratórios\nAgenda decide os labs do dia → robô do Hub gera os relatórios → e-mail por laboratório (com aviso à colega).\n\n⚙️ **Ajustes ficam na Agenda:** `MODO_TESTE` · `FORCAR_TESTE` · `EMAIL_COLEGA` · `EMAIL_AVISOS`.\n🔑 Nos 4 HTTP: trocar a **URL do Hub** e o **X-Hub-Token**.",
-        "height": 150,
+        "content": "# 📊 Relatórios aos Laboratórios\nAgenda decide os labs do dia → robô do Hub gera os relatórios → e-mail por laboratório (com aviso à colega).\n\n⚙️ **Ajustes ficam na Agenda:** `MODO_TESTE` · `FORCAR_TESTE` · `EMAIL_COLEGA` · `EMAIL_AVISOS`.\n",
+        "height": 134,
         "width": 920,
         "color": 7
       },
-      "id": "nota_titulo",
+      "id": "537974c0-6e58-46e6-859d-858c671f56a3",
       "name": "nota_titulo",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -80,
-        250
+        -3664,
+        336
       ]
     },
     {
       "parameters": {
         "content": "## 1 · Decisão\n**Schedule** ~06:30 → **Agenda** (regras: quais labs e períodos hoje) → **Tem disparo?** só segue se houver envio.",
-        "height": 240,
+        "height": 272,
         "width": 880,
         "color": 5
       },
-      "id": "nota_b1",
+      "id": "e239da55-8e7c-4783-bc0b-283e9704436f",
       "name": "nota_b1",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -80,
-        420
+        -3664,
+        480
       ]
     },
     {
       "parameters": {
         "content": "## 2 · Roda o robô (fila + Wait)\nEntra na fila → **Wait** acorda quando é a vez (igual ao Cadastro) → **Iniciar Robo** gera os relatórios e devolve o manifesto → **libera** a fila.\n**Robô OK?** separa sucesso × erro.",
-        "height": 240,
+        "height": 272,
         "width": 1660,
         "color": 4
       },
-      "id": "nota_b2",
+      "id": "d57a41ae-5b42-4daa-8d39-cc2fb847a90d",
       "name": "nota_b2",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        820,
-        420
+        -2768,
+        480
       ]
     },
     {
       "parameters": {
         "content": "## 3 · Monta os e-mails\nCasa manifesto × e-mails (**Preparar**), 1 item por arquivo (**Arquivos do lab**), **baixa** cada um e **junta** os anexos + HTML por lab.",
-        "height": 240,
+        "height": 272,
         "width": 1100,
         "color": 3
       },
-      "id": "nota_b3",
+      "id": "c2c9e8ea-90ba-49f8-94e4-ff1cc0859d22",
       "name": "nota_b3",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        2520,
-        420
+        -1072,
+        480
       ]
     },
     {
       "parameters": {
         "content": "## 4 · Envio por laboratório\n**Switch** roteia por `lab_id`.\n\nCada **Gmail: <lab>** envia (HTML + anexos). Tem 2 saídas: ✅ sucesso e ❌ erro (*On Error: Continue*).\n\nCada **Aviso: <lab>** avisa a colega (`email_colega`): `[OK]` enviado ou `[FALHA]` com o motivo.",
-        "height": 1900,
-        "width": 940,
+        "height": 2172,
+        "width": 956,
         "color": 6
       },
-      "id": "nota_b4",
+      "id": "3fafa727-5ea6-412f-9138-60457c653416",
       "name": "nota_b4",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        3660,
-        60
+        64,
+        64
       ]
     },
     {
       "parameters": {
         "content": "## 5 · Erro do robô\nSe o robô falhar (não gerou nada), avisa a TI (`email_avisos`) com o detalhe.",
-        "height": 220,
-        "width": 420,
+        "height": 316,
+        "width": 324,
         "color": 2
       },
-      "id": "nota_b5",
+      "id": "97a3e0a5-15e2-4dcd-94e2-eab9cc1af7db",
       "name": "nota_b5",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        2180,
-        720
+        -736,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "path": "93dd1cfe-3eb3-4f64-8345-a97cf87d39a4",
+        "formTitle": "Disparo manual de relatórios",
+        "formDescription": "Gera e envia os relatórios de UM laboratório. Período vazio = mês anterior. Respeita o MODO_TESTE da Agenda.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "lab_id",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "bayer"
+                  },
+                  {
+                    "option": "csl"
+                  },
+                  {
+                    "option": "fresenius"
+                  },
+                  {
+                    "option": "glaxo"
+                  },
+                  {
+                    "option": "organon"
+                  },
+                  {
+                    "option": "roche"
+                  },
+                  {
+                    "option": "sandoz_rs_sc"
+                  },
+                  {
+                    "option": "sandoz_sp"
+                  },
+                  {
+                    "option": "sankyo"
+                  },
+                  {
+                    "option": "sun_geral"
+                  },
+                  {
+                    "option": "sun_13082"
+                  },
+                  {
+                    "option": "united"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "periodo_ini",
+              "placeholder": "dd/mm/aaaa (vazio = mês anterior)"
+            },
+            {
+              "fieldLabel": "periodo_fim",
+              "placeholder": "dd/mm/aaaa (vazio = mês anterior)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "26e121aa-1fcd-4340-a164-4189abeac87d",
+      "name": "Disparo Manual",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2,
+      "position": [
+        -3552,
+        976
+      ],
+      "webhookId": "93dd1cfe-3eb3-4f64-8345-a97cf87d39a4"
+    },
+    {
+      "parameters": {
+        "content": "## Disparo manual\nForm Trigger → mesma **Agenda**.\nEscolha **lab_id** + período (vazio = mês anterior).\nMonta 1 envio e segue o fluxo normal.\n**Respeita o MODO_TESTE.**",
+        "height": 328,
+        "width": 316,
+        "color": 4
+      },
+      "id": "4d00f50b-c974-4245-9507-e3415399f5d8",
+      "name": "nota_manual",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -3664,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ══════════════════════════════════════════════════════════════\n// formatar_erro.js — Code node do n8n (ramo de ERRO do robô)\n// ──────────────────────────────────────────────────────────────\n// Roda quando \"Robô OK?\" é FALSE. Lê o resultado ESTRUTURADO do robô\n// (em \"Iniciar Robo\".resultado: etapa, lab, periodo, progresso,\n// explicacao, sugestao, detalhe_tecnico) e monta um e-mail HTML claro\n// (identidade Ciamed) para o nó \"Avisos (erro)\".\n// Saída: { to, subject, html }.\n// ══════════════════════════════════════════════════════════════\n\nconst ini = $(\"Iniciar Robo\").first().json || {};\nconst res = ini.resultado ? ini.resultado : ini;          // tolera as duas formas\nconst ag = $(\"Agenda\").first().json || {};\n\nconst esc = (s) => String(s == null ? \"\" : s)\n  .replace(/&/g, \"&amp;\").replace(/</g, \"&lt;\").replace(/>/g, \"&gt;\").replace(/\"/g, \"&quot;\");\n\nconst etapa     = res.etapa || \"\";\nconst lab       = res.lab || \"\";\nconst periodo   = res.periodo || \"\";\nconst progresso = res.progresso || \"\";\nconst explic    = res.explicacao || res.msg || \"Ocorreu um erro durante a execução do robô.\";\nconst sugestao  = res.sugestao || \"Rode novamente; se persistir, avise o desenvolvedor.\";\nconst detalhe   = res.detalhe_tecnico || res.msg || \"\";\nconst execId    = res.exec || (res.pasta ? String(res.pasta).split(/[\\\\/]/).pop() : \"\");\nconst quando    = ag.data_ref || \"\";\n\nconst linha = (rot, val) => val\n  ? `<tr><td style=\"padding:5px 0;color:#6E6E6E;width:130px;vertical-align:top;\">${esc(rot)}</td><td style=\"padding:5px 0;\">${esc(val)}</td></tr>`\n  : \"\";\n\nconst html = `<!doctype html>\n<html><body style=\"margin:0;padding:0;background:#f4f6f8;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#333;\">\n  <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f4f6f8;padding:24px 0;\">\n    <tr><td align=\"center\">\n      <table role=\"presentation\" width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e6e9ec;\">\n        <tr><td style=\"background:#00B3B2;padding:16px 22px;\">\n          <div style=\"color:#ffffff;font-size:22px;font-weight:bold;letter-spacing:4px;line-height:1;\">CIAMED</div>\n          <div style=\"color:#e6f7f7;font-size:12px;margin-top:5px;\">Aviso automático · Robô de Relatórios</div>\n        </td></tr>\n        <tr><td style=\"background:#FCEBEB;border-left:4px solid #A32D2D;padding:12px 18px;\">\n          <div style=\"color:#A32D2D;font-size:15px;font-weight:bold;\">O robô parou antes de concluir os envios</div>\n          <div style=\"color:#7a3030;font-size:13px;margin-top:2px;\">Nenhum e-mail foi enviado aos laboratórios nesta execução.</div>\n        </td></tr>\n        <tr><td style=\"padding:18px 22px 6px;\">\n          <table role=\"presentation\" width=\"100%\" style=\"font-size:13px;border-collapse:collapse;\">\n            ${linha(\"Quando\", quando)}\n            ${linha(\"Etapa\", etapa)}\n            ${linha(\"Laboratório\", lab)}\n            ${linha(\"Período\", periodo)}\n            ${linha(\"Progresso\", progresso)}\n            ${execId ? `<tr><td style=\"padding:5px 0;color:#6E6E6E;vertical-align:top;\">Execução</td><td style=\"padding:5px 0;font-family:monospace;font-size:12px;\">${esc(execId)}</td></tr>` : \"\"}\n          </table>\n        </td></tr>\n        <tr><td style=\"padding:8px 22px;\">\n          <div style=\"font-size:13px;color:#00B3B2;font-weight:bold;margin-bottom:4px;\">O que aconteceu</div>\n          <div style=\"font-size:13px;line-height:1.5;\">${esc(explic)}</div>\n          <div style=\"font-size:13px;color:#00B3B2;font-weight:bold;margin:12px 0 4px;\">O que fazer</div>\n          <div style=\"font-size:13px;line-height:1.5;\">${esc(sugestao)}</div>\n        </td></tr>\n        ${detalhe ? `<tr><td style=\"padding:10px 22px 18px;\">\n          <div style=\"font-size:11px;color:#8A8A8A;margin-bottom:4px;\">Detalhe técnico (para a TI)</div>\n          <div style=\"font-family:monospace;font-size:11px;color:#555;background:#f4f6f8;border:1px solid #eee;border-radius:4px;padding:8px 10px;word-break:break-word;\">${esc(detalhe)}</div>\n        </td></tr>` : \"\"}\n        <tr><td style=\"padding:12px 22px;border-top:1px solid #eee;\">\n          <p style=\"margin:0;font-size:12px;color:#8A8A8A;line-height:1.5;\">Mensagem automática do Hub de Automações — Ciamed.</p>\n        </td></tr>\n      </table>\n    </td></tr>\n  </table>\n</body></html>`;\n\nconst subject = `⚠️ Robô de relatórios falhou — ${[lab, etapa].filter(Boolean).join(\" · \") || quando}`;\n\nreturn [{ json: { to: ag.email_avisos || \"\", subject, html } }];\n"
+      },
+      "id": "3d4e5f60-7182-4930-9a4b-5c6d7e8f9a0b",
+      "name": "Formatar Erro",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1376,
+        600
       ]
     }
   ],
+  "pinData": {},
   "connections": {
     "Schedule 06:30": {
       "main": [
@@ -1564,7 +1662,7 @@
         ],
         [
           {
-            "node": "Avisos (erro)",
+            "node": "Formatar Erro",
             "type": "main",
             "index": 0
           }
@@ -1918,11 +2016,39 @@
           }
         ]
       ]
+    },
+    "Disparo Manual": {
+      "main": [
+        [
+          {
+            "node": "Agenda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar Erro": {
+      "main": [
+        [
+          {
+            "node": "Avisos (erro)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate"
   },
-  "pinData": {}
+  "versionId": "3f069267-6d53-46d8-8d51-0f53b3b51f7c",
+  "meta": {
+    "instanceId": "e6ba50edb8442a5e57d53b1fde783d26f4d173325ee71f811fed3dbe4c4df42d"
+  },
+  "id": "Nd4QUvT5dwhdj2aw",
+  "tags": []
 }
