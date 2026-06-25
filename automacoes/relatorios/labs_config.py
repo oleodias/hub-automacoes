@@ -69,7 +69,7 @@ LABS = {
     "sankyo":       {"nome": "Sankyo",           "modelo_venda": "103034120207945481", "estoque": ["privado"], "operacoes": [OPERACAO_PRIVADO]},
     "united":       {"nome": "United M",         "modelo_venda": "103039329135977606", "estoque": ["privado"], "operacoes": [OPERACAO_PRIVADO]},
     # Sun Geral: estoque Público+Privado e venda Privado(11)+Público(17) → 4 arquivos.
-    "sun_geral":    {"nome": "Sun Geral",        "modelo_venda": "124266373295785439", "estoque": ["privado", "publico"], "operacoes": [OPERACAO_PRIVADO, OPERACAO_PUBLICO]},
+    "sun_geral":    {"nome": "Sun Pharma",        "modelo_venda": "124266373295785439", "estoque": ["privado", "publico"], "operacoes": [OPERACAO_PRIVADO, OPERACAO_PUBLICO]},
     # Sun item 13082: modelo "26. SUN - ITEM 13082" (confirmado pelo usuário).
-    "sun_13082":    {"nome": "Sun Item 13082",   "modelo_venda": "103087407870276850", "estoque": ["privado"], "operacoes": [OPERACAO_PRIVADO]},
+    "sun_13082":    {"nome": "Sun Pharma (Ilumya)",   "modelo_venda": "103087407870276850", "estoque": ["privado"], "operacoes": [OPERACAO_PRIVADO]},
 }
