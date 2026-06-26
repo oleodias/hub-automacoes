@@ -63,13 +63,14 @@ uma colega interna recebe um aviso de cada envio (sucesso/erro).
 // saída
 { "status":"Sucesso"|"Sucesso com avisos"|"Erro", "msg":"...", "pasta":"<abs>",
   "exec":"exec_AAAAMMDD_HHMMSS",   // (preenchido pelo Hub; subpasta da execução)
-  "itens":[{"id":"bayer__T1","lab_id":"bayer","nome":"Bayer","arquivos":["..._privado.xlsx","..._11_....xlsx"]}],
+  "itens":[{"id":"bayer__T1","lab_id":"bayer","nome":"Bayer","arquivos":["Estoque - Bayer - Privado.xlsx","..._11_....xlsx"]}],
   "avisos":[...] }
 ```
 
 ### 3.3 Otimização (dedup)
 Cada combinação única é gerada **uma vez**:
-- **Estoque** por setor (`privado`/`publico`) → estoque privado sai 1x e todos reusam.
+- **Estoque** por (`modelo + setor`) → cada lab tem o SEU modelo de estoque; Sandoz
+  RS/SC e SP (mesmo modelo) saem 1x. (Antes era só por setor, com modelo fixo.)
 - **Venda** por (`modelo + operação + período`) → Sandoz RS/SC e SP (mesmo modelo) saem 1x.
 
 ### 3.4 Funções (todas em `gerar_relatorios.py`)
@@ -78,7 +79,7 @@ Cada combinação única é gerada **uma vez**:
 | `_sleep(s)` | Pausa × `_FATOR_LENTIDAO` (env `RELATORIOS_SLOWMO` ou `modo_lento`→3x). |
 | `_js_click` | Clique via JS (padrão do projeto). |
 | `_set_valor` | **Robusto:** `scrollIntoView` + foco/mouse + `apex.item().setValue()` + `input`/`change` + `jQuery.trigger('change')` + fallback `Select`. |
-| `_definir_operacao` | Garante a Operação (Público/Privado) no alvo; se já estiver no alvo, faz **"wiggle"** (vai na outra e volta) p/ forçar o `change`. |
+| `_definir_select` | Garante um `<select>` no valor alvo forçando transição REAL; se já estiver no alvo, faz **"wiggle"** (vai na outra e volta) p/ forçar o `change`. Usado na **Operação** (Demanda) e no **Setor** Público/Privado (Estoque). `rotulo` só cosmético no log. |
 | `_selecionar_modelo` | Troca o "saved report" por **value** (preferido) ou **label** (nome); aplica via `_set_valor`. |
 | `_entrar_na_tela` | Posiciona o Selenium no contexto certo: **nova aba → topo → iframe** (procura o marcador). |
 | `_abrir_favorito` | Abre a estrela de favoritos, clica no atalho pelo `invoker_code` e chama `_entrar_na_tela`. |
@@ -91,7 +92,7 @@ Cada combinação única é gerada **uma vez**:
 | `_csv_para_xlsx` | Converte CSV (detecta separador/encoding) p/ `.xlsx` (pandas). |
 | `_slug` | Slug "colado" (só alfanumérico) — usado em datas/valores. |
 | `_slug_nome` | Slug **legível** (espaços→`_`, remove chars proibidos) — nome do arquivo. |
-| `gerar_analise_estoque` | Tela A: filtro setor → modelo → Consultar → baixa. Nome = `<modelo>_<setor>`. |
+| `gerar_analise_estoque` | Tela A: **setor (forçado, `_definir_select`) → modelo (por lab) → Consultar** → baixa. Nome amigável = `Estoque - {Lab} - {Público\|Privado}`. |
 | `gerar_demanda` | Tela B: **datas → operação → modelo → Consultar** → baixa. Nome = `<modelo>_<op>_<ini>_<fim>`. |
 | `aplicar_pos_processamento` | Roda hooks do lab **in-place** sobre o .xlsx de venda (preserva o nome), 1x por combo. Ver §4.1. |
 | `executar(job)` | Orquestra: login → estoques (dedup) → vendas (dedup) → manifesto. |
@@ -122,9 +123,32 @@ Cada combinação única é gerada **uma vez**:
 | `united` | United (M) | `103039329135977606` | privado | 11 | leonardo.rossi@knighttx.com |
 
 - **Operações:** `11` = VENDA FATURAMENTO LÍQUIDO **PRIVADO** · `17` = **PÚBLICO** (só Sun Geral).
-- **Estoque:** modelo fixo `153738614031239522` ("1. ESTOQUE PARA MAPA") p/ todos; setor é diferenciado pelo filtro Público/Privado.
+- **Estoque:** **modelo POR LABORATÓRIO** (`modelo_estoque`, ver tabela abaixo); o setor
+  (Público/Privado, `P366_FILTRO`) é aplicado com transição **forçada** (`_definir_select`),
+  igual ao Público/Privado da venda — sem isso o 2º setor saía "preso" no 1º (bug da Sun).
+  O modelo fixo antigo `153738614031239522` ("ESTOQUE PARA MAPA") foi **aposentado**.
 - **Sun Geral = 4 arquivos** (estoque priv+pub + venda 11+17). Demais = 2.
-- **Fresenius**: `modelo_venda=None`, selecionado por **nome** (`modelo_label`) em runtime.
+- **Fresenius**: venda por **nome** (`modelo_label`); estoque por **value** (veio no HTML).
+
+**Modelos de estoque por lab** (`modelo_estoque` — saved report da Tela A):
+
+| lab_id | Modelo de estoque | value |
+|---|---|---|
+| `bayer` | ESTOQUE BAYER | `127943964783667034` |
+| `csl` | ESTOQUE CSL | `127945131004674976` |
+| `fresenius` | ESTOQUE FRESENIUS | `127946236241699626` |
+| `glaxo` | ESTOQUE GLAXO | `127947392953704118` |
+| `organon` | ESTOQUE ORGANON | `127948686117719839` |
+| `roche` | ESTOQUE ROCHE | `127949750666724717` |
+| `sandoz_rs_sc` / `sandoz_sp` | ESTOQUE SANDOZ (compartilhado) | `127951377532739678` |
+| `sankyo` | ESTOQUE SANKYO | `127953567883773259` |
+| `united` | ESTOQUE UNITED | `127959262106822214` |
+| `sun_geral` | ESTOQUE SUN PHARMA (MENOS ITEM 13082) | `127955843879806991` |
+| `sun_13082` | ESTOQUE SUN PHARMA (ILUMYA) | `127957403756813800` |
+
+> ⚠️ **Pré-requisito operacional:** esses saved reports precisam existir no NL/APEX
+> (select `R117088519510763187_saved_reports`) com esses values; senão o robô não
+> acha o modelo.
 
 ### 4.1 Ajustes por laboratório — pós-processamento (`pos_processamento.py`)
 

@@ -43,7 +43,7 @@ from selenium.common.exceptions import TimeoutException
 
 # Login/navegador reaproveitados do robô de cadastro (não reescrevemos login).
 from automacoes.clientes.navegacao_erp import iniciar_navegador, fazer_login
-from automacoes.relatorios.labs_config import ESTOQUE, DEMANDA, LABS
+from automacoes.relatorios.labs_config import ESTOQUE, DEMANDA, LABS, SETOR_LABEL
 from automacoes.relatorios import pos_processamento
 
 # Pasta-base onde cada execução cria sua subpasta de downloads.
@@ -118,14 +118,17 @@ def _set_valor(driver, item_id, valor):
     return el
 
 
-def _definir_operacao(driver, item_id, valor_alvo):
-    """Garante que a Operação (Público/Privado) termine no VALOR ALVO.
+def _definir_select(driver, item_id, valor_alvo, rotulo="Filtro"):
+    """Garante que um <select> termine no VALOR ALVO, forçando uma transição REAL.
 
-    O robô "nunca se perde": lê o que está selecionado e força uma transição
-    REAL para o alvo. Se já estiver no alvo, dá um 'wiggle' (seleciona a outra
-    opção e volta) para garantir que o change/refresh da IR dispare — caso
-    contrário, reaplicar o mesmo valor poderia não disparar nada. Verifica o
-    resultado no fim.
+    Usado tanto na Operação (Público/Privado) da Demanda quanto no Setor
+    (Público/Privado) do Estoque. O robô "nunca se perde": lê o que está
+    selecionado e força a transição para o alvo. Se já estiver no alvo, dá um
+    'wiggle' (seleciona a outra opção e volta) para garantir que o change/refresh
+    da IR dispare — caso contrário, reaplicar o mesmo valor poderia não disparar
+    nada (era o que deixava o setor "preso" no anterior). Verifica o resultado no fim.
+
+    `rotulo` é só cosmético (aparece no log): "Operação" na Demanda, "Setor" no Estoque.
     """
     valor_alvo = str(valor_alvo)
     el = WebDriverWait(driver, TIMEOUT_PADRAO).until(
@@ -145,7 +148,7 @@ def _definir_operacao(driver, item_id, valor_alvo):
     _set_valor(driver, item_id, valor_alvo)
     _sleep(0.3)
     final = Select(driver.find_element(By.ID, item_id)).first_selected_option.get_attribute("value")
-    print(f"> 🔀 Operação: alvo {valor_alvo} (estava {atual}) → selecionada {final}")
+    print(f"> 🔀 {rotulo}: alvo {valor_alvo} (estava {atual}) → selecionada {final}")
     return final
 
 
@@ -491,32 +494,45 @@ def _estilizar_xlsx(caminho, titulo="", subtitulo=""):
 
 
 # ─────────────────────── Geração de cada relatório ───────────────────────
-def gerar_analise_estoque(driver, setor, pasta):
-    """Tela A — gera a Análise de Estoque para um setor (privado/publico)."""
-    print(f"> 📦 Análise de Estoque — setor: {setor}")
+def gerar_analise_estoque(driver, setor, modelo_value, modelo_label, nome_base, pasta):
+    """Tela A — gera a Análise de Estoque para (modelo, setor).
+
+    Espelha a Demanda: setor com transição FORÇADA (igual ao Público/Privado da
+    venda) e o modelo (saved report) por ÚLTIMO antes do Consultar. `nome_base` é
+    o nome amigável do arquivo, já montado pelo orquestrador (ex.: "Estoque -
+    Bayer - Privado").
+    """
+    rotulo = modelo_value or modelo_label
+    print(f"> 📦 Análise de Estoque — modelo {rotulo} | setor: {setor}")
     wait = WebDriverWait(driver, TIMEOUT_PADRAO)
     wait.until(EC.presence_of_element_located((By.ID, ESTOQUE["item_marcador"])))
 
-    _set_valor(driver, ESTOQUE["item_filtro"], ESTOQUE["filtro_setor"][setor])
+    # 1) Setor PRIMEIRO, com transição real (wiggle) — garante que Público/Privado
+    #    realmente alternem entre arquivos (antes, com _set_valor, o 2º podia ficar
+    #    "preso" no setor do 1º — bug visível na Sun, que gera os dois).
+    _definir_select(driver, ESTOQUE["item_filtro"], ESTOQUE["filtro_setor"][setor], rotulo="Setor")
     _sleep(0.5)
-    _set_valor(driver, ESTOQUE["saved_reports"], ESTOQUE["modelo_value"])
-    _sleep(0.8)
 
-    # Captura o NOME do relatório salvo ativo (vira o nome do arquivo + setor,
-    # já que ambos os setores usam o mesmo modelo de estoque).
-    modelo_nome = None
+    # 2) DEPOIS troca o modelo (saved report) — última ação antes do Consultar —
+    #    e espera a IR recarregar (igual à Demanda).
+    _selecionar_modelo(driver, ESTOQUE["saved_reports"], value=modelo_value, label=modelo_label)
+    _esperar_apex_pronto(driver)
+    _sleep(1.0)
+
+    # Diagnóstico: captura o NOME do relatório salvo ativo agora.
     try:
-        modelo_nome = Select(driver.find_element(By.ID, ESTOQUE["saved_reports"])).first_selected_option.text.strip()
-        print(f"> 🔖 Relatório salvo ativo agora: '{modelo_nome}'")
+        sel = Select(driver.find_element(By.ID, ESTOQUE["saved_reports"]))
+        print(f"> 🔖 Relatório salvo ativo agora: '{sel.first_selected_option.text.strip()}'"
+              f" (value={sel.first_selected_option.get_attribute('value')})")
     except Exception as e:  # noqa: BLE001
         print(f"> ⚠️ Não consegui ler o relatório salvo ativo: {e}")
 
+    # 3) SÓ ENTÃO Consulta.
     _js_click(driver, driver.find_element(By.ID, ESTOQUE["btn_consultar"]))
     _esperar_apex_pronto(driver)
     _sleep(1.5)
 
-    base = _slug_nome(modelo_nome) if modelo_nome else "estoque"
-    return _baixar_csv(driver, ESTOQUE, pasta, f"{base}_{setor}")
+    return _baixar_csv(driver, ESTOQUE, pasta, nome_base)
 
 
 def gerar_demanda(driver, modelo_value, modelo_label, operacao, data_ini, data_fim, pasta):
@@ -530,7 +546,7 @@ def gerar_demanda(driver, modelo_value, modelo_label, operacao, data_ini, data_f
     #    real até o alvo, para Público/Privado nunca ficar "preso").
     _set_valor(driver, DEMANDA["data_ini"], data_ini)
     _set_valor(driver, DEMANDA["data_fim"], data_fim)
-    _definir_operacao(driver, DEMANDA["operacao"], operacao)
+    _definir_select(driver, DEMANDA["operacao"], operacao, rotulo="Operação")
     _sleep(0.5)
 
     # 2) DEPOIS troca o relatório salvo (modelo) — última ação antes do
@@ -734,25 +750,38 @@ def executar(job):
                 explicacao="O robô não conseguiu entrar no NL (login não concluído).",
                 sugestao="Confira usuário/senha do NL e se o sistema está no ar; depois rode novamente.")
 
-        # ---- 1) ANÁLISE DE ESTOQUE (gera cada setor 1x) ----
-        setores = []
+        # ---- 1) ANÁLISE DE ESTOQUE (gera cada (modelo, setor) único 1x) ----
+        # Cada lab tem o SEU modelo de estoque → a unidade é (modelo, setor),
+        # espelhando o (modelo, op, período) da Demanda. Sandoz RS/SC e SP
+        # compartilham o modelo → o dedup gera o arquivo 1x só.
+        combos_est_alvo = set()
         for e in envios:
-            for s in LABS[e["lab_id"]]["estoque"]:
-                if s not in setores:
-                    setores.append(s)
-        total_est, feito_est = len(setores), 0
-        estoque_paths = {}
+            lab = LABS[e["lab_id"]]
+            for s in lab["estoque"]:
+                combos_est_alvo.add((lab["modelo_estoque"], s))
+        total_est, feito_est = len(combos_est_alvo), 0
+        estoque_paths = {}  # (modelo_estoque, setor) -> caminho
         estilos = {}  # caminho -> (titulo, subtitulo) p/ a estilização final
-        if setores:
+        if combos_est_alvo:
             _abrir_favorito(driver, ESTOQUE["favorito_invoker"], ESTOQUE["item_marcador"])
-            for setor in setores:
-                ctx["etapa"] = f"Análise de Estoque — {setor}"
-                ctx["lab"], ctx["periodo"] = "", ""
-                p = gerar_analise_estoque(driver, setor, pasta)
-                estoque_paths[setor] = p
-                estilos[p] = ("Análise de Estoque", f"{setor.capitalize()} · posição atual")
-                feito_est += 1
-                ctx["progresso"] = f"Estoque {feito_est}/{total_est}"
+            for e in envios:
+                lab = LABS[e["lab_id"]]
+                nome_est = lab.get("nome_estoque", lab["nome"])
+                for s in lab["estoque"]:
+                    chave = (lab["modelo_estoque"], s)
+                    if chave not in estoque_paths:
+                        ctx["etapa"] = f"Análise de Estoque — {nome_est} / {s}"
+                        ctx["lab"], ctx["periodo"] = nome_est, ""
+                        nome_base = f"Estoque - {nome_est} - {SETOR_LABEL[s]}"
+                        p = gerar_analise_estoque(
+                            driver, s, lab["modelo_estoque"],
+                            lab.get("modelo_estoque_label"), nome_base, pasta,
+                        )
+                        estoque_paths[chave] = p
+                        estilos[p] = ("Análise de Estoque",
+                            f"{nome_est} · {SETOR_LABEL[s]} · posição atual")
+                        feito_est += 1
+                        ctx["progresso"] = f"Estoque {feito_est}/{total_est}"
 
         # ---- 2) DEMANDA FORNECEDOR (gera cada combo único 1x) ----
         # Conta os combos únicos só para o "progresso" no aviso de erro.
@@ -793,7 +822,7 @@ def executar(job):
         for e in envios:
             lab = LABS[e["lab_id"]]
             modelo_id = lab["modelo_venda"] or lab.get("modelo_label")
-            arquivos = [os.path.basename(estoque_paths[s]) for s in lab["estoque"]]
+            arquivos = [os.path.basename(estoque_paths[(lab["modelo_estoque"], s)]) for s in lab["estoque"]]
             for operacao in lab["operacoes"]:
                 chave = (modelo_id, operacao, e["periodo_ini"], e["periodo_fim"])
                 caminho_venda = combos[chave]
