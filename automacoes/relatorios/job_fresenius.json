@@ -1,0 +1,7 @@
+{
+  "tipo": 1,
+  "modo_fantasma": false,
+  "envios": [
+    { "id": "fresenius__T1", "lab_id": "fresenius", "periodo_ini": "01/05/2026", "periodo_fim": "31/05/2026" }
+  ]
+}
