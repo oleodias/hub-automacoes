@@ -1,0 +1,2051 @@
+{
+  "name": "Fluxo Cadastro Original",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config Hub').item.json.hub_url }}/fila_cadastro/entrar",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"resume_url\": \"{{ $execution.resumeUrl }}\",\n  \"empresa\": \"{{ $('Webhook1').item.json.body.razao_social }}\",\n  \"tipo\": \"NOVO\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        6416,
+        880
+      ],
+      "id": "6a26bd20-f31c-4e64-88ad-b7df45669793",
+      "name": "HTTP - Entrar na Fila (Novo)1"
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        6672,
+        976
+      ],
+      "id": "fffb41c9-c746-4351-a135-ecc1990236fe",
+      "name": "Wait - Fila do Robô (Novo)1",
+      "webhookId": "a3333333-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config Hub').item.json.hub_url }}/fila_cadastro/liberar_proximo",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"empresa\": \"{{ $('Webhook1').item.json.body.razao_social }}\",\n  \"tipo\": \"NOVO\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        7520,
+        784
+      ],
+      "id": "264400bd-8d31-452e-b847-a8e988370ae5",
+      "name": "HTTP - Liberar Próximo (Novo)1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config Hub').item.json.hub_url }}/fila_cadastro/entrar",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"resume_url\": \"{{ $execution.resumeUrl }}\",\n  \"empresa\": \"{{ $('Webhook1').item.json.body.razao_social }}\",\n  \"tipo\": \"REATIVACAO\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        6416,
+        1280
+      ],
+      "id": "ac8d3603-b62d-4cca-9b7c-1b73d49a5aa3",
+      "name": "HTTP - Entrar na Fila (Reativação)1"
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        6672,
+        1184
+      ],
+      "id": "4a3fbf01-c7a0-4011-8bf4-8a5b7a5a22c7",
+      "name": "Wait - Fila do Robô (Reativação)1",
+      "webhookId": "b3333333-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config Hub').item.json.hub_url }}/fila_cadastro/liberar_proximo",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"empresa\": \"{{ $('Webhook1').item.json.body.razao_social }}\",\n  \"tipo\": \"REATIVACAO\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        7520,
+        1184
+      ],
+      "id": "85e501ef-28be-4d74-b020-3c17fae8cc2b",
+      "name": "HTTP - Liberar Próximo (Reativação)1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "receber-cadastro-teste-em-casa",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        4640,
+        1008
+      ],
+      "id": "dc11ea14-ea7b-4677-9ccb-583f614e5749",
+      "name": "Webhook1",
+      "webhookId": "b27bafa9-ab1c-4411-a1df-deaee09bec87"
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        5392,
+        1168
+      ],
+      "id": "3a02e007-1d0a-4a49-8f33-bb5786dd5233",
+      "name": "Wait - Decisão1",
+      "webhookId": "338a1b73-6826-46ea-89d1-8e7e51beb25a"
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        8176,
+        912
+      ],
+      "id": "47222005-b4c7-4708-bd73-ce0187cb70bf",
+      "name": "Wait - Confirmação Máscaras1",
+      "webhookId": "b0588954-5e08-4478-9ab1-81818e5078eb"
+    },
+    {
+      "parameters": {
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "=💰 [FINANCEIRO] Cliente liberado para crédito — {{ $('Webhook1').item.json.body.razao_social }}",
+        "emailType": "html",
+        "message": "=<div style=\"background:#f4f5f7;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;\">\n<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" width=\"600\" style=\"width:600px;max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-collapse:collapse;\">\n      <tr>\n        <td bgcolor=\"#047857\" style=\"padding:28px 32px;background-color:#047857;\">\n          <p style=\"margin:0 0 10px;font-size:11px;color:#a7f3d0;font-weight:bold;letter-spacing:1.5px;font-family:Arial,Helvetica,sans-serif;\">LIBERA&Ccedil;&Atilde;O DE CR&Eacute;DITO</p>\n          <h1 style=\"margin:0 0 6px;font-size:22px;color:#ffffff;font-weight:bold;font-family:Arial,Helvetica,sans-serif;line-height:1.3;\">Cliente pronto para libera&ccedil;&atilde;o</h1>\n          <p style=\"margin:0;font-size:13px;color:#d1fae5;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">Todas as etapas foram conclu&iacute;das com sucesso.</p>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:24px 32px 12px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Empresa</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.razao_social }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">CNPJ</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.cnpj }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Vendedor</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.vendedor }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Representante</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.representante }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Regra Faturamento</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.regra_faturamento }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;\">Capta&ccedil;&atilde;o via</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.captacao }}</td>\n          </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 24px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n              <td bgcolor=\"#047857\" width=\"4\" style=\"background-color:#047857;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n              <td bgcolor=\"#ecfdf5\" style=\"padding:14px 18px;background-color:#ecfdf5;font-size:12px;color:#065f46;font-family:Arial,Helvetica,sans-serif;line-height:1.6;\">&#10003; Farmac&ecirc;uticas aprovaram &nbsp;&middot;&nbsp; &#10003; M&aacute;scaras atualizadas &nbsp;&middot;&nbsp; &#10003; Rob&ocirc; concluiu o cadastro</td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#f9fafb\" style=\"padding:16px 32px;text-align:center;background-color:#f9fafb;border-top:1px solid #e5e7eb;\">\n          <p style=\"margin:0;font-size:11px;color:#9ca3af;font-family:Arial,Helvetica,sans-serif;\">Ciamed Distribuidora de Medicamentos &nbsp;&middot;&nbsp; Sistema de Automa&ccedil;&atilde;o Fiscal</p>\n        </td>\n      </tr>\n</table>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        8368,
+        768
+      ],
+      "id": "ad976494-acae-4d89-9b2f-214fb4da5f01",
+      "name": "Email - Financeiro1",
+      "webhookId": "2e05eb53-3752-49b7-9ac0-7cfb7818a890",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Yl1yGNp14Nz77zEJ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "==⚠️ [CORREÇÃO NECESSÁRIA] Ficha de {{ $('Webhook1').item.json.body.razao_social }} reprovada{{ $('Webhook1').item.json.body.tentativa > 1 ? ' (' + $('Webhook1').item.json.body.tentativa + 'ª tentativa)' : '' }}",
+        "emailType": "html",
+        "message": "=<div style=\"background:#f4f5f7;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;\">\n<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" width=\"600\" style=\"width:600px;max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-collapse:collapse;\">\n      <tr>\n        <td bgcolor=\"#c2410c\" height=\"4\" style=\"background-color:#c2410c;line-height:1px;font-size:1px;height:4px;\">&nbsp;</td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#c2410c\" style=\"padding:28px 32px;background-color:#c2410c;\">\n          <p style=\"margin:0 0 10px;font-size:11px;color:#fed7aa;font-weight:bold;letter-spacing:1.5px;font-family:Arial,Helvetica,sans-serif;\">A&Ccedil;&Atilde;O REQUERIDA &middot; CORRE&Ccedil;&Atilde;O {{ $('Webhook1').item.json.body.tentativa > 1 ? '· ' + $('Webhook1').item.json.body.tentativa + 'ª TENTATIVA' : '' }}</p>\n          <h1 style=\"margin:0 0 6px;font-size:22px;color:#ffffff;font-weight:bold;font-family:Arial,Helvetica,sans-serif;line-height:1.3;\">{{ $('Webhook1').item.json.body.tentativa > 1 ? 'Ficha Reprovada Novamente' : 'Ficha Cadastral Reprovada' }}</h1>\n          <p style=\"margin:0;font-size:13px;color:#ffedd5;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">A triagem farmac&ecirc;utica identificou pend&ecirc;ncias. Corrija junto ao cliente e reenvie pelo link abaixo.</p>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:24px 32px 12px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Empresa</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.razao_social }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">CNPJ</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.cnpj }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Vendedor</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.vendedor }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;\">Tentativa</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.tentativa }}&ordf;</td>\n          </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:0 32px 24px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n              <td bgcolor=\"#c2410c\" width=\"4\" style=\"background-color:#c2410c;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n              <td bgcolor=\"#fff7ed\" style=\"padding:14px 18px;background-color:#fff7ed;font-family:Arial,Helvetica,sans-serif;\">\n                <p style=\"margin:0 0 6px;font-size:11px;font-weight:bold;color:#7c2d12;letter-spacing:1px;font-family:Arial,Helvetica,sans-serif;\">MOTIVO DA REPROVA&Ccedil;&Atilde;O</p>\n                <p style=\"margin:0;font-size:14px;color:#111827;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">{{ $json.query.motivo || $json.body.motivo || \"Motivo não informado\" }}</p>\n              </td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 28px;background-color:#ffffff;text-align:center;\">\n          <p style=\"margin:0 0 16px;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">Clique no bot&atilde;o abaixo para abrir a ficha pr&eacute;-preenchida e corrigir os documentos:</p>\n          \n      <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" style=\"margin:0 auto;\">\n        <tr>\n          <td bgcolor=\"#c2410c\" style=\"background-color:#c2410c;padding:0;\">\n            <a href=\"{{ $('Config Hub').item.json.hub_url }}/ficha_cliente?correcao={{ $('Webhook1').item.json.body.uuid }}&vendedor={{ $('Webhook1').item.json.body.vendedor }}&rep={{ $('Webhook1').item.json.body.representante }}&cap={{ $('Webhook1').item.json.body.captacao }}&tipo={{ $('Webhook1').item.json.body.tipo_cadastro }}\" style=\"display:inline-block;padding:14px 36px;font-size:14px;font-weight:bold;color:#ffffff;text-decoration:none;font-family:Arial,Helvetica,sans-serif;letter-spacing:0.5px;\">CORRIGIR E REENVIAR</a>\n          </td>\n        </tr>\n      </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#f9fafb\" style=\"padding:16px 32px;text-align:center;background-color:#f9fafb;border-top:1px solid #e5e7eb;\">\n          <p style=\"margin:0;font-size:11px;color:#9ca3af;font-family:Arial,Helvetica,sans-serif;\">Ciamed Distribuidora de Medicamentos &nbsp;&middot;&nbsp; Sistema de Automa&ccedil;&atilde;o Fiscal</p>\n        </td>\n      </tr>\n</table>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        5888,
+        1184
+      ],
+      "id": "aac0e859-2750-4c2f-8f4d-4473e67fadc8",
+      "name": "Email - Vendedor Reprovado1",
+      "webhookId": "6f145c06-0895-482a-8323-7a324aa483d7",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Yl1yGNp14Nz77zEJ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "=⏳ Ficha Recebida: {{ $json.body.razao_social }} (Em Análise)",
+        "emailType": "html",
+        "message": "=<div style=\"background:#f4f5f7;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;\">\n<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" width=\"600\" style=\"width:600px;max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-collapse:collapse;\">\n      <tr>\n        <td bgcolor=\"#1d4ed8\" style=\"padding:28px 32px;background-color:#1d4ed8;\">\n          <p style=\"margin:0 0 10px;font-size:11px;color:#bfdbfe;font-weight:bold;letter-spacing:1.5px;font-family:Arial,Helvetica,sans-serif;\">PASSO 1/4 &middot; FICHA RECEBIDA</p>\n          <h1 style=\"margin:0 0 6px;font-size:22px;color:#ffffff;font-weight:bold;font-family:Arial,Helvetica,sans-serif;line-height:1.3;\">O cadastro deu entrada na esteira</h1>\n          <p style=\"margin:0;font-size:13px;color:#dbeafe;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">A documenta&ccedil;&atilde;o j&aacute; est&aacute; na fila de an&aacute;lise da equipe Farmac&ecirc;utica.</p>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:24px 32px 12px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Empresa</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $json.body.razao_social }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">CNPJ</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $json.body.cnpj }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;\">Status atual</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-family:Arial,Helvetica,sans-serif;\">Em an&aacute;lise (Triagem)</td>\n          </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 24px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n              <td bgcolor=\"#1d4ed8\" width=\"4\" style=\"background-color:#1d4ed8;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n              <td bgcolor=\"#eff6ff\" style=\"padding:14px 18px;background-color:#eff6ff;font-size:12px;color:#1e3a8a;font-family:Arial,Helvetica,sans-serif;line-height:1.6;\">Voc&ecirc; receber&aacute; novos avisos &agrave; medida que o cadastro avan&ccedil;ar pelas etapas.</td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#f9fafb\" style=\"padding:16px 32px;text-align:center;background-color:#f9fafb;border-top:1px solid #e5e7eb;\">\n          <p style=\"margin:0;font-size:11px;color:#9ca3af;font-family:Arial,Helvetica,sans-serif;\">Ciamed Distribuidora de Medicamentos &nbsp;&middot;&nbsp; Sistema de Automa&ccedil;&atilde;o Fiscal</p>\n        </td>\n      </tr>\n</table>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        5040,
+        848
+      ],
+      "id": "0ed4dc2c-1689-439d-99b1-9d5b52a6d8d2",
+      "name": "Email - Aviso Vendedor1",
+      "webhookId": "e9b1baca-cf2a-4083-9844-2f80c7179993",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Yl1yGNp14Nz77zEJ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "=✅ [APROVADO] Cadastro de {{ $('Webhook1').item.json.body.razao_social }} aprovado — Robô acionado",
+        "emailType": "html",
+        "message": "=<div style=\"background:#f4f5f7;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;\">\n<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" width=\"600\" style=\"width:600px;max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-collapse:collapse;\">\n      <tr>\n        <td bgcolor=\"#047857\" style=\"padding:28px 32px;background-color:#047857;\">\n          <p style=\"margin:0 0 10px;font-size:11px;color:#a7f3d0;font-weight:bold;letter-spacing:1.5px;font-family:Arial,Helvetica,sans-serif;\">PASSO 2/4 &middot; CADASTRO APROVADO</p>\n          <h1 style=\"margin:0 0 6px;font-size:22px;color:#ffffff;font-weight:bold;font-family:Arial,Helvetica,sans-serif;line-height:1.3;\">Ficha aprovada pelas Farmac&ecirc;uticas</h1>\n          <p style=\"margin:0;font-size:13px;color:#d1fae5;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">N&atilde;o h&aacute; pend&ecirc;ncias. O rob&ocirc; de cadastro foi acionado automaticamente.</p>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:24px 32px 12px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Empresa</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.razao_social }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">CNPJ</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.cnpj }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;\">Status atual</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-family:Arial,Helvetica,sans-serif;\">Rob&ocirc; em execu&ccedil;&atilde;o</td>\n          </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 24px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n              <td bgcolor=\"#047857\" width=\"4\" style=\"background-color:#047857;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n              <td bgcolor=\"#ecfdf5\" style=\"padding:14px 18px;background-color:#ecfdf5;font-size:12px;color:#065f46;font-family:Arial,Helvetica,sans-serif;line-height:1.6;\">&#10003; Documenta&ccedil;&atilde;o validada &nbsp;&middot;&nbsp; &#10003; Rob&ocirc; iniciado &nbsp;&middot;&nbsp; Pr&oacute;ximo passo: inclus&atilde;o no NLWeb</td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#f9fafb\" style=\"padding:16px 32px;text-align:center;background-color:#f9fafb;border-top:1px solid #e5e7eb;\">\n          <p style=\"margin:0;font-size:11px;color:#9ca3af;font-family:Arial,Helvetica,sans-serif;\">Ciamed Distribuidora de Medicamentos &nbsp;&middot;&nbsp; Sistema de Automa&ccedil;&atilde;o Fiscal</p>\n        </td>\n      </tr>\n</table>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        5888,
+        896
+      ],
+      "id": "6f0773ad-0c3a-456e-a82d-d3185d548fac",
+      "name": "Email - Vendedor Aprovado",
+      "webhookId": "7b32852d-5984-4200-9f33-b378cc4654f5",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Yl1yGNp14Nz77zEJ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "=CLIENTE LIBERADO: {{ $('Webhook1').item.json.body.razao_social }}",
+        "emailType": "html",
+        "message": "=<div style=\"background:#f4f5f7;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;\">\n<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" width=\"600\" style=\"width:600px;max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-collapse:collapse;\">\n      <tr>\n        <td bgcolor=\"#b45309\" style=\"padding:28px 32px;background-color:#b45309;\">\n          <p style=\"margin:0 0 10px;font-size:11px;color:#fde68a;font-weight:bold;letter-spacing:1.5px;font-family:Arial,Helvetica,sans-serif;\">PASSO 4/4 &middot; LINHA DE CHEGADA</p>\n          <h1 style=\"margin:0 0 6px;font-size:22px;color:#ffffff;font-weight:bold;font-family:Arial,Helvetica,sans-serif;line-height:1.3;\">Cliente 100% liberado</h1>\n          <p style=\"margin:0;font-size:13px;color:#fef3c7;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">Todas as etapas foram conclu&iacute;das. O cliente j&aacute; est&aacute; pronto para faturamento.</p>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:24px 32px 12px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Empresa</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.razao_social }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">CNPJ</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.cnpj }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;\">Status atual</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-family:Arial,Helvetica,sans-serif;\">Liberado para vendas</td>\n          </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 24px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n              <td bgcolor=\"#b45309\" width=\"4\" style=\"background-color:#b45309;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n              <td bgcolor=\"#fffbeb\" style=\"padding:14px 18px;background-color:#fffbeb;font-size:12px;color:#78350f;font-family:Arial,Helvetica,sans-serif;line-height:1.6;\">&#10003; Farmac&ecirc;uticas aprovaram &nbsp;&middot;&nbsp; &#10003; M&aacute;scaras atualizadas &nbsp;&middot;&nbsp; &#10003; Rob&ocirc; concluiu o cadastro &nbsp;&middot;&nbsp; &#10003; Cr&eacute;dito liberado</td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#f9fafb\" style=\"padding:16px 32px;text-align:center;background-color:#f9fafb;border-top:1px solid #e5e7eb;\">\n          <p style=\"margin:0;font-size:11px;color:#9ca3af;font-family:Arial,Helvetica,sans-serif;\">Ciamed Distribuidora de Medicamentos &nbsp;&middot;&nbsp; Sistema de Automa&ccedil;&atilde;o Fiscal</p>\n        </td>\n      </tr>\n</table>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        8368,
+        1056
+      ],
+      "id": "3d0f0ef1-83c0-4b67-ae4f-3ddf376a79b0",
+      "name": "Email - Aviso Vendedor12",
+      "webhookId": "a92cef24-7791-4eb8-996f-7de7a7230fb1",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Yl1yGNp14Nz77zEJ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "=💰 [FINANCEIRO] Cliente liberado para crédito — {{ $('Webhook1').item.json.body.razao_social }}",
+        "emailType": "html",
+        "message": "=<div style=\"background:#f4f5f7;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;\">\n<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" width=\"600\" style=\"width:600px;max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-collapse:collapse;\">\n      <tr>\n        <td bgcolor=\"#047857\" style=\"padding:28px 32px;background-color:#047857;\">\n          <p style=\"margin:0 0 10px;font-size:11px;color:#a7f3d0;font-weight:bold;letter-spacing:1.5px;font-family:Arial,Helvetica,sans-serif;\">LIBERA&Ccedil;&Atilde;O DE CR&Eacute;DITO</p>\n          <h1 style=\"margin:0 0 6px;font-size:22px;color:#ffffff;font-weight:bold;font-family:Arial,Helvetica,sans-serif;line-height:1.3;\">Cliente pronto para libera&ccedil;&atilde;o</h1>\n          <p style=\"margin:0;font-size:13px;color:#d1fae5;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">Todas as etapas foram conclu&iacute;das com sucesso.</p>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:24px 32px 12px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Empresa</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.razao_social }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">CNPJ</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.cnpj }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Vendedor</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.vendedor }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Representante</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.representante }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Regra Faturamento</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.regra_faturamento }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;\">Capta&ccedil;&atilde;o via</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.captacao }}</td>\n          </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 24px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n              <td bgcolor=\"#047857\" width=\"4\" style=\"background-color:#047857;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n              <td bgcolor=\"#ecfdf5\" style=\"padding:14px 18px;background-color:#ecfdf5;font-size:12px;color:#065f46;font-family:Arial,Helvetica,sans-serif;line-height:1.6;\">&#10003; Farmac&ecirc;uticas aprovaram &nbsp;&middot;&nbsp; &#10003; M&aacute;scaras atualizadas &nbsp;&middot;&nbsp; &#10003; Rob&ocirc; concluiu o cadastro</td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#f9fafb\" style=\"padding:16px 32px;text-align:center;background-color:#f9fafb;border-top:1px solid #e5e7eb;\">\n          <p style=\"margin:0;font-size:11px;color:#9ca3af;font-family:Arial,Helvetica,sans-serif;\">Ciamed Distribuidora de Medicamentos &nbsp;&middot;&nbsp; Sistema de Automa&ccedil;&atilde;o Fiscal</p>\n        </td>\n      </tr>\n</table>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        7856,
+        1328
+      ],
+      "id": "6cf51c0a-db6c-4e73-9839-fa779ff196d7",
+      "name": "Email - Financeiro5",
+      "webhookId": "f2491bfe-43a9-4e2a-b8b1-662e61af3688",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Yl1yGNp14Nz77zEJ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config Hub').item.json.hub_url }}/n8n_iniciar_cadastro",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"uuid\": \"{{ $('Webhook1').item.json.body.uuid }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        6960,
+        880
+      ],
+      "id": "dd9408ae-97b8-45bf-b944-bbcdca4df2fd",
+      "name": "HTTP - Acionar Robô Novo1",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config Hub').item.json.hub_url }}/n8n_iniciar_reativacao",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"uuid\": \"{{ $('Webhook1').item.json.body.uuid }}\",\n  \"acao_bloqueio\": \"{{ $('Wait - Decisão1').item.json.query.acao_bloqueio }}\",\n  \"valor_bloqueio\": \"{{ $('Wait - Decisão1').item.json.query.valor_bloqueio }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        6960,
+        1296
+      ],
+      "id": "d71d2fce-f159-40ea-a73f-4f9f39f2486e",
+      "name": "HTTP - Acionar Robô Reativação1",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "=CLIENTE LIBERADO: {{ $('Webhook1').item.json.body.razao_social }}",
+        "emailType": "html",
+        "message": "=<div style=\"background:#f4f5f7;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;\">\n<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" width=\"600\" style=\"width:600px;max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-collapse:collapse;\">\n      <tr>\n        <td bgcolor=\"#b45309\" style=\"padding:28px 32px;background-color:#b45309;\">\n          <p style=\"margin:0 0 10px;font-size:11px;color:#fde68a;font-weight:bold;letter-spacing:1.5px;font-family:Arial,Helvetica,sans-serif;\">PASSO 4/4 &middot; LINHA DE CHEGADA</p>\n          <h1 style=\"margin:0 0 6px;font-size:22px;color:#ffffff;font-weight:bold;font-family:Arial,Helvetica,sans-serif;line-height:1.3;\">Cliente 100% liberado</h1>\n          <p style=\"margin:0;font-size:13px;color:#fef3c7;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">Todas as etapas foram conclu&iacute;das. O cliente j&aacute; est&aacute; pronto para faturamento.</p>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:24px 32px 12px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Empresa</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.razao_social }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">CNPJ</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.cnpj }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;\">Status atual</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-family:Arial,Helvetica,sans-serif;\">Liberado para vendas</td>\n          </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 24px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n              <td bgcolor=\"#b45309\" width=\"4\" style=\"background-color:#b45309;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n              <td bgcolor=\"#fffbeb\" style=\"padding:14px 18px;background-color:#fffbeb;font-size:12px;color:#78350f;font-family:Arial,Helvetica,sans-serif;line-height:1.6;\">&#10003; Farmac&ecirc;uticas aprovaram &nbsp;&middot;&nbsp; &#10003; M&aacute;scaras atualizadas &nbsp;&middot;&nbsp; &#10003; Rob&ocirc; concluiu o cadastro &nbsp;&middot;&nbsp; &#10003; Cr&eacute;dito liberado</td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#f9fafb\" style=\"padding:16px 32px;text-align:center;background-color:#f9fafb;border-top:1px solid #e5e7eb;\">\n          <p style=\"margin:0;font-size:11px;color:#9ca3af;font-family:Arial,Helvetica,sans-serif;\">Ciamed Distribuidora de Medicamentos &nbsp;&middot;&nbsp; Sistema de Automa&ccedil;&atilde;o Fiscal</p>\n        </td>\n      </tr>\n</table>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        7856,
+        1488
+      ],
+      "id": "281f3fbe-6edf-47fe-9de4-9bf1ff4008a0",
+      "name": "Email - Aviso Vendedor14",
+      "webhookId": "c981d175-7ca5-4693-b86e-b2b95b6cd2c5",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Yl1yGNp14Nz77zEJ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "==🔍 [TRIAGEM] {{ $json.body.tentativa > 1 ? $json.body.tentativa + 'ª Tentativa — ' : '' }}Nova Ficha Cadastral — {{ $json.body.razao_social }}",
+        "emailType": "html",
+        "message": "=<div style=\"background:#f4f5f7;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;\">\n<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" width=\"600\" style=\"width:600px;max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-collapse:collapse;\">\n      <tr>\n        <td bgcolor=\"#0d9488\" style=\"padding:28px 32px;background-color:#0d9488;\">\n          <p style=\"margin:0 0 10px;font-size:11px;color:#99f6e4;font-weight:bold;letter-spacing:1.5px;font-family:Arial,Helvetica,sans-serif;\">TRIAGEM FARMAC&Ecirc;UTICA &middot; TENTATIVA {{ $json.body.tentativa }}</p>\n          <h1 style=\"margin:0 0 6px;font-size:22px;color:#ffffff;font-weight:bold;font-family:Arial,Helvetica,sans-serif;line-height:1.3;\">{{ $json.body.tentativa > 1 ? 'Ficha Corrigida para Reanálise' : 'Nova Ficha Cadastral para Análise' }}</h1>\n          <p style=\"margin:0;font-size:13px;color:#ccfbf1;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">Seu parecer &eacute; necess&aacute;rio para prosseguir com o cadastro.</p>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:24px 32px 12px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Raz&atilde;o Social</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $json.body.razao_social }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">CNPJ</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $json.body.cnpj }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Endere&ccedil;o</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $json.body.endereco }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Vendedor</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $json.body.vendedor }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Representante</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $json.body.representante }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Capta&ccedil;&atilde;o via</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $json.body.captacao }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">ICMS Contribuinte</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $json.body.contribuinte_icms }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Regime Especial</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $json.body.possui_regime_especial }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Regra Faturamento</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $json.body.regra_faturamento }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">E-mail XML</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $json.body.email_xml_1 }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Respons&aacute;vel T&eacute;cnico</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $json.body.farma_nome }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;\">Tel. Resp. T&eacute;cnico</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-family:Arial,Helvetica,sans-serif;\">{{ $json.body.farma_tel }}</td>\n          </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 16px;background-color:#ffffff;\">\n          <p style=\"margin:0 0 12px;font-size:11px;font-weight:bold;color:#6b7280;letter-spacing:1px;font-family:Arial,Helvetica,sans-serif;\">SITUACAO DOS DOCUMENTOS</p>\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr><td style=\"\">\n              <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n                <tr>\n                  <td bgcolor=\"#047857\" width=\"4\" style=\"background-color:#047857;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n                  <td bgcolor=\"#ecfdf5\" style=\"padding:12px 16px;background-color:#ecfdf5;font-family:Arial,Helvetica,sans-serif;\">\n                    <p style=\"margin:0 0 4px;font-size:11px;font-weight:bold;color:#065f46;letter-spacing:0.5px;font-family:Arial,Helvetica,sans-serif;\">DOCUMENTOS J&Aacute; EXISTENTES (n&atilde;o alterados)</p>\n                    <p style=\"margin:0;font-size:13px;color:#111827;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">{{ $json.body.docs_ja_existentes }}</p>\n                  </td>\n                </tr>\n              </table>\n            </td></tr>\n<tr><td style=\"padding-top:10px;\">\n              <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n                <tr>\n                  <td bgcolor=\"#b45309\" width=\"4\" style=\"background-color:#b45309;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n                  <td bgcolor=\"#fffbeb\" style=\"padding:12px 16px;background-color:#fffbeb;font-family:Arial,Helvetica,sans-serif;\">\n                    <p style=\"margin:0 0 4px;font-size:11px;font-weight:bold;color:#78350f;letter-spacing:0.5px;font-family:Arial,Helvetica,sans-serif;\">DOCUMENTOS SUBSTITU&Iacute;DOS (arquivo novo enviado)</p>\n                    <p style=\"margin:0;font-size:13px;color:#111827;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">{{ $json.body.docs_substituidos }}</p>\n                  </td>\n                </tr>\n              </table>\n            </td></tr>\n<tr><td style=\"padding-top:10px;\">\n              <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n                <tr>\n                  <td bgcolor=\"#1d4ed8\" width=\"4\" style=\"background-color:#1d4ed8;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n                  <td bgcolor=\"#eff6ff\" style=\"padding:12px 16px;background-color:#eff6ff;font-family:Arial,Helvetica,sans-serif;\">\n                    <p style=\"margin:0 0 4px;font-size:11px;font-weight:bold;color:#1e3a8a;letter-spacing:0.5px;font-family:Arial,Helvetica,sans-serif;\">DOCUMENTOS ADICIONADOS AGORA (novos)</p>\n                    <p style=\"margin:0;font-size:13px;color:#111827;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">{{ $json.body.docs_adicionados }}</p>\n                  </td>\n                </tr>\n              </table>\n            </td></tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 28px;background-color:#ffffff;text-align:center;\">\n          <p style=\"margin:0 0 16px;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">Ap&oacute;s revisar os documentos anexados, clique em uma das op&ccedil;&otilde;es:</p>\n          \n      <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" style=\"margin:0 auto;\">\n        <tr>\n          <td style=\"padding:0 6px;\">\n            <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\n              <tr><td bgcolor=\"#047857\" style=\"background-color:#047857;\">\n                <a href=\"{{ $json.body.tipo_cadastro === 'REATIVACAO' ? $('Config Hub').item.json.hub_url + '/decidir_bloqueio?' : $('Config Hub').item.json.hub_url + '/confirmar?acao=aprovar&' }}empresa={{ $json.body.razao_social }}&resumeUrl={{ $execution.resumeUrl }}&uuid={{ $json.body.uuid }}\" style=\"display:inline-block;padding:14px 36px;font-size:14px;font-weight:bold;color:#ffffff;text-decoration:none;font-family:Arial,Helvetica,sans-serif;letter-spacing:0.5px;\">&#10003; APROVAR</a>\n              </td></tr>\n            </table>\n          </td>\n          <td style=\"padding:0 6px;\">\n            <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\n              <tr><td bgcolor=\"#c2410c\" style=\"background-color:#c2410c;\">\n                <a href=\"{{ $('Config Hub').item.json.hub_url }}/motivo_reprovacao?empresa={{ $json.body.razao_social }}&cnpj={{ $json.body.cnpj }}&resumeUrl={{ $execution.resumeUrl }}&uuid={{ $json.body.uuid }}\" style=\"display:inline-block;padding:14px 36px;font-size:14px;font-weight:bold;color:#ffffff;text-decoration:none;font-family:Arial,Helvetica,sans-serif;letter-spacing:0.5px;\">&times; REPROVAR</a>\n              </td></tr>\n            </table>\n          </td>\n        </tr>\n      </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#f9fafb\" style=\"padding:16px 32px;text-align:center;background-color:#f9fafb;border-top:1px solid #e5e7eb;\">\n          <p style=\"margin:0;font-size:11px;color:#9ca3af;font-family:Arial,Helvetica,sans-serif;\">Ciamed Distribuidora de Medicamentos &nbsp;&middot;&nbsp; Sistema de Automa&ccedil;&atilde;o Fiscal</p>\n        </td>\n      </tr>\n</table>\n</div>",
+        "options": {
+          "appendAttribution": false,
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+                "property": "={{ Object.keys($binary || {}).join(',') }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        5040,
+        1168
+      ],
+      "id": "71d1f2b6-cf06-4ec3-acb9-2631632e62dc",
+      "name": "Email - Triagem Farmacêutica",
+      "webhookId": "69898a87-21cf-409a-b02a-e976b372b1a7",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Yl1yGNp14Nz77zEJ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "=[MÁSCARAS] Cadastro concluído — {{ $('Webhook1').item.json.body.razao_social }} · Cód: {{ $json.codigo_cliente }}",
+        "emailType": "html",
+        "message": "=<div style=\"background:#f4f5f7;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;\">\n<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" width=\"600\" style=\"width:600px;max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-collapse:collapse;\">\n      <tr>\n        <td bgcolor=\"#6d28d9\" style=\"padding:28px 32px;background-color:#6d28d9;\">\n          <p style=\"margin:0 0 10px;font-size:11px;color:#ddd6fe;font-weight:bold;letter-spacing:1.5px;font-family:Arial,Helvetica,sans-serif;\">ATUALIZA&Ccedil;&Atilde;O DE M&Aacute;SCARAS</p>\n          <h1 style=\"margin:0 0 6px;font-size:22px;color:#ffffff;font-weight:bold;font-family:Arial,Helvetica,sans-serif;line-height:1.3;\">Cadastro conclu&iacute;do no sistema NL</h1>\n          <p style=\"margin:0;font-size:13px;color:#ede9fe;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">Farm&aacute;cia, por gentileza atualize as m&aacute;scaras do cliente abaixo.</p>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:24px 32px 12px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Empresa</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.razao_social }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">CNPJ</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.cnpj }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">C&oacute;digo NL</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $json.codigo_cliente }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;\">CNAE</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.cnae }}</td>\n          </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 28px;background-color:#ffffff;text-align:center;\">\n          <p style=\"margin:0 0 16px;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">Ap&oacute;s atualizar as m&aacute;scaras, clique no bot&atilde;o abaixo para liberar o financeiro:</p>\n          \n      <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" style=\"margin:0 auto;\">\n        <tr>\n          <td bgcolor=\"#6d28d9\" style=\"background-color:#6d28d9;padding:0;\">\n            <a href=\"{{ $('Config Hub').item.json.hub_url }}/confirmar?acao=mascaras&empresa={{ $('Webhook1').item.json.body.razao_social }}&resumeUrl={{ $execution.resumeUrl }}\" style=\"display:inline-block;padding:14px 36px;font-size:14px;font-weight:bold;color:#ffffff;text-decoration:none;font-family:Arial,Helvetica,sans-serif;letter-spacing:0.5px;\">CONFIRMAR ATUALIZA&Ccedil;&Atilde;O</a>\n          </td>\n        </tr>\n      </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#f9fafb\" style=\"padding:16px 32px;text-align:center;background-color:#f9fafb;border-top:1px solid #e5e7eb;\">\n          <p style=\"margin:0;font-size:11px;color:#9ca3af;font-family:Arial,Helvetica,sans-serif;\">Ciamed Distribuidora de Medicamentos &nbsp;&middot;&nbsp; Sistema de Automa&ccedil;&atilde;o Fiscal</p>\n        </td>\n      </tr>\n</table>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        7856,
+        992
+      ],
+      "id": "bcba489c-251c-48f6-94ef-204c44eab1a0",
+      "name": "Email - Máscaras",
+      "webhookId": "fc85d501-ac06-4d18-97fe-03f718ca57b5",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Yl1yGNp14Nz77zEJ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Webhook1').item.json.body.tipo_cadastro }}",
+                    "rightValue": "NOVO",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "dfa2c9e5-b7d5-4ddd-993c-ac5b5da64309"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Webhook1').item.json.body.tipo_cadastro }}",
+                    "rightValue": "REATIVACAO",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "cf5d022b-7558-43cd-a111-d16fd07bebe4"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        6208,
+        1088
+      ],
+      "id": "f0e992bb-9e40-42b9-8674-0f36006505e3",
+      "name": "Switch - Decisão (novo ou reativacao)"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.query.decisao }}",
+                    "rightValue": "aprovar",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "dfa2c9e5-b7d5-4ddd-993c-ac5b5da64309"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.query.decisao }}",
+                    "rightValue": "reprovar",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "cf5d022b-7558-43cd-a111-d16fd07bebe4"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        5584,
+        912
+      ],
+      "id": "ec5efd3e-49ac-49cd-a91e-8e3d1bd55142",
+      "name": "Switch - Decisão (aprovado ou reprovado)"
+    },
+    {
+      "parameters": {
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "=🤖 Robô finalizou: {{ $('Webhook1').item.json.body.razao_social }} (Fase Final)",
+        "emailType": "html",
+        "message": "=<div style=\"background:#f4f5f7;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;\">\n<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" width=\"600\" style=\"width:600px;max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-collapse:collapse;\">\n      <tr>\n        <td bgcolor=\"#6d28d9\" style=\"padding:28px 32px;background-color:#6d28d9;\">\n          <p style=\"margin:0 0 10px;font-size:11px;color:#ddd6fe;font-weight:bold;letter-spacing:1.5px;font-family:Arial,Helvetica,sans-serif;\">PASSO 3/4 &middot; ROB&Ocirc; FINALIZOU</p>\n          <h1 style=\"margin:0 0 6px;font-size:22px;color:#ffffff;font-weight:bold;font-family:Arial,Helvetica,sans-serif;line-height:1.3;\">O cliente j&aacute; existe no sistema NL</h1>\n          <p style=\"margin:0;font-size:13px;color:#ede9fe;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">A automa&ccedil;&atilde;o terminou. Aguardando apenas a atualiza&ccedil;&atilde;o de m&aacute;scaras pelas Farmac&ecirc;uticas.</p>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:24px 32px 12px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Empresa</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.razao_social }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">C&oacute;digo gerado</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $json.codigo_cliente }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;\">Status atual</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-family:Arial,Helvetica,sans-serif;\">Aguardando m&aacute;scaras</td>\n          </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 24px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n              <td bgcolor=\"#6d28d9\" width=\"4\" style=\"background-color:#6d28d9;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n              <td bgcolor=\"#f5f3ff\" style=\"padding:14px 18px;background-color:#f5f3ff;font-size:12px;color:#4c1d95;font-family:Arial,Helvetica,sans-serif;line-height:1.6;\">&#10003; Documenta&ccedil;&atilde;o validada &nbsp;&middot;&nbsp; &#10003; Cliente cadastrado no NLWeb &nbsp;&middot;&nbsp; Pr&oacute;ximo passo: m&aacute;scaras</td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#f9fafb\" style=\"padding:16px 32px;text-align:center;background-color:#f9fafb;border-top:1px solid #e5e7eb;\">\n          <p style=\"margin:0;font-size:11px;color:#9ca3af;font-family:Arial,Helvetica,sans-serif;\">Ciamed Distribuidora de Medicamentos &nbsp;&middot;&nbsp; Sistema de Automa&ccedil;&atilde;o Fiscal</p>\n        </td>\n      </tr>\n</table>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        7856,
+        816
+      ],
+      "id": "520c4a72-bd54-4ee5-80e4-71164f405f46",
+      "name": "Email - Aviso Vendedor13",
+      "webhookId": "040d0ccb-3808-4b37-af8b-c4a41cd36572",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Yl1yGNp14Nz77zEJ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config Hub').item.json.hub_url }}/fila_cadastro/liberar_proximo",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        7520,
+        1008
+      ],
+      "id": "4cb3fd55-b1c1-43b7-8841-cc723d740147",
+      "name": "HTTP - Liberar Próximo Erro (Novo)"
+    },
+    {
+      "parameters": {
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "=🔴 ERRO NO ROBÔ: {{ $('Webhook1').item.json.body.razao_social }}",
+        "emailType": "html",
+        "message": "=<div style=\"background:#f4f5f7;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;\">\n<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" width=\"600\" style=\"width:600px;max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-collapse:collapse;\">\n      <tr>\n        <td bgcolor=\"#b91c1c\" height=\"4\" style=\"background-color:#b91c1c;line-height:1px;font-size:1px;height:4px;\">&nbsp;</td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#b91c1c\" style=\"padding:28px 32px;background-color:#b91c1c;\">\n          <p style=\"margin:0 0 10px;font-size:11px;color:#fecaca;font-weight:bold;letter-spacing:1.5px;font-family:Arial,Helvetica,sans-serif;\">ALERTA &middot; ERRO NO ROB&Ocirc;</p>\n          <h1 style=\"margin:0 0 6px;font-size:22px;color:#ffffff;font-weight:bold;font-family:Arial,Helvetica,sans-serif;line-height:1.3;\">Falha no cadastro autom&aacute;tico</h1>\n          <p style=\"margin:0;font-size:13px;color:#fee2e2;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">O rob&ocirc; encontrou um problema e n&atilde;o concluiu o cadastro. Investiga&ccedil;&atilde;o manual necess&aacute;ria.</p>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:24px 32px 12px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Empresa</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.razao_social }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">CNPJ</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.cnpj }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">UUID</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\"><span style=\"font-family:Consolas,Monaco,monospace;font-size:12px;\">{{ $('Webhook1').item.json.body.uuid }}</span></td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;\">Tipo</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.tipo_cadastro }}</td>\n          </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:0 32px 24px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n              <td bgcolor=\"#b91c1c\" width=\"4\" style=\"background-color:#b91c1c;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n              <td bgcolor=\"#fef2f2\" style=\"padding:14px 18px;background-color:#fef2f2;font-family:Arial,Helvetica,sans-serif;\">\n                <p style=\"margin:0 0 6px;font-size:11px;font-weight:bold;color:#7f1d1d;letter-spacing:1px;font-family:Arial,Helvetica,sans-serif;\">MENSAGEM DE ERRO</p>\n                <p style=\"margin:0;font-size:14px;color:#111827;font-family:Consolas,Monaco,monospace;line-height:1.5;\">{{ $('HTTP - Acionar Robô Novo1').item.json.mensagem }}</p>\n              </td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 24px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n              <td bgcolor=\"#b45309\" width=\"4\" style=\"background-color:#b45309;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n              <td bgcolor=\"#fffbeb\" style=\"padding:14px 18px;background-color:#fffbeb;font-size:12px;color:#78350f;font-family:Arial,Helvetica,sans-serif;line-height:1.6;\"><strong>A&Ccedil;&Atilde;O NECESS&Aacute;RIA:</strong> acesse o Monitor de Cadastros no Hub para investigar e reprocessar manualmente.</td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 28px;background-color:#ffffff;text-align:center;\">\n          <p style=\"margin:0 0 16px;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\"></p>\n          \n      <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" style=\"margin:0 auto;\">\n        <tr>\n          <td bgcolor=\"#1f2937\" style=\"background-color:#1f2937;padding:0;\">\n            <a href=\"{{ $('Config Hub').item.json.hub_url }}/monitor_cadastros\" style=\"display:inline-block;padding:14px 36px;font-size:14px;font-weight:bold;color:#ffffff;text-decoration:none;font-family:Arial,Helvetica,sans-serif;letter-spacing:0.5px;\">ABRIR MONITOR DE CADASTROS</a>\n          </td>\n        </tr>\n      </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#f9fafb\" style=\"padding:16px 32px;text-align:center;background-color:#f9fafb;border-top:1px solid #e5e7eb;\">\n          <p style=\"margin:0;font-size:11px;color:#9ca3af;font-family:Arial,Helvetica,sans-serif;\">Ciamed Distribuidora de Medicamentos &nbsp;&middot;&nbsp; Sistema de Automa&ccedil;&atilde;o Fiscal</p>\n        </td>\n      </tr>\n</table>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        7856,
+        1152
+      ],
+      "id": "ccfc72e9-9b66-4039-9725-27df71aecec6",
+      "name": "Email - Alerta Erro Robô (Novo)",
+      "webhookId": "44f7bc1d-3a12-4e9d-95f1-7eded50717b6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Yl1yGNp14Nz77zEJ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "428e2a99-c295-4cee-b531-6d0d9ca1ed6b",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "sucesso",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        7296,
+        880
+      ],
+      "id": "73f1d8b5-67d8-4df2-ae57-f304ede64cfc",
+      "name": "Switch - Resultado Robô (Novo)"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "428e2a99-c295-4cee-b531-6d0d9ca1ed6b",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "sucesso",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        7296,
+        1296
+      ],
+      "id": "6dde9530-cb98-4fa4-adb7-953d61c1a707",
+      "name": "Switch - Resultado Robô (Reativação)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config Hub').item.json.hub_url }}/fila_cadastro/liberar_proximo",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        7520,
+        1424
+      ],
+      "id": "395bd003-4600-4714-8c3a-039452593c51",
+      "name": "HTTP - Liberar Próximo Erro (Reativação)"
+    },
+    {
+      "parameters": {
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "=🔴 ERRO NO ROBÔ: {{ $('Webhook1').item.json.body.razao_social }}",
+        "emailType": "html",
+        "message": "=<div style=\"background:#f4f5f7;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;\">\n<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" width=\"600\" style=\"width:600px;max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-collapse:collapse;\">\n      <tr>\n        <td bgcolor=\"#b91c1c\" height=\"4\" style=\"background-color:#b91c1c;line-height:1px;font-size:1px;height:4px;\">&nbsp;</td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#b91c1c\" style=\"padding:28px 32px;background-color:#b91c1c;\">\n          <p style=\"margin:0 0 10px;font-size:11px;color:#fecaca;font-weight:bold;letter-spacing:1.5px;font-family:Arial,Helvetica,sans-serif;\">ALERTA &middot; ERRO NO ROB&Ocirc;</p>\n          <h1 style=\"margin:0 0 6px;font-size:22px;color:#ffffff;font-weight:bold;font-family:Arial,Helvetica,sans-serif;line-height:1.3;\">Falha no cadastro autom&aacute;tico</h1>\n          <p style=\"margin:0;font-size:13px;color:#fee2e2;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">O rob&ocirc; encontrou um problema e n&atilde;o concluiu o cadastro. Investiga&ccedil;&atilde;o manual necess&aacute;ria.</p>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:24px 32px 12px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Empresa</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.razao_social }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">CNPJ</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.cnpj }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">UUID</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\"><span style=\"font-family:Consolas,Monaco,monospace;font-size:12px;\">{{ $('Webhook1').item.json.body.uuid }}</span></td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;\">Tipo</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook1').item.json.body.tipo_cadastro }}</td>\n          </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:0 32px 24px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n              <td bgcolor=\"#b91c1c\" width=\"4\" style=\"background-color:#b91c1c;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n              <td bgcolor=\"#fef2f2\" style=\"padding:14px 18px;background-color:#fef2f2;font-family:Arial,Helvetica,sans-serif;\">\n                <p style=\"margin:0 0 6px;font-size:11px;font-weight:bold;color:#7f1d1d;letter-spacing:1px;font-family:Arial,Helvetica,sans-serif;\">MENSAGEM DE ERRO</p>\n                <p style=\"margin:0;font-size:14px;color:#111827;font-family:Consolas,Monaco,monospace;line-height:1.5;\">{{ $('HTTP - Acionar Robô Reativação1').item.json.mensagem }}</p>\n              </td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 24px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n              <td bgcolor=\"#b45309\" width=\"4\" style=\"background-color:#b45309;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n              <td bgcolor=\"#fffbeb\" style=\"padding:14px 18px;background-color:#fffbeb;font-size:12px;color:#78350f;font-family:Arial,Helvetica,sans-serif;line-height:1.6;\"><strong>A&Ccedil;&Atilde;O NECESS&Aacute;RIA:</strong> acesse o Monitor de Cadastros no Hub para investigar e reprocessar manualmente.</td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 28px;background-color:#ffffff;text-align:center;\">\n          <p style=\"margin:0 0 16px;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\"></p>\n          \n      <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" style=\"margin:0 auto;\">\n        <tr>\n          <td bgcolor=\"#1f2937\" style=\"background-color:#1f2937;padding:0;\">\n            <a href=\"{{ $('Config Hub').item.json.hub_url }}/monitor_cadastros\" style=\"display:inline-block;padding:14px 36px;font-size:14px;font-weight:bold;color:#ffffff;text-decoration:none;font-family:Arial,Helvetica,sans-serif;letter-spacing:0.5px;\">ABRIR MONITOR DE CADASTROS</a>\n          </td>\n        </tr>\n      </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#f9fafb\" style=\"padding:16px 32px;text-align:center;background-color:#f9fafb;border-top:1px solid #e5e7eb;\">\n          <p style=\"margin:0;font-size:11px;color:#9ca3af;font-family:Arial,Helvetica,sans-serif;\">Ciamed Distribuidora de Medicamentos &nbsp;&middot;&nbsp; Sistema de Automa&ccedil;&atilde;o Fiscal</p>\n        </td>\n      </tr>\n</table>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        7856,
+        1664
+      ],
+      "id": "e6d10369-fc76-4441-b91b-5dc888ef2002",
+      "name": "Email - Alerta Erro Robô (Reativação)",
+      "webhookId": "44f7bc1d-3a12-4e9d-95f1-7eded50717b6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Yl1yGNp14Nz77zEJ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.tipo_cadastro }}",
+                    "rightValue": "NOVO",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "c821fef0-f10b-4b30-9b0c-ebd775bd1b5a"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        6144,
+        2336
+      ],
+      "id": "9543cea1-cd6f-438d-942e-7d86632d8693",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config Hub Reproc').item.json.hub_url }}/fila_cadastro/entrar",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\"resume_url\": \"{{ $execution.resumeUrl }}\",\n\"empresa\": \"{{ $('Webhook - Reprocessar').item.json.body.razao_social }}\",\n\"tipo\": \"NOVO\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        6384,
+        2176
+      ],
+      "id": "ad11bbe9-66dc-4f93-9bf7-8e5df5810000",
+      "name": "HTTP - Entrar Fila (Novo-Reprocessar)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config Hub Reproc').item.json.hub_url }}/n8n_iniciar_cadastro",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\"uuid\": \"{{ $('Webhook - Reprocessar').item.json.body.uuid }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        6944,
+        2160
+      ],
+      "id": "96ab7e6c-60dc-4ed3-80a8-99228b2e8db5",
+      "name": "HTTP - Acionar Robô (Novo-Reprocessar)",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config Hub Reproc').item.json.hub_url }}/fila_cadastro/entrar",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\"resume_url\": \"{{ $execution.resumeUrl }}\",\n\"empresa\": \"{{ $('Webhook - Reprocessar').item.json.body.razao_social }}\",\n\"tipo\": \"REATIVACAO\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        6384,
+        2496
+      ],
+      "id": "479163e4-3587-437f-a2ba-479f645a9fb4",
+      "name": "HTTP - Entrar Fila (Reat-Reprocessar)"
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        6656,
+        2432
+      ],
+      "id": "13fbfec6-bcb9-4889-ae96-b2c6816f5a3b",
+      "name": "Wait - Fila Robô (Reat-Reprocessar)",
+      "webhookId": "4415e59b-af9c-49a1-84ab-f67c68af25ec"
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        6656,
+        2240
+      ],
+      "id": "1c7b64fa-f4eb-4c59-845b-ae67e0b5a4ab",
+      "name": "Wait - Fila Robô (Novo-Reprocessar)",
+      "webhookId": "caf0559b-c7bf-427b-8804-f78d17009157"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config Hub Reproc').item.json.hub_url }}/n8n_iniciar_reativacao",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\"uuid\": \"{{ $('Webhook - Reprocessar').item.json.body.uuid }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        6944,
+        2496
+      ],
+      "id": "f5b3a756-b6ab-4f94-afd9-0d15b7b0ab34",
+      "name": "HTTP - Acionar Robô (Reat-Reprocessar)",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "428e2a99-c295-4cee-b531-6d0d9ca1ed6b",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "sucesso",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        7280,
+        2144
+      ],
+      "id": "dad05d62-0d4a-4baa-9b24-d4e02bb3fdae",
+      "name": "Switch - Resultado Robô (Novo)1"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "428e2a99-c295-4cee-b531-6d0d9ca1ed6b",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "sucesso",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        7280,
+        2528
+      ],
+      "id": "0f315f7f-d908-463d-b320-914af55addfa",
+      "name": "Switch - Resultado Robô (Reativação)1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config Hub Reproc').item.json.hub_url }}/fila_cadastro/liberar_proximo",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        7520,
+        2656
+      ],
+      "id": "14d46ce5-226c-41b8-adff-31ff0fb04d05",
+      "name": "HTTP - Liberar Próximo Erro (Reativação)1"
+    },
+    {
+      "parameters": {
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "=ERRO NO ROBÔ: {{ $('Webhook - Reprocessar').item.json.body.razao_social }}",
+        "emailType": "html",
+        "message": "=<div style=\"background:#f4f5f7;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;\">\n<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" width=\"600\" style=\"width:600px;max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-collapse:collapse;\">\n      <tr>\n        <td bgcolor=\"#b91c1c\" height=\"4\" style=\"background-color:#b91c1c;line-height:1px;font-size:1px;height:4px;\">&nbsp;</td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#b91c1c\" style=\"padding:28px 32px;background-color:#b91c1c;\">\n          <p style=\"margin:0 0 10px;font-size:11px;color:#fecaca;font-weight:bold;letter-spacing:1.5px;font-family:Arial,Helvetica,sans-serif;\">ALERTA &middot; ERRO NO ROB&Ocirc;</p>\n          <h1 style=\"margin:0 0 6px;font-size:22px;color:#ffffff;font-weight:bold;font-family:Arial,Helvetica,sans-serif;line-height:1.3;\">Falha no cadastro autom&aacute;tico</h1>\n          <p style=\"margin:0;font-size:13px;color:#fee2e2;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">O rob&ocirc; encontrou um problema e n&atilde;o concluiu o cadastro. Investiga&ccedil;&atilde;o manual necess&aacute;ria.</p>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:24px 32px 12px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Empresa</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.razao_social }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">CNPJ</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.cnpj }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">UUID</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\"><span style=\"font-family:Consolas,Monaco,monospace;font-size:12px;\">{{ $('Webhook - Reprocessar').item.json.body.uuid }}</span></td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;\">Tipo</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.tipo_cadastro }}</td>\n          </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:0 32px 24px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n              <td bgcolor=\"#b91c1c\" width=\"4\" style=\"background-color:#b91c1c;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n              <td bgcolor=\"#fef2f2\" style=\"padding:14px 18px;background-color:#fef2f2;font-family:Arial,Helvetica,sans-serif;\">\n                <p style=\"margin:0 0 6px;font-size:11px;font-weight:bold;color:#7f1d1d;letter-spacing:1px;font-family:Arial,Helvetica,sans-serif;\">MENSAGEM DE ERRO</p>\n                <p style=\"margin:0;font-size:14px;color:#111827;font-family:Consolas,Monaco,monospace;line-height:1.5;\">{{ $('HTTP - Acionar Robô (Reat-Reprocessar)').item.json.mensagem }}</p>\n              </td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 24px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n              <td bgcolor=\"#b45309\" width=\"4\" style=\"background-color:#b45309;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n              <td bgcolor=\"#fffbeb\" style=\"padding:14px 18px;background-color:#fffbeb;font-size:12px;color:#78350f;font-family:Arial,Helvetica,sans-serif;line-height:1.6;\"><strong>A&Ccedil;&Atilde;O NECESS&Aacute;RIA:</strong> acesse o Monitor de Cadastros no Hub para investigar e reprocessar manualmente.</td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 28px;background-color:#ffffff;text-align:center;\">\n          <p style=\"margin:0 0 16px;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\"></p>\n          \n      <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" style=\"margin:0 auto;\">\n        <tr>\n          <td bgcolor=\"#1f2937\" style=\"background-color:#1f2937;padding:0;\">\n            <a href=\"{{ $('Config Hub Reproc').item.json.hub_url }}/monitor_cadastros\" style=\"display:inline-block;padding:14px 36px;font-size:14px;font-weight:bold;color:#ffffff;text-decoration:none;font-family:Arial,Helvetica,sans-serif;letter-spacing:0.5px;\">ABRIR MONITOR DE CADASTROS</a>\n          </td>\n        </tr>\n      </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#f9fafb\" style=\"padding:16px 32px;text-align:center;background-color:#f9fafb;border-top:1px solid #e5e7eb;\">\n          <p style=\"margin:0;font-size:11px;color:#9ca3af;font-family:Arial,Helvetica,sans-serif;\">Ciamed Distribuidora de Medicamentos &nbsp;&middot;&nbsp; Sistema de Automa&ccedil;&atilde;o Fiscal</p>\n        </td>\n      </tr>\n</table>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        7856,
+        2928
+      ],
+      "id": "43a0cbac-39c1-44b8-8adf-3533f772d5a2",
+      "name": "Email - Alerta Erro Robô (Reativação)1",
+      "webhookId": "44f7bc1d-3a12-4e9d-95f1-7eded50717b6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Yl1yGNp14Nz77zEJ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config Hub Reproc').item.json.hub_url }}/fila_cadastro/liberar_proximo",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"empresa\": \"{{ $('Webhook - Reprocessar').item.json.body.razao_social }}\",\n  \"tipo\": \"REATIVACAO\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        7520,
+        2432
+      ],
+      "id": "33263b31-5e2d-40cc-9f82-47d7faff65e4",
+      "name": "HTTP - Liberar Próximo (Reativação)"
+    },
+    {
+      "parameters": {
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "=[FINANCEIRO] Cliente liberado para crédito — {{ $('Webhook - Reprocessar').item.json.body.razao_social }}",
+        "emailType": "html",
+        "message": "=<div style=\"background:#f4f5f7;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;\">\n<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" width=\"600\" style=\"width:600px;max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-collapse:collapse;\">\n      <tr>\n        <td bgcolor=\"#047857\" style=\"padding:28px 32px;background-color:#047857;\">\n          <p style=\"margin:0 0 10px;font-size:11px;color:#a7f3d0;font-weight:bold;letter-spacing:1.5px;font-family:Arial,Helvetica,sans-serif;\">LIBERA&Ccedil;&Atilde;O DE CR&Eacute;DITO</p>\n          <h1 style=\"margin:0 0 6px;font-size:22px;color:#ffffff;font-weight:bold;font-family:Arial,Helvetica,sans-serif;line-height:1.3;\">Cliente pronto para libera&ccedil;&atilde;o</h1>\n          <p style=\"margin:0;font-size:13px;color:#d1fae5;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">Todas as etapas foram conclu&iacute;das com sucesso.</p>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:24px 32px 12px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Empresa</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.razao_social }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">CNPJ</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.cnpj }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Vendedor</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.vendedor }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Representante</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.representante }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Regra Faturamento</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.regra_faturamento }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;\">Capta&ccedil;&atilde;o via</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.captacao }}</td>\n          </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 24px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n              <td bgcolor=\"#047857\" width=\"4\" style=\"background-color:#047857;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n              <td bgcolor=\"#ecfdf5\" style=\"padding:14px 18px;background-color:#ecfdf5;font-size:12px;color:#065f46;font-family:Arial,Helvetica,sans-serif;line-height:1.6;\">&#10003; Farmac&ecirc;uticas aprovaram &nbsp;&middot;&nbsp; &#10003; M&aacute;scaras atualizadas &nbsp;&middot;&nbsp; &#10003; Rob&ocirc; concluiu o cadastro</td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#f9fafb\" style=\"padding:16px 32px;text-align:center;background-color:#f9fafb;border-top:1px solid #e5e7eb;\">\n          <p style=\"margin:0;font-size:11px;color:#9ca3af;font-family:Arial,Helvetica,sans-serif;\">Ciamed Distribuidora de Medicamentos &nbsp;&middot;&nbsp; Sistema de Automa&ccedil;&atilde;o Fiscal</p>\n        </td>\n      </tr>\n</table>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        7856,
+        2576
+      ],
+      "id": "b8bae4b2-27ad-4086-aaad-22f06d1536b0",
+      "name": "Email - Financeiro",
+      "webhookId": "f2491bfe-43a9-4e2a-b8b1-662e61af3688",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Yl1yGNp14Nz77zEJ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "=CLIENTE LIBERADO: {{ $('Webhook - Reprocessar').item.json.body.razao_social }}",
+        "emailType": "html",
+        "message": "=<div style=\"background:#f4f5f7;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;\">\n<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" width=\"600\" style=\"width:600px;max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-collapse:collapse;\">\n      <tr>\n        <td bgcolor=\"#b45309\" style=\"padding:28px 32px;background-color:#b45309;\">\n          <p style=\"margin:0 0 10px;font-size:11px;color:#fde68a;font-weight:bold;letter-spacing:1.5px;font-family:Arial,Helvetica,sans-serif;\">PASSO 4/4 &middot; LINHA DE CHEGADA</p>\n          <h1 style=\"margin:0 0 6px;font-size:22px;color:#ffffff;font-weight:bold;font-family:Arial,Helvetica,sans-serif;line-height:1.3;\">Cliente 100% liberado</h1>\n          <p style=\"margin:0;font-size:13px;color:#fef3c7;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">Todas as etapas foram conclu&iacute;das. O cliente j&aacute; est&aacute; pronto para faturamento.</p>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:24px 32px 12px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Empresa</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.razao_social }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">CNPJ</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.cnpj }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;\">Status atual</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-family:Arial,Helvetica,sans-serif;\">Liberado para vendas</td>\n          </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 24px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n              <td bgcolor=\"#b45309\" width=\"4\" style=\"background-color:#b45309;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n              <td bgcolor=\"#fffbeb\" style=\"padding:14px 18px;background-color:#fffbeb;font-size:12px;color:#78350f;font-family:Arial,Helvetica,sans-serif;line-height:1.6;\">&#10003; Farmac&ecirc;uticas aprovaram &nbsp;&middot;&nbsp; &#10003; M&aacute;scaras atualizadas &nbsp;&middot;&nbsp; &#10003; Rob&ocirc; concluiu o cadastro &nbsp;&middot;&nbsp; &#10003; Cr&eacute;dito liberado</td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#f9fafb\" style=\"padding:16px 32px;text-align:center;background-color:#f9fafb;border-top:1px solid #e5e7eb;\">\n          <p style=\"margin:0;font-size:11px;color:#9ca3af;font-family:Arial,Helvetica,sans-serif;\">Ciamed Distribuidora de Medicamentos &nbsp;&middot;&nbsp; Sistema de Automa&ccedil;&atilde;o Fiscal</p>\n        </td>\n      </tr>\n</table>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        7856,
+        2752
+      ],
+      "id": "357f4129-2276-48e1-8234-0215523562c5",
+      "name": "Email - Aviso Vendedor",
+      "webhookId": "c981d175-7ca5-4693-b86e-b2b95b6cd2c5",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Yl1yGNp14Nz77zEJ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config Hub Reproc').item.json.hub_url }}/fila_cadastro/liberar_proximo",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        7520,
+        2240
+      ],
+      "id": "cb23390d-0758-45bb-9cfd-7b9e392c3c2f",
+      "name": "HTTP - Liberar Próximo Erro (Novo)1"
+    },
+    {
+      "parameters": {
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "=🔴 ERRO NO ROBÔ: {{ $('Webhook - Reprocessar').item.json.body.razao_social }}",
+        "emailType": "html",
+        "message": "=<div style=\"background:#f4f5f7;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;\">\n<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" width=\"600\" style=\"width:600px;max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-collapse:collapse;\">\n      <tr>\n        <td bgcolor=\"#b91c1c\" height=\"4\" style=\"background-color:#b91c1c;line-height:1px;font-size:1px;height:4px;\">&nbsp;</td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#b91c1c\" style=\"padding:28px 32px;background-color:#b91c1c;\">\n          <p style=\"margin:0 0 10px;font-size:11px;color:#fecaca;font-weight:bold;letter-spacing:1.5px;font-family:Arial,Helvetica,sans-serif;\">ALERTA &middot; ERRO NO ROB&Ocirc;</p>\n          <h1 style=\"margin:0 0 6px;font-size:22px;color:#ffffff;font-weight:bold;font-family:Arial,Helvetica,sans-serif;line-height:1.3;\">Falha no cadastro autom&aacute;tico</h1>\n          <p style=\"margin:0;font-size:13px;color:#fee2e2;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">O rob&ocirc; encontrou um problema e n&atilde;o concluiu o cadastro. Investiga&ccedil;&atilde;o manual necess&aacute;ria.</p>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:24px 32px 12px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Empresa</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.razao_social }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">CNPJ</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.cnpj }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">UUID</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\"><span style=\"font-family:Consolas,Monaco,monospace;font-size:12px;\">{{ $('Webhook - Reprocessar').item.json.body.uuid }}</span></td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;\">Tipo</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.tipo_cadastro }}</td>\n          </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:0 32px 24px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n              <td bgcolor=\"#b91c1c\" width=\"4\" style=\"background-color:#b91c1c;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n              <td bgcolor=\"#fef2f2\" style=\"padding:14px 18px;background-color:#fef2f2;font-family:Arial,Helvetica,sans-serif;\">\n                <p style=\"margin:0 0 6px;font-size:11px;font-weight:bold;color:#7f1d1d;letter-spacing:1px;font-family:Arial,Helvetica,sans-serif;\">MENSAGEM DE ERRO</p>\n                <p style=\"margin:0;font-size:14px;color:#111827;font-family:Consolas,Monaco,monospace;line-height:1.5;\">{{ $('HTTP - Acionar Robô (Novo-Reprocessar)').item.json.mensagem }}</p>\n              </td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 24px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n              <td bgcolor=\"#b45309\" width=\"4\" style=\"background-color:#b45309;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n              <td bgcolor=\"#fffbeb\" style=\"padding:14px 18px;background-color:#fffbeb;font-size:12px;color:#78350f;font-family:Arial,Helvetica,sans-serif;line-height:1.6;\"><strong>A&Ccedil;&Atilde;O NECESS&Aacute;RIA:</strong> acesse o Monitor de Cadastros no Hub para investigar e reprocessar manualmente.</td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 28px;background-color:#ffffff;text-align:center;\">\n          <p style=\"margin:0 0 16px;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\"></p>\n          \n      <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" style=\"margin:0 auto;\">\n        <tr>\n          <td bgcolor=\"#1f2937\" style=\"background-color:#1f2937;padding:0;\">\n            <a href=\"{{ $('Config Hub Reproc').item.json.hub_url }}/monitor_cadastros\" style=\"display:inline-block;padding:14px 36px;font-size:14px;font-weight:bold;color:#ffffff;text-decoration:none;font-family:Arial,Helvetica,sans-serif;letter-spacing:0.5px;\">ABRIR MONITOR DE CADASTROS</a>\n          </td>\n        </tr>\n      </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#f9fafb\" style=\"padding:16px 32px;text-align:center;background-color:#f9fafb;border-top:1px solid #e5e7eb;\">\n          <p style=\"margin:0;font-size:11px;color:#9ca3af;font-family:Arial,Helvetica,sans-serif;\">Ciamed Distribuidora de Medicamentos &nbsp;&middot;&nbsp; Sistema de Automa&ccedil;&atilde;o Fiscal</p>\n        </td>\n      </tr>\n</table>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        7856,
+        2384
+      ],
+      "id": "720ac683-7ca7-4322-9cfa-730878eb2fff",
+      "name": "Email - Alerta Erro Robô (Novo)1",
+      "webhookId": "44f7bc1d-3a12-4e9d-95f1-7eded50717b6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Yl1yGNp14Nz77zEJ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config Hub Reproc').item.json.hub_url }}/fila_cadastro/liberar_proximo",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"empresa\": \"{{ $('Webhook - Reprocessar').item.json.body.razao_social }}\",\n  \"tipo\": \"NOVO\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        7520,
+        2032
+      ],
+      "id": "aad2b160-7279-49bd-ab85-dc7caf9d128f",
+      "name": "HTTP - Liberar Próximo (Novo)"
+    },
+    {
+      "parameters": {
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "=🤖 Robô finalizou: {{ $('Webhook - Reprocessar').item.json.body.razao_social }} (Fase Final)",
+        "emailType": "html",
+        "message": "=<div style=\"background:#f4f5f7;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;\">\n<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" width=\"600\" style=\"width:600px;max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-collapse:collapse;\">\n      <tr>\n        <td bgcolor=\"#6d28d9\" style=\"padding:28px 32px;background-color:#6d28d9;\">\n          <p style=\"margin:0 0 10px;font-size:11px;color:#ddd6fe;font-weight:bold;letter-spacing:1.5px;font-family:Arial,Helvetica,sans-serif;\">PASSO 3/4 &middot; ROB&Ocirc; FINALIZOU</p>\n          <h1 style=\"margin:0 0 6px;font-size:22px;color:#ffffff;font-weight:bold;font-family:Arial,Helvetica,sans-serif;line-height:1.3;\">O cliente j&aacute; existe no sistema NL</h1>\n          <p style=\"margin:0;font-size:13px;color:#ede9fe;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">A automa&ccedil;&atilde;o terminou. Aguardando apenas a atualiza&ccedil;&atilde;o de m&aacute;scaras pelas Farmac&ecirc;uticas.</p>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:24px 32px 12px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Empresa</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.razao_social }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">C&oacute;digo gerado</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $json.codigo_cliente }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;\">Status atual</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-family:Arial,Helvetica,sans-serif;\">Aguardando m&aacute;scaras</td>\n          </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 24px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n              <td bgcolor=\"#6d28d9\" width=\"4\" style=\"background-color:#6d28d9;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n              <td bgcolor=\"#f5f3ff\" style=\"padding:14px 18px;background-color:#f5f3ff;font-size:12px;color:#4c1d95;font-family:Arial,Helvetica,sans-serif;line-height:1.6;\">&#10003; Documenta&ccedil;&atilde;o validada &nbsp;&middot;&nbsp; &#10003; Cliente cadastrado no NLWeb &nbsp;&middot;&nbsp; Pr&oacute;ximo passo: m&aacute;scaras</td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#f9fafb\" style=\"padding:16px 32px;text-align:center;background-color:#f9fafb;border-top:1px solid #e5e7eb;\">\n          <p style=\"margin:0;font-size:11px;color:#9ca3af;font-family:Arial,Helvetica,sans-serif;\">Ciamed Distribuidora de Medicamentos &nbsp;&middot;&nbsp; Sistema de Automa&ccedil;&atilde;o Fiscal</p>\n        </td>\n      </tr>\n</table>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        7856,
+        2032
+      ],
+      "id": "83f3592a-82e2-4c31-acee-6f17145102ba",
+      "name": "Email - Aviso Vendedor15",
+      "webhookId": "040d0ccb-3808-4b37-af8b-c4a41cd36572",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Yl1yGNp14Nz77zEJ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "=[MÁSCARAS] Cadastro concluído — {{ $('Webhook - Reprocessar').item.json.body.razao_social }} · Cód: {{ $json.codigo_cliente }}",
+        "emailType": "html",
+        "message": "=<div style=\"background:#f4f5f7;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;\">\n<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" width=\"600\" style=\"width:600px;max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-collapse:collapse;\">\n      <tr>\n        <td bgcolor=\"#6d28d9\" style=\"padding:28px 32px;background-color:#6d28d9;\">\n          <p style=\"margin:0 0 10px;font-size:11px;color:#ddd6fe;font-weight:bold;letter-spacing:1.5px;font-family:Arial,Helvetica,sans-serif;\">ATUALIZA&Ccedil;&Atilde;O DE M&Aacute;SCARAS</p>\n          <h1 style=\"margin:0 0 6px;font-size:22px;color:#ffffff;font-weight:bold;font-family:Arial,Helvetica,sans-serif;line-height:1.3;\">Cadastro conclu&iacute;do no sistema NL</h1>\n          <p style=\"margin:0;font-size:13px;color:#ede9fe;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">Farm&aacute;cia, por gentileza atualize as m&aacute;scaras do cliente abaixo.</p>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:24px 32px 12px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Empresa</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.razao_social }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">CNPJ</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.cnpj }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">C&oacute;digo NL</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $json.codigo_cliente }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;\">CNAE</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.cnae }}</td>\n          </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 28px;background-color:#ffffff;text-align:center;\">\n          <p style=\"margin:0 0 16px;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">Ap&oacute;s atualizar as m&aacute;scaras, clique no bot&atilde;o abaixo para liberar o financeiro:</p>\n          \n      <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" style=\"margin:0 auto;\">\n        <tr>\n          <td bgcolor=\"#6d28d9\" style=\"background-color:#6d28d9;padding:0;\">\n            <a href=\"{{ $('Config Hub Reproc').item.json.hub_url }}/confirmar?acao=mascaras&empresa={{ $('Webhook - Reprocessar').item.json.body.razao_social }}&resumeUrl={{ $execution.resumeUrl }}\" style=\"display:inline-block;padding:14px 36px;font-size:14px;font-weight:bold;color:#ffffff;text-decoration:none;font-family:Arial,Helvetica,sans-serif;letter-spacing:0.5px;\">CONFIRMAR ATUALIZA&Ccedil;&Atilde;O</a>\n          </td>\n        </tr>\n      </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#f9fafb\" style=\"padding:16px 32px;text-align:center;background-color:#f9fafb;border-top:1px solid #e5e7eb;\">\n          <p style=\"margin:0;font-size:11px;color:#9ca3af;font-family:Arial,Helvetica,sans-serif;\">Ciamed Distribuidora de Medicamentos &nbsp;&middot;&nbsp; Sistema de Automa&ccedil;&atilde;o Fiscal</p>\n        </td>\n      </tr>\n</table>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        7856,
+        2208
+      ],
+      "id": "55717d78-c491-418a-b063-bb7661b25388",
+      "name": "Email - Máscaras1",
+      "webhookId": "fc85d501-ac06-4d18-97fe-03f718ca57b5",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Yl1yGNp14Nz77zEJ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        8176,
+        2160
+      ],
+      "id": "99590d63-0bfe-4235-bc99-06316c1a2105",
+      "name": "Wait - Confirmação Máscaras",
+      "webhookId": "b0588954-5e08-4478-9ab1-81818e5078eb"
+    },
+    {
+      "parameters": {
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "=CLIENTE LIBERADO: {{ $('Webhook - Reprocessar').item.json.body.razao_social }}",
+        "emailType": "html",
+        "message": "=<div style=\"background:#f4f5f7;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;\">\n<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" width=\"600\" style=\"width:600px;max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-collapse:collapse;\">\n      <tr>\n        <td bgcolor=\"#b45309\" style=\"padding:28px 32px;background-color:#b45309;\">\n          <p style=\"margin:0 0 10px;font-size:11px;color:#fde68a;font-weight:bold;letter-spacing:1.5px;font-family:Arial,Helvetica,sans-serif;\">PASSO 4/4 &middot; LINHA DE CHEGADA</p>\n          <h1 style=\"margin:0 0 6px;font-size:22px;color:#ffffff;font-weight:bold;font-family:Arial,Helvetica,sans-serif;line-height:1.3;\">Cliente 100% liberado</h1>\n          <p style=\"margin:0;font-size:13px;color:#fef3c7;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">Todas as etapas foram conclu&iacute;das. O cliente j&aacute; est&aacute; pronto para faturamento.</p>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:24px 32px 12px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Empresa</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.razao_social }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">CNPJ</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.cnpj }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;\">Status atual</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-family:Arial,Helvetica,sans-serif;\">Liberado para vendas</td>\n          </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 24px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n              <td bgcolor=\"#b45309\" width=\"4\" style=\"background-color:#b45309;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n              <td bgcolor=\"#fffbeb\" style=\"padding:14px 18px;background-color:#fffbeb;font-size:12px;color:#78350f;font-family:Arial,Helvetica,sans-serif;line-height:1.6;\">&#10003; Farmac&ecirc;uticas aprovaram &nbsp;&middot;&nbsp; &#10003; M&aacute;scaras atualizadas &nbsp;&middot;&nbsp; &#10003; Rob&ocirc; concluiu o cadastro &nbsp;&middot;&nbsp; &#10003; Cr&eacute;dito liberado</td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#f9fafb\" style=\"padding:16px 32px;text-align:center;background-color:#f9fafb;border-top:1px solid #e5e7eb;\">\n          <p style=\"margin:0;font-size:11px;color:#9ca3af;font-family:Arial,Helvetica,sans-serif;\">Ciamed Distribuidora de Medicamentos &nbsp;&middot;&nbsp; Sistema de Automa&ccedil;&atilde;o Fiscal</p>\n        </td>\n      </tr>\n</table>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        8368,
+        2016
+      ],
+      "id": "c065fbc3-f9aa-4190-b659-e3ff3d4c1c16",
+      "name": "Email - Aviso Vendedor16",
+      "webhookId": "a92cef24-7791-4eb8-996f-7de7a7230fb1",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Yl1yGNp14Nz77zEJ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "leonardodiascaumo@gmail.com",
+        "subject": "=[FINANCEIRO] Cliente liberado para crédito — {{ $('Webhook - Reprocessar').item.json.body.razao_social }}",
+        "emailType": "html",
+        "message": "=<div style=\"background:#f4f5f7;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;\">\n<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" width=\"600\" style=\"width:600px;max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-collapse:collapse;\">\n      <tr>\n        <td bgcolor=\"#047857\" style=\"padding:28px 32px;background-color:#047857;\">\n          <p style=\"margin:0 0 10px;font-size:11px;color:#a7f3d0;font-weight:bold;letter-spacing:1.5px;font-family:Arial,Helvetica,sans-serif;\">LIBERA&Ccedil;&Atilde;O DE CR&Eacute;DITO</p>\n          <h1 style=\"margin:0 0 6px;font-size:22px;color:#ffffff;font-weight:bold;font-family:Arial,Helvetica,sans-serif;line-height:1.3;\">Cliente pronto para libera&ccedil;&atilde;o</h1>\n          <p style=\"margin:0;font-size:13px;color:#d1fae5;font-family:Arial,Helvetica,sans-serif;line-height:1.5;\">Todas as etapas foram conclu&iacute;das com sucesso.</p>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:24px 32px 12px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Empresa</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-weight:bold;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.razao_social }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">CNPJ</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.cnpj }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Vendedor</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.vendedor }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Representante</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.representante }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">Regra Faturamento</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;border-bottom:1px solid #f1f3f5;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.regra_faturamento }}</td>\n          </tr>\n<tr>\n            <td width=\"38%\" style=\"padding:11px 0;font-size:13px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;\">Capta&ccedil;&atilde;o via</td>\n            <td style=\"padding:11px 0;font-size:13px;color:#111827;font-family:Arial,Helvetica,sans-serif;\">{{ $('Webhook - Reprocessar').item.json.body.captacao }}</td>\n          </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#ffffff\" style=\"padding:8px 32px 24px;background-color:#ffffff;\">\n          <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"width:100%;\">\n            <tr>\n              <td bgcolor=\"#047857\" width=\"4\" style=\"background-color:#047857;width:4px;line-height:1px;font-size:1px;\">&nbsp;</td>\n              <td bgcolor=\"#ecfdf5\" style=\"padding:14px 18px;background-color:#ecfdf5;font-size:12px;color:#065f46;font-family:Arial,Helvetica,sans-serif;line-height:1.6;\">&#10003; Farmac&ecirc;uticas aprovaram &nbsp;&middot;&nbsp; &#10003; M&aacute;scaras atualizadas &nbsp;&middot;&nbsp; &#10003; Rob&ocirc; concluiu o cadastro</td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <tr>\n        <td bgcolor=\"#f9fafb\" style=\"padding:16px 32px;text-align:center;background-color:#f9fafb;border-top:1px solid #e5e7eb;\">\n          <p style=\"margin:0;font-size:11px;color:#9ca3af;font-family:Arial,Helvetica,sans-serif;\">Ciamed Distribuidora de Medicamentos &nbsp;&middot;&nbsp; Sistema de Automa&ccedil;&atilde;o Fiscal</p>\n        </td>\n      </tr>\n</table>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        8368,
+        2304
+      ],
+      "id": "ee65be90-c793-48d2-90ee-58f5fca20904",
+      "name": "Email - Financeiro2",
+      "webhookId": "2e05eb53-3752-49b7-9ac0-7cfb7818a890",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Yl1yGNp14Nz77zEJ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "reprocessar",
+        "options": {
+          "responseCode": {
+            "values": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        5712,
+        2336
+      ],
+      "id": "2fed622f-7191-46c0-af0d-a4cf4961ecea",
+      "name": "Webhook - Reprocessar",
+      "webhookId": "056cc290-5d4e-47f0-a078-45421faead9c"
+    },
+    {
+      "parameters": {
+        "content": "# 🚀 Cadastro e Reativação de Clientes\n\n**Fluxo automatizado Ciamed Hub** — orquestração completa do cadastro de clientes novos e da reativação de clientes inativos. Integra triagem farmacêutica, fila de robô RPA e liberação de crédito.\n\n🔵 **Bloco superior** — Cadastro novo (Webhook1)\n🔁 **Bloco inferior** — Reprocessamento (Webhook - Reprocessar)",
+        "height": 220,
+        "width": 3784,
+        "color": 4
+      },
+      "id": "8c06c4f4-e50c-441b-a0f9-de307ef13534",
+      "name": "Título do Fluxo",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        4720,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 1 — Recebimento da ficha\n\nO webhook recebe a ficha cadastral preenchida pelo vendedor no Hub. Em paralelo, dispara **e-mail de confirmação ao vendedor** e envia a ficha à **equipe farmacêutica** para análise.",
+        "height": 832,
+        "width": 756,
+        "color": 6
+      },
+      "id": "bdaf9d10-f5ad-4202-a049-12bfa110e2f1",
+      "name": "Fase 1 - Recebimento",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        4560,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 2 — Triagem farmacêutica\n\nAs farmacêuticas analisam os documentos. O fluxo **fica em espera** até receberem o parecer (aprovar ou reprovar).",
+        "height": 832,
+        "width": 460,
+        "color": 7
+      },
+      "id": "1a0fd6a7-3dc0-45ad-8493-9b0ef68ccf25",
+      "name": "Fase 2 - Triagem Farmacêutica",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        5328,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 3 — Decisão\n\n**Aprovado** → segue para o robô.\n**Reprovado** → vendedor recebe e-mail com motivo e link de correção. [FIM]",
+        "height": 832,
+        "width": 280,
+        "color": 3
+      },
+      "id": "b27233d1-95ed-4ce7-ab23-30cbd9ac323a",
+      "name": "Fase 3 - Decisão da Triagem",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        5792,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 4 — Tipo de cadastro + fila do robô\n\nSepara **Novo Cadastro** de **Reativação** (rotinas diferentes no NLWeb). Cada caminho entra na fila do robô, aguarda a vez e dispara a execução do RPA correspondente.\n\n🤖 Lane superior — Cadastro Novo\n🔄 Lane inferior — Reativação de cliente",
+        "height": 912,
+        "width": 1140,
+        "color": 5
+      },
+      "id": "262cbde6-51ae-4976-bcaa-e38fc5da7d9d",
+      "name": "Fase 4 - Tipo e Fila do Robô",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        6080,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 5 — Resultado do robô\n\n**OK** → segue para máscaras / liberação.\n**Erro** → libera a fila (próximo da fila pode rodar) e dispara alerta de erro pra TI.",
+        "height": 992,
+        "width": 460,
+        "color": 2
+      },
+      "id": "07f5fa29-56ab-4cd8-9b10-5c4930220a2d",
+      "name": "Fase 5 - Resultado do Robô",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        7232,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 6 — Máscaras e liberação\n\n**Novo**: aguarda a farmácia atualizar máscaras → libera o financeiro.\n\n**Reativação**: já pula direto para liberação (sem máscaras).\n\n**Erro**: envia alerta detalhado pra TI investigar.",
+        "height": 1222,
+        "width": 380,
+        "color": 4
+      },
+      "id": "9492ec8a-1a36-4476-a024-7362280208d0",
+      "name": "Fase 6 - Máscaras + Liberação",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        7712,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 7 — Cliente 100% liberado\n\nAvisa o **vendedor** e o **financeiro** que o cliente está pronto pra faturamento. 🎯",
+        "height": 624,
+        "width": 460,
+        "color": 5
+      },
+      "id": "5563a448-d339-4781-af5f-b16d8757df03",
+      "name": "Fase 7 - Notificações Finais",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        8112,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🔁 1 — Reprocessamento\n\nQuando um cadastro **já aprovado anteriormente** dá erro no robô, ele pode ser reprocessado pelo Hub. Esse fluxo **pula a triagem** (já foi feita) e vai direto pro robô.",
+        "height": 900,
+        "width": 440,
+        "color": 6
+      },
+      "id": "10e38587-4852-423c-9f5e-48abdbacbdad",
+      "name": "Fase 1' - Reprocessamento",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        5632,
+        1904
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🔁 2 — Tipo + fila do robô\n\nMesmo padrão do fluxo principal: separa Novo / Reativação e dispara o RPA correspondente.",
+        "height": 900,
+        "width": 1140,
+        "color": 5
+      },
+      "id": "fb3c7e89-3d7c-42fa-8e9e-5e0009138374",
+      "name": "Fase 2' - Tipo e Fila do Robô (reprocessar)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        6080,
+        1904
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🔁 3 — Resultado do robô\n\nMesma lógica da Fase 5 do fluxo principal:\nOK → segue. Erro → alerta.",
+        "height": 996,
+        "width": 460,
+        "color": 2
+      },
+      "id": "236deeb2-f880-4f56-9187-b6fe66a1b9cb",
+      "name": "Fase 3' - Resultado do Robô (reprocessar)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        7232,
+        1904
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🔁 4 — Máscaras + finalização\n\nRepete o ciclo da Fase 6: Novo precisa de máscaras antes do financeiro; Reativação vai direto.",
+        "height": 1204,
+        "width": 380,
+        "color": 4
+      },
+      "id": "33c950d0-ebbd-4ea2-8f6d-66f773ecef59",
+      "name": "Fase 4' - Finalização (reprocessar)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        7712,
+        1904
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🔁 5 — Cliente liberado\n\nMesma finalização do fluxo principal.",
+        "height": 592,
+        "width": 460,
+        "color": 5
+      },
+      "id": "733f5e03-f3d4-4cae-99db-ffae9bed9ca3",
+      "name": "Fase 5' - Liberação (reprocessar)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        8112,
+        1904
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e73ad25c-1900-489e-8a3c-aa36cca8e8dd",
+              "name": "hub_url",
+              "value": "http://192.168.210.215:5000",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4832,
+        1008
+      ],
+      "id": "1812894d-3249-4962-8bd5-bf7818de399d",
+      "name": "Config Hub"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b5eac5d7-f3b1-4f64-ba6d-615fb3f38e27",
+              "name": "hub_url",
+              "value": "http://192.168.210.215:5000",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        5904,
+        2336
+      ],
+      "id": "ebc7f932-6228-4d7a-913a-b51b6f059ec9",
+      "name": "Config Hub Reproc"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP - Entrar na Fila (Novo)1": {
+      "main": [
+        [
+          {
+            "node": "Wait - Fila do Robô (Novo)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait - Fila do Robô (Novo)1": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Acionar Robô Novo1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Liberar Próximo (Novo)1": {
+      "main": [
+        [
+          {
+            "node": "Email - Máscaras",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email - Aviso Vendedor13",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Entrar na Fila (Reativação)1": {
+      "main": [
+        [
+          {
+            "node": "Wait - Fila do Robô (Reativação)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait - Fila do Robô (Reativação)1": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Acionar Robô Reativação1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Liberar Próximo (Reativação)1": {
+      "main": [
+        [
+          {
+            "node": "Email - Financeiro5",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email - Aviso Vendedor14",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Config Hub",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait - Decisão1": {
+      "main": [
+        [
+          {
+            "node": "Switch - Decisão (aprovado ou reprovado)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait - Confirmação Máscaras1": {
+      "main": [
+        [
+          {
+            "node": "Email - Financeiro1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email - Aviso Vendedor12",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email - Vendedor Aprovado": {
+      "main": [
+        [
+          {
+            "node": "Switch - Decisão (novo ou reativacao)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Acionar Robô Novo1": {
+      "main": [
+        [
+          {
+            "node": "Switch - Resultado Robô (Novo)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Acionar Robô Reativação1": {
+      "main": [
+        [
+          {
+            "node": "Switch - Resultado Robô (Reativação)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email - Triagem Farmacêutica": {
+      "main": [
+        []
+      ]
+    },
+    "Email - Máscaras": {
+      "main": [
+        [
+          {
+            "node": "Wait - Confirmação Máscaras1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - Decisão (novo ou reativacao)": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Entrar na Fila (Novo)1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP - Entrar na Fila (Reativação)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - Decisão (aprovado ou reprovado)": {
+      "main": [
+        [
+          {
+            "node": "Email - Vendedor Aprovado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email - Vendedor Reprovado1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Liberar Próximo Erro (Novo)": {
+      "main": [
+        [
+          {
+            "node": "Email - Alerta Erro Robô (Novo)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - Resultado Robô (Novo)": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Liberar Próximo (Novo)1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP - Liberar Próximo Erro (Novo)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - Resultado Robô (Reativação)": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Liberar Próximo (Reativação)1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP - Liberar Próximo Erro (Reativação)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Liberar Próximo Erro (Reativação)": {
+      "main": [
+        [
+          {
+            "node": "Email - Alerta Erro Robô (Reativação)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Entrar Fila (Novo-Reprocessar)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP - Entrar Fila (Reat-Reprocessar)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Entrar Fila (Novo-Reprocessar)": {
+      "main": [
+        [
+          {
+            "node": "Wait - Fila Robô (Novo-Reprocessar)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Entrar Fila (Reat-Reprocessar)": {
+      "main": [
+        [
+          {
+            "node": "Wait - Fila Robô (Reat-Reprocessar)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait - Fila Robô (Novo-Reprocessar)": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Acionar Robô (Novo-Reprocessar)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait - Fila Robô (Reat-Reprocessar)": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Acionar Robô (Reat-Reprocessar)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Acionar Robô (Novo-Reprocessar)": {
+      "main": [
+        [
+          {
+            "node": "Switch - Resultado Robô (Novo)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Acionar Robô (Reat-Reprocessar)": {
+      "main": [
+        [
+          {
+            "node": "Switch - Resultado Robô (Reativação)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - Resultado Robô (Reativação)1": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Liberar Próximo (Reativação)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP - Liberar Próximo Erro (Reativação)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Liberar Próximo Erro (Reativação)1": {
+      "main": [
+        [
+          {
+            "node": "Email - Alerta Erro Robô (Reativação)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Liberar Próximo (Reativação)": {
+      "main": [
+        [
+          {
+            "node": "Email - Financeiro",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email - Aviso Vendedor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - Resultado Robô (Novo)1": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Liberar Próximo (Novo)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP - Liberar Próximo Erro (Novo)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Liberar Próximo Erro (Novo)1": {
+      "main": [
+        [
+          {
+            "node": "Email - Alerta Erro Robô (Novo)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Liberar Próximo (Novo)": {
+      "main": [
+        [
+          {
+            "node": "Email - Aviso Vendedor15",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email - Máscaras1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email - Máscaras1": {
+      "main": [
+        [
+          {
+            "node": "Wait - Confirmação Máscaras",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait - Confirmação Máscaras": {
+      "main": [
+        [
+          {
+            "node": "Email - Aviso Vendedor16",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email - Financeiro2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Reprocessar": {
+      "main": [
+        [
+          {
+            "node": "Config Hub Reproc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config Hub": {
+      "main": [
+        [
+          {
+            "node": "Email - Triagem Farmacêutica",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email - Aviso Vendedor1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config Hub Reproc": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "6110fdb7-0b81-4bbc-82b9-73d9f1386b8d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e6ba50edb8442a5e57d53b1fde783d26f4d173325ee71f811fed3dbe4c4df42d"
+  },
+  "id": "PHUhC5tN83AZEoJm",
+  "tags": []
+}
