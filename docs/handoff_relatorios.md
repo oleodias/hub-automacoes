@@ -63,14 +63,18 @@ uma colega interna recebe um aviso de cada envio (sucesso/erro).
 // saída
 { "status":"Sucesso"|"Sucesso com avisos"|"Erro", "msg":"...", "pasta":"<abs>",
   "exec":"exec_AAAAMMDD_HHMMSS",   // (preenchido pelo Hub; subpasta da execução)
-  "itens":[{"id":"bayer__T1","lab_id":"bayer","nome":"Bayer","arquivos":["Estoque - Bayer - Privado.xlsx","..._11_....xlsx"]}],
+  "itens":[{"id":"bayer__T1","lab_id":"bayer","nome":"Bayer",
+            "arquivos":["Estoque - Bayer.xlsx","Mapa de Venda - Bayer - 01-05-2026 a 31-05-2026.xlsx"], // nomes de arquivo (anexos)
+            "com_dados":["Estoque","Mapa de Venda"],   // rótulos amigáveis COM dados (p/ o aviso)
+            "vazios":[]}],                             // rótulos amigáveis SEM dados (p/ o aviso)
   "avisos":[...] }
 ```
 
 ### 3.3 Otimização (dedup)
 Cada combinação única é gerada **uma vez**:
-- **Estoque** por (`modelo + setor`) → cada lab tem o SEU modelo de estoque; Sandoz
-  RS/SC e SP (mesmo modelo) saem 1x. (Antes era só por setor, com modelo fixo.)
+- **Estoque** por (`modelo + setor`): cada lab tem o SEU modelo. **Labs comuns** usam
+  o filtro Público/Privado **em branco** → 1 arquivo. **Os dois labs Sun** geram
+  Público **e** Privado (2 arquivos cada). Sandoz RS/SC e SP (mesmo modelo) saem 1x.
 - **Venda** por (`modelo + operação + período`) → Sandoz RS/SC e SP (mesmo modelo) saem 1x.
 
 ### 3.4 Funções (todas em `gerar_relatorios.py`)
@@ -87,13 +91,11 @@ Cada combinação única é gerada **uma vez**:
 | `_clicar_real` | Clique robusto p/ `a-Menu`/diálogos: sequência `mouseover→mousedown→mouseup→click`. |
 | `_clicar_item_menu` | Acha item do menu Ações **pelo texto** (id numérico muda) + `_clicar_real`. |
 | `_fechar_dialogo` | Clica no **"X"** do diálogo (jQuery UI) após o CSV (best-effort). |
-| `_baixar_csv` | Ações → Download (por texto) → CSV → fecha diálogo → espera baixar. |
-| `_esperar_download` | Espera o `.csv`/`.xlsx` estável; **ignora artefatos** (`downloads.htm`, `.tmp`, `.crdownload`); **à prova de corrida** (try/except no getsize). |
+| `_baixar_csv` | Ações → Download (por texto) → CSV → fecha diálogo → espera baixar. **CSV de 0 byte = relatório vazio → devolve `None`** (não vira anexo). |
+| `_esperar_download` | Espera o `.csv`/`.xlsx` estável; **ignora artefatos** (`downloads.htm`, `.tmp`, `.crdownload`); **à prova de corrida**. **Aceita 0 byte** (estável + sem `.crdownload`) — é o que o APEX baixa quando não há dados. |
 | `_csv_para_xlsx` | Converte CSV (detecta separador/encoding) p/ `.xlsx` (pandas). |
-| `_slug` | Slug "colado" (só alfanumérico) — usado em datas/valores. |
-| `_slug_nome` | Slug **legível** (espaços→`_`, remove chars proibidos) — nome do arquivo. |
-| `gerar_analise_estoque` | Tela A: **setor (forçado, `_definir_select`) → modelo (por lab) → Consultar** → baixa. Nome amigável = `Estoque - {Lab} - {Público\|Privado}`. |
-| `gerar_demanda` | Tela B: **datas → operação → modelo → Consultar** → baixa. Nome = `<modelo>_<op>_<ini>_<fim>`. |
+| `gerar_analise_estoque` | Tela A: **setor (forçado, `_definir_select`) → modelo (por lab) → Consultar** → baixa (vazio → `None`, via 0 byte no `_baixar_csv`). Comuns: setor em branco → `Estoque - {Lab}`. Sun: `Estoque - {Lab} - {Público\|Privado}`. |
+| `gerar_demanda` | Tela B: **datas → operação → modelo → Consultar** → baixa (vazio → `None`, via 0 byte). Nome amigável = `Mapa de Venda - {Lab} - {período}` (Sun ganha `(Público\|Privado)`). |
 | `aplicar_pos_processamento` | Roda hooks do lab **in-place** sobre o .xlsx de venda (preserva o nome), 1x por combo. Ver §4.1. |
 | `executar(job)` | Orquestra: login → estoques (dedup) → vendas (dedup) → manifesto. |
 | `main()` | Standalone: aceita **arquivo .json**, **JSON inline** ou **stdin**. |
@@ -109,25 +111,39 @@ Cada combinação única é gerada **uma vez**:
 
 | lab_id | Nome | modelo_venda (saved report) | Estoque | Operações | E-mails de produção |
 |---|---|---|---|---|---|
-| `bayer` | Bayer | `103052508672357463` | privado | 11 | operacoescomerciaisbhp@bayer.com; elias.zanatta@bayer.com; paula.yokomizo@bayer.com |
-| `csl` | CSL | `103030134957924372` | privado | 11 | csl@wfbconsultoria.com.br; Rafael.Esteves@csl.com.au |
-| `fresenius` | Fresenius | **por nome** `MAPA DE VENDA FRESENIUS` | privado | 11 | jailton.silva@fresenius-kabi.com |
-| `glaxo` | Glaxo | `103036051703963152` | privado | 11 | alexandre.x.mitsuda@gsk.com |
-| `organon` | Organon | `103037225680969181` | privado | 11 | rodrigo.blas@organon.com |
-| `roche` | Roche | `103031583388937239` | privado | 11 | brasil.operacoescomerciais@roche.com; joao.pessoa@roche.com |
-| `sandoz_rs_sc` | Sandoz RS/SC | `103032823287941952` | privado | 11 | marcelo.novelli@sandoz.com; isaque.fedrigo@sandoz.com |
-| `sandoz_sp` | Sandoz SP | `103032823287941952` (mesmo da RS/SC) | privado | 11 | roger.damian@sandoz.com |
-| `sankyo` | Sankyo | `103034120207945481` | privado | 11 | marcio.honorati@daiichisankyo.com; pedro.mota@daiichisankyo.com; alexandre.jesus@daiichisankyo.com |
+| `bayer` | Bayer | `103052508672357463` | branco | 11 | operacoescomerciaisbhp@bayer.com; elias.zanatta@bayer.com; paula.yokomizo@bayer.com |
+| `csl` | CSL | `103030134957924372` | branco | 11 | csl@wfbconsultoria.com.br; Rafael.Esteves@csl.com.au |
+| `fresenius` | Fresenius | **por nome** `MAPA DE VENDA FRESENIUS` | branco | 11 | jailton.silva@fresenius-kabi.com |
+| `glaxo` | Glaxo | `103036051703963152` | branco | 11 | alexandre.x.mitsuda@gsk.com |
+| `organon` | Organon | `103037225680969181` | branco | 11 | rodrigo.blas@organon.com |
+| `roche` | Roche | `103031583388937239` | branco | 11 | brasil.operacoescomerciais@roche.com; joao.pessoa@roche.com |
+| `sandoz_rs_sc` | Sandoz RS/SC | `103032823287941952` | branco | 11 | marcelo.novelli@sandoz.com; isaque.fedrigo@sandoz.com |
+| `sandoz_sp` | Sandoz SP | `103032823287941952` (mesmo da RS/SC) | branco | 11 | roger.damian@sandoz.com |
+| `sankyo` | Sankyo | `103034120207945481` | branco | 11 | marcio.honorati@daiichisankyo.com; pedro.mota@daiichisankyo.com; alexandre.jesus@daiichisankyo.com |
 | `sun_geral` | Sun Geral | `124266373295785439` | privado + **publico** | **11 + 17** | Gisele.Lemos@sunpharma.com; Ana.ferreira@sunpharma.com |
-| `sun_13082` | Sun Item 13082 | `103087407870276850` | privado | 11 | Cecilia.Castro@sunpharma.com; Edgar.Lopes@sunpharma.com |
-| `united` | United (M) | `103039329135977606` | privado | 11 | leonardo.rossi@knighttx.com |
+| `sun_13082` | Sun Item 13082 | `103087407870276850` | **público + privado** | 11 | Cecilia.Castro@sunpharma.com; Edgar.Lopes@sunpharma.com |
+| `united` | United (M) | `103039329135977606` | branco | 11 | leonardo.rossi@knighttx.com |
 
 - **Operações:** `11` = VENDA FATURAMENTO LÍQUIDO **PRIVADO** · `17` = **PÚBLICO** (só Sun Geral).
-- **Estoque:** **modelo POR LABORATÓRIO** (`modelo_estoque`, ver tabela abaixo); o setor
-  (Público/Privado, `P366_FILTRO`) é aplicado com transição **forçada** (`_definir_select`),
-  igual ao Público/Privado da venda — sem isso o 2º setor saía "preso" no 1º (bug da Sun).
-  O modelo fixo antigo `153738614031239522` ("ESTOQUE PARA MAPA") foi **aposentado**.
-- **Sun Geral = 4 arquivos** (estoque priv+pub + venda 11+17). Demais = 2.
+- **Estoque:** **modelo POR LABORATÓRIO** (`modelo_estoque`, tabela abaixo). O filtro de
+  setor (`P366_FILTRO`) tem 3 estados: **em branco** (padrão dos labs comuns → 1 arquivo
+  `Estoque - {Lab}`), **Público** e **Privado**. **Só a Sun aciona o filtro:** os dois labs
+  Sun (`sun_geral` e `sun_13082`) geram Público **e** Privado. O setor é aplicado com
+  transição **forçada** (`_definir_select`) — sem isso o 2º setor da Sun saía "preso" no
+  1º. O modelo fixo antigo `153738614031239522` ("ESTOQUE PARA MAPA") foi **aposentado**.
+- **Arquivos por lab:** Sun Geral = **4** (estoque pub+priv + venda 11+17); Sun Ilumya = **3**
+  (estoque pub+priv + venda 11); demais = **2** (estoque + venda).
+- **Relatório vazio (estoque OU venda)** — ex.: Ilumya sem Público num mês, ou um lab
+  sem vendas numa semana: nesse caso a tela mostra "Item não encontrado" e o APEX baixa
+  um **CSV de 0 byte**. O `_baixar_csv` reconhece o 0 byte como "sem dados", **devolve
+  `None`** e o robô **pula** aquele arquivo com um aviso — sem travar no download nem
+  derrubar o lote (status "Sucesso com avisos"; só não anexa). Vale para **qualquer lab**,
+  nas duas telas. Rede de segurança: cada combo (estoque e venda) roda em `try/except`,
+  então mesmo uma falha inesperada vira aviso e o lote continua.
+- **Manifesto por lab:** `arquivos` (nomes de arquivo p/ anexar) + `com_dados` e `vazios`
+  (**rótulos amigáveis** — ex.: "Estoque", "Mapa de Venda", "Estoque (Público)"). O e-mail
+  de aviso lista `com_dados` (✅) e `vazios` (⚠️) — texto limpo, sem nome de arquivo cru
+  (ver `n8n/README.md` → "Aviso com status de dados"). Os campos fluem pelos Code nodes.
 - **Fresenius**: venda por **nome** (`modelo_label`); estoque por **value** (veio no HTML).
 
 **Modelos de estoque por lab** (`modelo_estoque` — saved report da Tela A):

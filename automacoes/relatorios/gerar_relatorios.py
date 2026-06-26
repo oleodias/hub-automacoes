@@ -43,7 +43,7 @@ from selenium.common.exceptions import TimeoutException
 
 # Login/navegador reaproveitados do robô de cadastro (não reescrevemos login).
 from automacoes.clientes.navegacao_erp import iniciar_navegador, fazer_login
-from automacoes.relatorios.labs_config import ESTOQUE, DEMANDA, LABS, SETOR_LABEL
+from automacoes.relatorios.labs_config import ESTOQUE, DEMANDA, LABS, SETOR_LABEL, OP_LABEL
 from automacoes.relatorios import pos_processamento
 
 # Pasta-base onde cada execução cria sua subpasta de downloads.
@@ -319,6 +319,17 @@ def _baixar_csv(driver, cfg, pasta, destino_basename):
     #    no 'X' nunca interferir no download em andamento.
     caminho_csv = _esperar_download(pasta, antes)
     _fechar_dialogo(driver)
+
+    # Relatório SEM dados: o APEX baixa um CSV de **0 byte** (tela "Item não
+    # encontrado"). Não vira anexo — devolve None p/ o orquestrador pular com aviso.
+    try:
+        if os.path.getsize(caminho_csv) == 0:
+            print(f"> ⚠️ Download vazio (0 byte) — relatório sem dados. Ignorando '{destino_basename}'.")
+            os.remove(caminho_csv)
+            return None
+    except OSError:
+        pass
+
     destino_xlsx = os.path.join(pasta, destino_basename + ".xlsx")
     _csv_para_xlsx(caminho_csv, destino_xlsx)
     try:
@@ -336,6 +347,11 @@ def _esperar_download(pasta, arquivos_antes, timeout=TIMEOUT_DOWNLOAD):
     Chrome (downloads.htm, .tmp, .crdownload). É à prova de corrida: se o
     arquivo candidato sumir/renomear entre uma medição e outra, apenas
     continua tentando em vez de estourar FileNotFoundError.
+
+    Aceita arquivo **de 0 byte** desde que ESTÁVEL e sem `.crdownload` — é o que
+    o APEX baixa quando o relatório não tem dados ("Item não encontrado"). Sem
+    isso o robô esperava esse 0 byte virar >0 pra sempre, até o timeout. Quem
+    decide o que fazer com o vazio é o `_baixar_csv` (devolve None).
     """
     EXT_RESULTADO = (".csv", ".xlsx", ".xls")
     fim = time.time() + timeout
@@ -355,7 +371,9 @@ def _esperar_download(pasta, arquivos_antes, timeout=TIMEOUT_DOWNLOAD):
                 tamanho_1 = os.path.getsize(caminho)
                 _sleep(1.2)
                 ainda_baixando = any(x.endswith(".crdownload") for x in os.listdir(pasta))
-                if not ainda_baixando and os.path.getsize(caminho) == tamanho_1 and tamanho_1 > 0:
+                # Estável + sem .crdownload = download concluído. Aceita 0 byte
+                # (relatório vazio) — o _baixar_csv trata o vazio depois.
+                if not ainda_baixando and os.path.getsize(caminho) == tamanho_1:
                     return caminho
             except OSError:
                 pass  # candidato sumiu/renomeou — segue tentando
@@ -383,19 +401,6 @@ def _csv_para_xlsx(caminho_csv, destino_xlsx):
         raise ValueError(f"Falha ao ler o CSV baixado: {ultimo_erro}")
     df.to_excel(destino_xlsx, index=False)
     return destino_xlsx
-
-
-def _slug(texto):
-    return re.sub(r"[^A-Za-z0-9]+", "", str(texto))
-
-
-def _slug_nome(texto):
-    """Slug legível p/ nome de arquivo: troca espaços por '_' e remove só os
-    caracteres proibidos em nome de arquivo. Ex.: 'MAPA VENDA ROCHE' →
-    'MAPA_VENDA_ROCHE'."""
-    s = re.sub(r'[\\/:*?"<>|.,;]+', " ", str(texto))
-    s = re.sub(r"\s+", "_", s.strip())
-    return s or "relatorio"
 
 
 def _estilizar_xlsx(caminho, titulo="", subtitulo=""):
@@ -532,11 +537,17 @@ def gerar_analise_estoque(driver, setor, modelo_value, modelo_label, nome_base, 
     _esperar_apex_pronto(driver)
     _sleep(1.5)
 
+    # Se o relatório vier vazio (ex.: Sun Ilumya sem estoque Público num mês), o
+    # _baixar_csv detecta o CSV de 0 byte e devolve None → o orquestrador pula com aviso.
     return _baixar_csv(driver, ESTOQUE, pasta, nome_base)
 
 
-def gerar_demanda(driver, modelo_value, modelo_label, operacao, data_ini, data_fim, pasta):
-    """Tela B — gera a Demanda Fornecedor para (modelo, operação, período)."""
+def gerar_demanda(driver, modelo_value, modelo_label, operacao, data_ini, data_fim, nome_base, pasta):
+    """Tela B — gera a Demanda Fornecedor para (modelo, operação, período).
+
+    `nome_base` é o nome amigável do arquivo, montado pelo orquestrador
+    (ex.: "Mapa de Venda - Roche - 01-05-2026 a 31-05-2026").
+    """
     rotulo = modelo_value or modelo_label
     print(f"> 🧾 Demanda Fornecedor — modelo {rotulo} | op {operacao} | {data_ini}→{data_fim}")
     wait = WebDriverWait(driver, TIMEOUT_PADRAO)
@@ -570,12 +581,9 @@ def gerar_demanda(driver, modelo_value, modelo_label, operacao, data_ini, data_f
     _esperar_apex_pronto(driver)
     _sleep(1.5)
 
-    # Nome do arquivo = NOME do relatório selecionado (+ operação e período
-    # para manter unicidade, já que a Sun usa o mesmo modelo em 11 e 17).
-    base = _slug_nome(modelo_nome) if modelo_nome else f"venda_{_slug(rotulo)}"
-    nome = f"{base}_{operacao}_{_slug(data_ini)}_{_slug(data_fim)}"
-    # Retorna o caminho + o nome do relatório salvo (usado no título da planilha).
-    return _baixar_csv(driver, DEMANDA, pasta, nome), modelo_nome
+    # Venda vazia (lab sem vendas no período): _baixar_csv detecta o CSV de 0 byte
+    # e devolve None → o orquestrador pula com aviso. Retorna (caminho, nome_modelo).
+    return _baixar_csv(driver, DEMANDA, pasta, nome_base), modelo_nome
 
 
 def aplicar_pos_processamento(caminho_venda, lab):
@@ -766,22 +774,41 @@ def executar(job):
             _abrir_favorito(driver, ESTOQUE["favorito_invoker"], ESTOQUE["item_marcador"])
             for e in envios:
                 lab = LABS[e["lab_id"]]
-                nome_est = lab.get("nome_estoque", lab["nome"])
+                nome_est = lab.get("nome_arquivo", lab["nome"])
                 for s in lab["estoque"]:
                     chave = (lab["modelo_estoque"], s)
                     if chave not in estoque_paths:
-                        ctx["etapa"] = f"Análise de Estoque — {nome_est} / {s}"
+                        # rotulo vazio quando setor == "geral" (filtro em branco):
+                        # o arquivo/subtítulo ficam SEM o sufixo Público/Privado.
+                        rotulo = SETOR_LABEL[s]
+                        ctx["etapa"] = f"Análise de Estoque — {nome_est}" + (f" / {rotulo}" if rotulo else "")
                         ctx["lab"], ctx["periodo"] = nome_est, ""
-                        nome_base = f"Estoque - {nome_est} - {SETOR_LABEL[s]}"
-                        p = gerar_analise_estoque(
-                            driver, s, lab["modelo_estoque"],
-                            lab.get("modelo_estoque_label"), nome_base, pasta,
-                        )
-                        estoque_paths[chave] = p
-                        estilos[p] = ("Análise de Estoque",
-                            f"{nome_est} · {SETOR_LABEL[s]} · posição atual")
+                        nome_base = f"Estoque - {nome_est}" + (f" - {rotulo}" if rotulo else "")
+                        # Tolerante a relatório vazio/falha: não derruba o lote.
+                        # gerar_analise_estoque devolve None quando o setor não tem
+                        # dados (ex.: Sun Ilumya sem Público num mês).
+                        erro = None
+                        try:
+                            p = gerar_analise_estoque(
+                                driver, s, lab["modelo_estoque"],
+                                lab.get("modelo_estoque_label"), nome_base, pasta,
+                            )
+                        except Exception as ex:  # noqa: BLE001
+                            p, erro = None, ex
                         feito_est += 1
                         ctx["progresso"] = f"Estoque {feito_est}/{total_est}"
+                        # Marca o combo como visto (mesmo None) p/ o dedup não repetir.
+                        estoque_paths[chave] = p
+                        if p is None:
+                            if erro is not None:
+                                avisos.append(f"Estoque '{nome_base}' deu erro e foi ignorado: "
+                                              f"{type(erro).__name__}: {(str(erro).splitlines() or [''])[0]}")
+                            else:
+                                avisos.append(f"Estoque '{nome_base}' sem dados nesse setor — não anexado.")
+                            continue
+                        subtitulo = (f"{nome_est} · {rotulo} · posição atual" if rotulo
+                                     else f"{nome_est} · posição atual")
+                        estilos[p] = ("Análise de Estoque", subtitulo)
 
         # ---- 2) DEMANDA FORNECEDOR (gera cada combo único 1x) ----
         # Conta os combos únicos só para o "progresso" no aviso de erro.
@@ -793,7 +820,7 @@ def executar(job):
                 combos_alvo.add((modelo_id, operacao, e["periodo_ini"], e["periodo_fim"]))
         total_venda, feito_venda = len(combos_alvo), 0
 
-        combos = {}  # (modelo_id, operacao, ini, fim) -> caminho
+        combos = {}  # (modelo_id, operacao, ini, fim) -> caminho (None se vazio/falhou)
         _abrir_favorito(driver, DEMANDA["favorito_invoker"], DEMANDA["item_marcador"])
         for e in envios:
             lab = LABS[e["lab_id"]]
@@ -804,15 +831,36 @@ def executar(job):
                     ctx["etapa"] = "Demanda Fornecedor (venda)"
                     ctx["lab"] = lab["nome"]
                     ctx["periodo"] = f'{e["periodo_ini"]} a {e["periodo_fim"]}'
-                    caminho, modelo_nome = gerar_demanda(
-                        driver, lab["modelo_venda"], lab.get("modelo_label"), operacao,
-                        e["periodo_ini"], e["periodo_fim"], pasta,
-                    )
-                    combos[chave] = caminho
-                    estilos[caminho] = ("Mapa de Venda",
-                        f"{modelo_nome or lab['nome']} · {e['periodo_ini']} a {e['periodo_fim']}")
+                    # Nome amigável do arquivo de venda (igual ao estoque). Inclui o
+                    # rótulo da operação só quando o lab tem as duas (Sun) — p/ distinguir.
+                    nome_v = lab.get("nome_arquivo", lab["nome"])
+                    periodo_arq = f"{e['periodo_ini'].replace('/', '-')} a {e['periodo_fim'].replace('/', '-')}"
+                    if len(lab["operacoes"]) > 1:
+                        nome_base_v = f"Mapa de Venda - {nome_v} - {OP_LABEL.get(operacao, operacao)} - {periodo_arq}"
+                    else:
+                        nome_base_v = f"Mapa de Venda - {nome_v} - {periodo_arq}"
+                    # Tolerante a venda vazia/falha: não derruba o lote (igual ao estoque).
+                    erro = None
+                    try:
+                        caminho, modelo_nome = gerar_demanda(
+                            driver, lab["modelo_venda"], lab.get("modelo_label"), operacao,
+                            e["periodo_ini"], e["periodo_fim"], nome_base_v, pasta,
+                        )
+                    except Exception as ex:  # noqa: BLE001
+                        caminho, modelo_nome, erro = None, None, ex
+                    combos[chave] = caminho  # marca o combo como visto (mesmo None)
                     feito_venda += 1
                     ctx["progresso"] = f"Estoque {total_est}/{total_est} · Venda {feito_venda}/{total_venda}"
+                    if caminho is None:
+                        periodo_txt = f"{e['periodo_ini']} a {e['periodo_fim']}"
+                        if erro is not None:
+                            avisos.append(f"Venda '{lab['nome']}' ({periodo_txt}) deu erro e foi ignorada: "
+                                          f"{type(erro).__name__}: {(str(erro).splitlines() or [''])[0]}")
+                        else:
+                            avisos.append(f"Venda '{modelo_nome or lab['nome']}' ({periodo_txt}) sem dados — não anexada.")
+                        continue
+                    estilos[caminho] = ("Mapa de Venda",
+                        f"{modelo_nome or lab['nome']} · {e['periodo_ini']} a {e['periodo_fim']}")
 
         # ---- 3) MANIFESTO (lab -> arquivos), com pós-processamento ----
         ctx["etapa"] = "Montagem dos arquivos / pós-processamento"
@@ -822,10 +870,26 @@ def executar(job):
         for e in envios:
             lab = LABS[e["lab_id"]]
             modelo_id = lab["modelo_venda"] or lab.get("modelo_label")
-            arquivos = [os.path.basename(estoque_paths[(lab["modelo_estoque"], s)]) for s in lab["estoque"]]
+            multi_op = len(lab["operacoes"]) > 1   # Sun Geral: distingue 11/17 no rótulo
+            # arquivos = nomes de arquivo COM dados (p/ anexar/baixar no n8n).
+            # com_dados / vazios = RÓTULOS amigáveis (p/ o e-mail de aviso ler bonito).
+            arquivos, com_dados, vazios = [], [], []
+            for s in lab["estoque"]:
+                rot = SETOR_LABEL[s]
+                label = "Estoque" + (f" ({rot})" if rot else "")
+                caminho_est = estoque_paths.get((lab["modelo_estoque"], s))
+                if caminho_est:
+                    arquivos.append(os.path.basename(caminho_est))
+                    com_dados.append(label)
+                else:
+                    vazios.append(label)
             for operacao in lab["operacoes"]:
+                label = "Mapa de Venda" + (f" ({OP_LABEL.get(operacao, operacao)})" if multi_op else "")
                 chave = (modelo_id, operacao, e["periodo_ini"], e["periodo_fim"])
-                caminho_venda = combos[chave]
+                caminho_venda = combos.get(chave)
+                if not caminho_venda:   # venda vazia/falha → não anexa, registra em vazios
+                    vazios.append(label)
+                    continue
                 # Pós-processa o arquivo de venda IN-PLACE, uma única vez por combo.
                 # Seguro: um lab com hook usa modelo exclusivo (ex.: Fresenius), então
                 # nenhum outro lab reaproveita esse combo no dedup.
@@ -835,11 +899,14 @@ def executar(job):
                     aplicar_pos_processamento(caminho_venda, lab)
                     pos_feito.add(chave)
                 arquivos.append(os.path.basename(caminho_venda))
+                com_dados.append(label)
             itens.append({
                 "id": e.get("id"),
                 "lab_id": e["lab_id"],
                 "nome": lab["nome"],
-                "arquivos": arquivos,
+                "arquivos": arquivos,       # nomes de arquivo (anexos)
+                "com_dados": com_dados,     # rótulos amigáveis dos que vieram COM dados
+                "vazios": vazios,           # rótulos amigáveis dos que vieram SEM dados
             })
 
         # ---- 4) ESTILIZAÇÃO (passo final, DEPOIS do pós-processamento) ----
