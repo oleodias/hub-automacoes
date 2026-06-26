@@ -20,6 +20,7 @@ MODULOS_HUB = {
     'fornecedor':  'Cadastro de Fornecedor',
     'clientes':    'Cadastro de Clientes',
     'cnpj':        'Consulta CNPJ',
+    'cep':         'Cadastro de CEP',
     'monitor':     'Monitor de Cadastros',
     'notas':       'Controle de Notas Fiscais',
     'lancamento_notas': 'Lançamento de Notas',
@@ -29,6 +30,22 @@ MODULOS_HUB = {
 def permissoes_padrao():
     """Retorna dict com todos os módulos liberados (padrão para novos usuários)."""
     return {modulo: True for modulo in MODULOS_HUB}
+
+
+# ── ROBÔS DO HUB (lista central p/ filtros de histórico) ─────
+# Chaves são EXATAMENTE os nomes passados em iniciar_execucao_robo(...).
+# Ao criar um robô novo, adicione aqui e o filtro do histórico
+# (admin e meu_historico) já passa a listá-lo automaticamente.
+
+ROBOS_HUB = {
+    'itens_fase1':        'Itens — Fase 1',
+    'itens_fase2':        'Itens — Fase 2',
+    'mdf':                'Relatório MDF-e',
+    'fornecedor':         'Fornecedor',
+    'cliente_novo':       'Cliente Novo',
+    'cliente_reativacao': 'Cliente Reativação',
+    'cadastro_cep':       'Cadastro de CEP',
+}
 
 SETORES_CIAMED = [
     'TI',
@@ -542,6 +559,9 @@ class NotasFornecedor(db.Model):
 
     # ── Campos v2 ──────────────────────────────────────────────
     retencao_padrao = db.Column(db.Boolean, default=False)
+    # Lista de TIPOS de retenção marcados como padrão (ex: ["inss", "iss"]).
+    # O código em routes/notas.py lê/grava isto como lista JSON.
+    retencoes_padrao = db.Column(db.JSON, default=list)
     valor_medio     = db.Column(db.Numeric(12, 2), nullable=True)
     iniciado_em     = db.Column(db.String(7), nullable=True)   # "2026-05"
     observacoes     = db.Column(db.Text, nullable=True)

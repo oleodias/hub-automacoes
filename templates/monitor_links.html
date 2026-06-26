@@ -1,227 +1,161 @@
-{% extends "base.html" %}
-{% block title %}Links Gerados — Hub Ciamed{% endblock %}
-{% block navbar_title %}Hub de Automações{% endblock %}
-
-{% block css %}
-<style>
-  #tela-links { padding: 8px 4px; }
-  #tela-links .page-header {
-    display: flex; align-items: center; gap: 14px; margin-bottom: 18px;
-  }
-  #tela-links .btn-back {
-    background: #1e293b; color: #cbd5e1; border: none; border-radius: 8px;
-    padding: 9px 14px; cursor: pointer; font-size: 14px;
-  }
-  #tela-links h2 { margin: 0; font-family: 'Syne', sans-serif; }
-  #tela-links .stats-row {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px;
-  }
-  #tela-links .stat-item {
-    background: #0f172a; border: 1px solid #1e293b; border-radius: 10px;
-    padding: 14px 16px;
-  }
-  #tela-links .stat-value { font-size: 26px; font-weight: 700; font-family: 'Syne', sans-serif; }
-  #tela-links .stat-label { font-size: 12px; color: #94a3b8; }
-  #tela-links .filtros {
-    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px;
-  }
-  #tela-links .filtros input, #tela-links .filtros select {
-    background: #0f172a; border: 1px solid #1e293b; color: #e2e8f0;
-    border-radius: 8px; padding: 9px 12px; font-size: 14px;
-  }
-  #tela-links table { width: 100%; border-collapse: collapse; }
-  #tela-links th, #tela-links td {
-    padding: 11px 12px; text-align: left; font-size: 13px;
-    border-bottom: 1px solid #1e293b;
-  }
-  #tela-links th { color: #94a3b8; font-weight: 600; }
-  #tela-links .badge {
-    padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
-  }
-  #tela-links .btn-mini {
-    background: #1e293b; color: #cbd5e1; border: none; border-radius: 7px;
-    padding: 6px 10px; cursor: pointer; font-size: 12px;
-  }
-</style>
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Links Gerados — Hub Ciamed{% endblock
+%} {% block css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/monitor_links.css') }}"
+/>
+{% endblock %} {% block navbar_title %}Hub de Automações{% endblock %} {% block
+content %}
 <div id="tela-links">
+  <!-- PAGE HEADER -->
   <div class="page-header">
-    <button class="btn-back" onclick="window.location.href='/'">
-      <i class="fa-solid fa-arrow-left"></i>
+    <div class="left">
+      <button
+        class="btn-back"
+        onclick="window.location.href = '/'"
+        title="Voltar"
+      >
+        <i class="fa-solid fa-arrow-left" style="font-size: 13px"></i>
+      </button>
+      <div class="page-title">
+        Links Gerados
+        <span>Controle dos links de ficha gerados</span>
+      </div>
+    </div>
+    <button class="btn-refresh" onclick="carregarLinks()" title="Atualizar">
+      <i class="fa-solid fa-rotate-right"></i> Atualizar
     </button>
-    <h2><i class="fa-solid fa-link"></i> Links Gerados</h2>
   </div>
 
+  <!-- STATS ROW -->
   <div class="stats-row">
     <div class="stat-item">
-      <div class="stat-value" id="stTotal">—</div>
-      <div class="stat-label">Total</div>
+      <div
+        class="stat-icon"
+        style="background: var(--teal-dim); color: var(--teal)"
+      >
+        <i class="fa-solid fa-link"></i>
+      </div>
+      <div>
+        <div class="stat-value" id="stTotal">—</div>
+        <div class="stat-label">Total</div>
+      </div>
     </div>
     <div class="stat-item">
-      <div class="stat-value" id="stAtivo" style="color:#10b981">—</div>
-      <div class="stat-label">Ativos</div>
+      <div
+        class="stat-icon"
+        style="background: var(--green-dim); color: var(--green)"
+      >
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <div>
+        <div class="stat-value" id="stAtivo">—</div>
+        <div class="stat-label">Ativos</div>
+      </div>
     </div>
     <div class="stat-item">
-      <div class="stat-value" id="stUsado" style="color:#60a5fa">—</div>
-      <div class="stat-label">Usados</div>
+      <div
+        class="stat-icon"
+        style="background: var(--blue-dim); color: var(--blue)"
+      >
+        <i class="fa-solid fa-paper-plane"></i>
+      </div>
+      <div>
+        <div class="stat-value" id="stUsado">—</div>
+        <div class="stat-label">Usados</div>
+      </div>
     </div>
     <div class="stat-item">
-      <div class="stat-value" id="stExpirado" style="color:#94a3b8">—</div>
-      <div class="stat-label">Expirados</div>
+      <div
+        class="stat-icon"
+        style="background: rgba(148, 163, 184, 0.12); color: var(--faint)"
+      >
+        <i class="fa-solid fa-clock"></i>
+      </div>
+      <div>
+        <div class="stat-value" id="stExpirado">—</div>
+        <div class="stat-label">Expirados</div>
+      </div>
     </div>
   </div>
 
-  <div class="filtros">
-    <input id="fBusca" type="text" placeholder="🔎 CNPJ, vendedor ou quem gerou" style="flex:1;min-width:220px" />
-    <select id="fStatus">
-      <option value="">Todos os status</option>
-      <option value="ativo">Ativos</option>
-      <option value="usado">Usados</option>
-      <option value="expirado">Expirados</option>
-    </select>
-    <input id="fDataDe" type="date" />
-    <input id="fDataAte" type="date" />
-    <button class="btn-mini" onclick="carregarLinks()">Filtrar</button>
+  <!-- FILTROS -->
+  <div class="filtros-card">
+    <div class="filtros-row">
+      <div class="filtro-group" style="flex: 2; min-width: 220px">
+        <label>Buscar</label>
+        <div class="search-wrap">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input
+            id="fBusca"
+            type="text"
+            placeholder="CNPJ, vendedor ou quem gerou"
+            onkeydown="if(event.key==='Enter') carregarLinks()"
+          />
+        </div>
+      </div>
+      <div class="filtro-group">
+        <label>Status</label>
+        <select id="fStatus">
+          <option value="">Todos os status</option>
+          <option value="ativo">Ativos</option>
+          <option value="usado">Usados</option>
+          <option value="expirado">Expirados</option>
+        </select>
+      </div>
+      <div class="filtro-group">
+        <label>Data de</label>
+        <input id="fDataDe" type="date" />
+      </div>
+      <div class="filtro-group">
+        <label>Data até</label>
+        <input id="fDataAte" type="date" />
+      </div>
+      <button class="btn-filtrar" onclick="carregarLinks()">
+        <i class="fa-solid fa-filter"></i> Filtrar
+      </button>
+      <button class="btn-limpar" onclick="limparFiltros()">
+        <i class="fa-solid fa-eraser"></i> Limpar
+      </button>
+    </div>
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Gerado em</th>
-        <th>Gerado por</th>
-        <th>CNPJ Cliente</th>
-        <th>Vendedor</th>
-        <th>Tipo</th>
-        <th>Validade</th>
-        <th>Status</th>
-        <th>Ações</th>
-      </tr>
-    </thead>
-    <tbody id="linksBody">
-      <tr><td colspan="8" style="color:#94a3b8;text-align:center;padding:24px">Carregando…</td></tr>
-    </tbody>
-  </table>
+  <!-- TABELA -->
+  <div class="tabela-card">
+    <div class="tabela-header-row">
+      <div class="titulo">Histórico de links</div>
+      <div class="contador" id="contador">—</div>
+    </div>
+    <div class="tabela-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Gerado em</th>
+            <th>Gerado por</th>
+            <th>CNPJ Cliente</th>
+            <th>Vendedor</th>
+            <th>Tipo</th>
+            <th>Validade</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="linksBody">
+          <tr>
+            <td colspan="8" class="loading-cell">
+              <i class="fa-solid fa-circle-notch fa-spin"></i> Carregando…
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script>
   // Só o admin do Hub pode excluir links de fato (operador vê o botão,
   // mas recebe orientação para contatar o admin).
   window.IS_ADMIN = {{ is_admin | tojson }};
-  let TODOS = [];
-
-  const BADGE = {
-    ativo:    { txt: "Ativo",    cor: "#10b981", bg: "rgba(16,185,129,.12)" },
-    usado:    { txt: "Usado",    cor: "#60a5fa", bg: "rgba(96,165,250,.12)" },
-    expirado: { txt: "Expirado", cor: "#94a3b8", bg: "rgba(148,163,184,.12)" },
-  };
-
-  function fmtCnpj(c) {
-    if (!c) return "—";
-    return c.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
-  }
-
-  async function carregarLinks() {
-    const p = new URLSearchParams();
-    const busca = document.getElementById("fBusca").value.trim();
-    const status = document.getElementById("fStatus").value;
-    const de = document.getElementById("fDataDe").value;
-    const ate = document.getElementById("fDataAte").value;
-    if (busca) p.set("busca", busca);
-    if (status) p.set("status", status);
-    if (de) p.set("data_de", de);
-    if (ate) p.set("data_ate", ate);
-
-    document.getElementById("linksBody").innerHTML =
-      `<tr><td colspan="8" style="color:#94a3b8;text-align:center;padding:24px">Carregando…</td></tr>`;
-    try {
-      const res = await fetch("/api/monitor_links?" + p.toString());
-      const data = await res.json();
-      TODOS = data.links || [];
-      atualizarStats(data.stats || {});
-      renderizar(TODOS);
-    } catch (e) {
-      document.getElementById("linksBody").innerHTML =
-        `<tr><td colspan="8" style="color:#ef4444;text-align:center;padding:24px">Erro ao carregar.</td></tr>`;
-    }
-  }
-
-  function atualizarStats(s) {
-    document.getElementById("stTotal").textContent = s.total || 0;
-    document.getElementById("stAtivo").textContent = s.ativo || 0;
-    document.getElementById("stUsado").textContent = s.usado || 0;
-    document.getElementById("stExpirado").textContent = s.expirado || 0;
-  }
-
-  function renderizar(lista) {
-    const body = document.getElementById("linksBody");
-    if (!lista.length) {
-      body.innerHTML =
-        `<tr><td colspan="8" style="color:#94a3b8;text-align:center;padding:24px">Nenhum link encontrado.</td></tr>`;
-      return;
-    }
-    body.innerHTML = lista
-      .map((l) => {
-        const b = BADGE[l.status] || BADGE.expirado;
-        const tipo = l.tipo === "REATIVACAO" ? "🔄 Reativação" : "🆕 Novo";
-        let acoes = "";
-        if (l.status === "ativo") {
-          acoes = `<button class="btn-mini" onclick="copiarLink('${l.token}')"><i class="fa-solid fa-copy"></i> Copiar link</button> `;
-        } else if (l.status === "usado") {
-          acoes = `<span style="color:#60a5fa;margin-right:6px">Ficha enviada</span>`;
-        }
-        // Botão Excluir aparece para todos; só admin exclui de fato.
-        acoes += `<button class="btn-mini" title="Excluir link" style="color:#ef4444" onclick="excluirLink(${l.id})"><i class="fa-solid fa-trash"></i></button>`;
-        return `
-      <tr>
-        <td>${l.created_at || "—"}</td>
-        <td>${l.gerado_por_nome || "—"}</td>
-        <td>${fmtCnpj(l.cnpj_cliente)}</td>
-        <td>${l.vendedor || "—"}</td>
-        <td>${tipo}</td>
-        <td>${l.expira_em || "—"}</td>
-        <td><span class="badge" style="color:${b.cor};background:${b.bg}">${b.txt}</span></td>
-        <td>${acoes}</td>
-      </tr>`;
-      })
-      .join("");
-  }
-
-  async function excluirLink(id) {
-    if (!window.IS_ADMIN) {
-      alert(
-        "🔒 Apenas um administrador do Hub pode excluir links.\n" +
-          "Contate o administrador para remover este link.",
-      );
-      return;
-    }
-    if (!confirm("Excluir definitivamente este link? Esta ação não pode ser desfeita.")) return;
-    try {
-      const res = await fetch("/api/links/" + id, { method: "DELETE" });
-      if (res.ok) {
-        carregarLinks();
-      } else {
-        alert("❌ Não foi possível excluir o link.");
-      }
-    } catch (e) {
-      alert("❌ Erro de conexão ao excluir.");
-    }
-  }
-
-  function copiarLink(token) {
-    const url = window.location.origin + "/ficha_cliente?t=" + encodeURIComponent(token);
-    const ta = document.createElement("textarea");
-    ta.value = url;
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand("copy"); alert("✅ Link copiado!"); }
-    catch (e) { prompt("Copie o link:", url); }
-    document.body.removeChild(ta);
-  }
-
-  document.addEventListener("DOMContentLoaded", carregarLinks);
 </script>
+<script src="{{ url_for('static', filename='js/monitor_links.js') }}"></script>
 {% endblock %}

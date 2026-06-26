@@ -7,7 +7,7 @@ import logging
 from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify, session
 from extensions import db
-from models import Usuario, MODULOS_HUB, permissoes_padrao
+from models import Usuario, MODULOS_HUB, ROBOS_HUB, permissoes_padrao
 from utils.auth import admin_required
 from utils.validacao import validar_senha
 
@@ -18,9 +18,10 @@ admin_bp = Blueprint('admin', __name__)
 @admin_bp.route('/admin')
 @admin_required
 def admin():
-    return render_template('admin.html', 
+    return render_template('admin.html',
     usuario_nome=session.get('usuario_nome'),
-    modulos=MODULOS_HUB)
+    modulos=MODULOS_HUB,
+    robos=ROBOS_HUB)
 
 # ══════════════════════════════════════════════════════════════
 # GESTÃO DE USUÁRIOS

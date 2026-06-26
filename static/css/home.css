@@ -422,6 +422,16 @@ body::before {
   animation: pulse 2s infinite;
 }
 
+.badge-developing {
+  color: var(--amber);
+  background: var(--amber-dim);
+  border: 1px solid rgba(217, 119, 6, 0.2);
+}
+
+.badge-developing .dot{
+  background:var(--amber);
+}
+
 .badge-planning {
   color: var(--text-muted);
   background: rgba(148, 163, 184, 0.15);
