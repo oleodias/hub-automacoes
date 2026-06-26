@@ -7,8 +7,9 @@ import logging
 from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify, session
 from extensions import db
-from models import Usuario, MODULOS_HUB, permissoes_padrao
+from models import Usuario, MODULOS_HUB, ROBOS_HUB, permissoes_padrao
 from utils.auth import admin_required
+from utils.validacao import validar_senha
 
 logger = logging.getLogger(__name__)
 
@@ -17,9 +18,10 @@ admin_bp = Blueprint('admin', __name__)
 @admin_bp.route('/admin')
 @admin_required
 def admin():
-    return render_template('admin.html', 
+    return render_template('admin.html',
     usuario_nome=session.get('usuario_nome'),
-    modulos=MODULOS_HUB)
+    modulos=MODULOS_HUB,
+    robos=ROBOS_HUB)
 
 # ══════════════════════════════════════════════════════════════
 # GESTÃO DE USUÁRIOS
@@ -55,8 +57,9 @@ def criar_usuario():
 
     if not nome or not email or not senha:
         return jsonify({'erro': 'Nome, email e senha são obrigatórios.'}), 400
-    if len(senha) < 4:
-        return jsonify({'erro': 'A senha deve ter pelo menos 4 caracteres.'}), 400
+    senha_ok, erro_senha = validar_senha(senha)
+    if not senha_ok:
+        return jsonify({'erro': erro_senha}), 400
     if Usuario.query.filter_by(email=email).first():
         return jsonify({'erro': 'Já existe um usuário com este email.'}), 400
 
@@ -122,8 +125,9 @@ def reset_senha(id):
         return jsonify({'erro': 'Usuário não encontrado.'}), 404
 
     nova_senha = (request.get_json().get('senha') or '').strip()
-    if len(nova_senha) < 4:
-        return jsonify({'erro': 'A senha deve ter pelo menos 4 caracteres.'}), 400
+    senha_ok, erro_senha = validar_senha(nova_senha)
+    if not senha_ok:
+        return jsonify({'erro': erro_senha}), 400
 
     usuario.definir_senha(nova_senha)
     db.session.commit()

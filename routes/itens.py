@@ -70,7 +70,7 @@ def rota_fase1():
             yield f"data: ❌ Erro: {str(e)}\n\n"
             yield "data: [FIM_DO_PROCESSO]\n\n"
         finally:
-            finalizar_execucao()
+            finalizar_execucao(meu_id)
 
     return Response(gerar_logs(), mimetype='text/event-stream')
 
@@ -125,6 +125,6 @@ def run_fase2():
             yield f"data: ❌ Erro: {str(e)}\n\n"
             yield "data: [FIM_DO_PROCESSO]\n\n"
         finally:
-            finalizar_execucao()
+            finalizar_execucao(meu_id)
 
     return Response(gerar_logs(), mimetype='text/event-stream')

@@ -16,15 +16,21 @@ import re
 import json
 from io import BytesIO
 from datetime import datetime
-from flask import Blueprint, render_template, request, jsonify, send_file
+from flask import Blueprint, render_template, request, jsonify, send_file, session
 from werkzeug.utils import secure_filename
 import requests as req_ext
 import uuid as uuid_lib
 
 import banco_cadastros
 from utils.cnpj_ws import consultar_cnpj_ws
-from utils.fila import cadastro_entrar, cadastro_liberar_proximo
-from utils.auth import permissao_required
+from utils.fila import (
+    cadastro_entrar, cadastro_liberar_proximo,
+    fila_cadastro_status_dict, fila_cadastro_reset as _fila_cadastro_reset,
+)
+from utils.n8n_security import resume_url_confiavel, exigir_token_n8n
+from utils.auth import permissao_required, admin_required
+from utils.validacao import eh_uuid_valido
+import banco_links
 from utils.rastreio import iniciar_execucao_robo, finalizar_execucao_robo
 from automacoes.clientes import cadastro_novo
 from automacoes.clientes import cadastro_reativacao
@@ -44,9 +50,112 @@ def cadastro_clientes():
     return render_template('cadastro_clientes.html')
 
 
+@clientes_bp.route('/api/gerar_link_ficha', methods=['POST'])
+@permissao_required('clientes')
+def gerar_link_ficha():
+    """
+    Gera o link da ficha (V-05) e o registra no banco para controle.
+    Só operadores logados com permissão 'clientes' geram links. O front
+    monta a URL final com origin + /ficha_cliente?t=<token>.
+    """
+    dados = request.get_json(silent=True) or {}
+    vendedor   = (dados.get('vendedor')  or '').strip()
+    rep        = (dados.get('rep')       or '').strip()
+    cap        = (dados.get('cap')       or '').strip()
+    tipo       = (dados.get('tipo')      or '').strip()
+    codigo_nl  = (dados.get('codigo_nl') or '').strip()
+    cnpj_cliente = re.sub(r'\D', '', dados.get('cnpj_cliente') or '')
+
+    if not vendedor or not rep or not cap or not tipo:
+        return jsonify({'erro': 'Preencha vendedor, representante, captação e tipo.'}), 400
+    if len(cnpj_cliente) != 14:
+        return jsonify({'erro': 'Informe um CNPJ válido (14 dígitos) do cliente.'}), 400
+
+    token = banco_links.criar_link(
+        cnpj_cliente=cnpj_cliente,
+        vendedor=vendedor, representante=rep, captacao=cap,
+        tipo=tipo, codigo_nl=codigo_nl,
+        gerado_por_id=session.get('usuario_id'),
+        gerado_por_nome=session.get('usuario_nome', 'Sistema'),
+    )
+    return jsonify({'token': token})
+
+
 @clientes_bp.route('/ficha_cliente')
 def ficha_cliente():
-    return render_template('ficha_cliente.html')
+    # Modo correção: o link vem do e-mail de reprovação (N8N) com
+    # ?correcao=<uuid>. Continua protegido pelo conhecimento do UUID,
+    # como antes — não exige token.
+    if request.args.get('correcao'):
+        return render_template('ficha_cliente.html', ficha_params=None, ficha_token='')
+
+    # Nova ficha: exige um token de link válido, dentro da validade e
+    # ainda não utilizado.
+    token = request.args.get('t', '')
+    link, motivo = banco_links.validar_link(token)
+    if motivo:
+        return render_template('ficha_link_invalido.html', motivo=motivo), 403
+
+    ficha_params = {
+        'vendedor':  link.vendedor or '',
+        'rep':       link.representante or '',
+        'cap':       link.captacao or '',
+        'tipo':      link.tipo or '',
+        'codigo_nl': link.codigo_nl or '',
+    }
+    return render_template('ficha_cliente.html', ficha_params=ficha_params, ficha_token=token)
+
+
+# ══════════════════════════════════════════════════════════════
+# DISPARO AO N8N (reutilizado pelo recebimento e pelo reenvio)
+# ══════════════════════════════════════════════════════════════
+
+def _disparar_para_n8n(submission_uuid, payload_str, docs_permitidos=None):
+    """
+    Envia (ou reenvia) uma ficha ao webhook do N8N, anexando os arquivos
+    salvos em uploads_fichas/<uuid>. Se 'docs_permitidos' for informado,
+    anexa só esses documentos; senão, anexa todos os da pasta.
+
+    Retorna (ok, erro):
+        ok=True  → N8N recebeu (HTTP < 400)
+        ok=False → falha (N8N fora do ar, timeout, HTTP de erro); 'erro' = msg
+    """
+    n8n_url = os.getenv('N8N_WEBHOOK_CADASTRO')
+    if not n8n_url:
+        return False, 'N8N_WEBHOOK_CADASTRO não configurado.'
+
+    arquivos_abertos = {}
+    pasta = os.path.join('uploads_fichas', submission_uuid)
+    if os.path.exists(pasta):
+        for arquivo in os.listdir(pasta):
+            nome_sem_ext = os.path.splitext(arquivo)[0]
+            if docs_permitidos is not None and nome_sem_ext not in docs_permitidos:
+                continue
+            caminho = os.path.join(pasta, arquivo)
+            arquivos_abertos[nome_sem_ext] = (
+                arquivo, open(caminho, 'rb'), 'application/octet-stream'
+            )
+
+    try:
+        resposta = req_ext.post(
+            n8n_url, data=payload_str,
+            files=arquivos_abertos if arquivos_abertos else None,
+            timeout=60,
+        )
+        if resposta.status_code >= 400:
+            logger.error(f"[N8N] HTTP {resposta.status_code} | UUID: {submission_uuid}")
+            return False, f'N8N respondeu HTTP {resposta.status_code}'
+        logger.info(f"[N8N] Status: {resposta.status_code} | UUID: {submission_uuid}")
+        return True, None
+    except Exception as e:
+        logger.error(f"[N8N] Erro ao disparar webhook: {e}")
+        return False, str(e)
+    finally:
+        for _nome, (_, fp, _) in arquivos_abertos.items():
+            try:
+                fp.close()
+            except Exception:
+                pass
 
 
 # ══════════════════════════════════════════════════════════════
@@ -59,6 +168,8 @@ def receber_ficha():
     # ── 1. Verificar se é correção ─────────────────────────────
     uuid_existente = request.form.get('uuid', '').strip()
     is_correcao    = bool(uuid_existente)
+    link_ficha     = None
+    ficha_token    = ''
 
     if is_correcao:
         sub_original = banco_cadastros.buscar_submissao(uuid_existente)
@@ -67,6 +178,17 @@ def receber_ficha():
         submission_uuid = uuid_existente
         docs_originais  = sub_original['docs_enviados']
     else:
+        # Ficha nova: exige um token de link válido (V-05), dentro da
+        # validade e ainda não utilizado.
+        ficha_token = request.form.get('ficha_token', '')
+        link_ficha, motivo = banco_links.validar_link(ficha_token)
+        if motivo:
+            msg = (
+                'Este link já foi utilizado para enviar uma ficha.'
+                if motivo == 'usado'
+                else 'Este link é inválido ou expirou. Solicite um novo link ao seu vendedor.'
+            )
+            return jsonify({'status': 'erro', 'mensagem': msg}), 403
         submission_uuid = str(uuid_lib.uuid4())
         docs_originais  = []
 
@@ -102,8 +224,29 @@ def receber_ficha():
         'farma_email':            request.form.get('farma_email',             ''),
     }
 
+    # Em ficha nova, os dados de rastreio vêm do LINK (fonte confiável),
+    # não do formulário — assim ninguém adultera vendedor/tipo/etc.
+    if not is_correcao and link_ficha:
+        campos['vendedor']      = link_ficha.vendedor or campos['vendedor']
+        campos['representante'] = link_ficha.representante or campos['representante']
+        campos['captacao']      = link_ficha.captacao or campos['captacao']
+        campos['tipo_cadastro'] = link_ficha.tipo or campos['tipo_cadastro']
+        campos['codigo_nl']     = link_ficha.codigo_nl or campos['codigo_nl']
+
     # ── 2.1. Enriquecimento via CNPJ.ws ───────────────────────
     cnpj_limpo = re.sub(r'\D', '', campos['cnpj'])
+
+    # O CNPJ preenchido na ficha PRECISA bater com o CNPJ do link.
+    # Se não bater, recusa de imediato (não salva, não consome o link)
+    # e orienta a pedir um novo link ao vendedor.
+    if (not is_correcao and link_ficha and link_ficha.cnpj_cliente
+            and link_ficha.cnpj_cliente != cnpj_limpo):
+        return jsonify({
+            'status': 'erro',
+            'mensagem': 'O CNPJ preenchido não corresponde ao CNPJ deste link. '
+                        'Verifique o número ou solicite um novo link ao seu vendedor.'
+        }), 403
+
     dados_cnpj_ws = consultar_cnpj_ws(cnpj_limpo)
 
     campos['cnpj_limpo']               = cnpj_limpo
@@ -159,6 +302,9 @@ def receber_ficha():
             submission_uuid, campos['cnpj'], campos['razao_social'],
             campos, docs_finais
         )
+        # Marca o link como usado (o CNPJ já foi validado contra o do link).
+        if link_ficha:
+            banco_links.marcar_usado(ficha_token, submission_uuid, False)
 
     # ── 6. Nomes legíveis dos docs ─────────────────────────────
     nomes_legiveis = {
@@ -185,39 +331,22 @@ def receber_ficha():
         'docs_adicionados':   nomes(docs_adicionados),
     }
 
-    # ── 8. Disparar para o N8N ─────────────────────────────────
-    N8N_WEBHOOK_URL = os.getenv('N8N_WEBHOOK_CADASTRO')
-    payload_str     = {k: str(v) for k, v in payload_n8n.items()}
+    # ── 8. Disparar para o N8N (com controle anti-ficha-órfã) ──
+    payload_str = {k: str(v) for k, v in payload_n8n.items()}
+    # Guarda o payload para permitir reenvio pelo Monitor se o N8N falhar.
+    banco_cadastros.salvar_payload_n8n(submission_uuid, payload_str)
 
-    arquivos_abertos = {}
-    pasta = os.path.join('uploads_fichas', submission_uuid)
+    ok, erro = _disparar_para_n8n(submission_uuid, payload_str, docs_finais)
+    if ok:
+        banco_cadastros.marcar_envio_n8n(submission_uuid, 'enviado')
+    else:
+        # A ficha JÁ está salva no banco. Marcamos o envio como falho para o
+        # operador reenviar pelo Monitor — assim a ficha não fica "órfã".
+        banco_cadastros.marcar_envio_n8n(submission_uuid, 'falhou', erro)
 
-    if os.path.exists(pasta):
-        for arquivo in os.listdir(pasta):
-            nome_sem_ext = os.path.splitext(arquivo)[0]
-            caminho      = os.path.join(pasta, arquivo)
-            if nome_sem_ext in docs_finais:
-                arquivos_abertos[nome_sem_ext] = (
-                    arquivo, open(caminho, 'rb'), 'application/octet-stream'
-                )
-
-    try:
-        resposta_n8n = req_ext.post(
-            N8N_WEBHOOK_URL, data=payload_str,
-            files=arquivos_abertos if arquivos_abertos else None,
-            timeout=60
-        )
-        logger.info(f"[N8N] Status: {resposta_n8n.status_code} | UUID: {submission_uuid}")
-        return jsonify({'status': 'ok', 'uuid': submission_uuid})
-    except Exception as e:
-        logger.error(f"[N8N] Erro ao disparar webhook: {e}")
-        return jsonify({'status': 'erro', 'mensagem': str(e)}), 500
-    finally:
-        for nome, (_, fp, _) in arquivos_abertos.items():
-            try:
-                fp.close()
-            except Exception:
-                pass
+    # Para o vendedor, a ficha foi recebida nos dois casos (ela está salva).
+    # Se o N8N estiver fora do ar, a equipe reenvia internamente pelo Monitor.
+    return jsonify({'status': 'ok', 'uuid': submission_uuid})
 
 
 # ══════════════════════════════════════════════════════════════
@@ -240,6 +369,69 @@ def api_ficha(submission_uuid):
 
 
 # ══════════════════════════════════════════════════════════════
+# REENVIAR FICHA AO N8N (anti-ficha-órfã — operador no Monitor)
+# ══════════════════════════════════════════════════════════════
+
+@clientes_bp.route('/api/reenviar_ficha/<uuid>', methods=['POST'])
+@permissao_required('monitor')
+def reenviar_ficha(uuid):
+    """
+    Reenvia ao N8N uma ficha cujo envio falhou. Usa o payload guardado e
+    reanexa os documentos da pasta. Atualiza o status do envio.
+    """
+    if not eh_uuid_valido(uuid):
+        return jsonify({'erro': 'UUID inválido.'}), 400
+
+    sub = banco_cadastros.buscar_submissao(uuid)
+    if not sub:
+        return jsonify({'erro': 'Submissão não encontrada.'}), 404
+
+    payload = banco_cadastros.buscar_payload_n8n(uuid)
+    if not payload:
+        return jsonify({'erro': 'Não há dados de envio guardados para esta ficha.'}), 400
+
+    ok, erro = _disparar_para_n8n(uuid, payload, sub.get('docs_enviados'))
+    if ok:
+        banco_cadastros.marcar_envio_n8n(uuid, 'enviado')
+        return jsonify({'status': 'ok'})
+
+    banco_cadastros.marcar_envio_n8n(uuid, 'falhou', erro)
+    return jsonify({'status': 'erro', 'mensagem': erro or 'Falha ao reenviar.'}), 502
+
+
+# ══════════════════════════════════════════════════════════════
+# MONITOR DE LINKS GERADOS (controle/rastreio)
+# ══════════════════════════════════════════════════════════════
+
+@clientes_bp.route('/monitor_links')
+@permissao_required('monitor')
+def monitor_links():
+    return render_template('monitor_links.html')
+
+
+@clientes_bp.route('/api/monitor_links')
+@permissao_required('monitor')
+def api_monitor_links():
+    links = banco_links.listar_links(
+        busca    = request.args.get('busca'),
+        status   = request.args.get('status'),
+        data_de  = request.args.get('data_de'),
+        data_ate = request.args.get('data_ate'),
+    )
+    stats = banco_links.estatisticas()
+    return jsonify({'links': links, 'stats': stats})
+
+
+@clientes_bp.route('/api/links/<int:link_id>', methods=['DELETE'])
+@admin_required
+def excluir_link(link_id):
+    """Exclui um link gerado. Apenas administradores do Hub (admin_required)."""
+    if banco_links.excluir_link(link_id):
+        return jsonify({'status': 'ok'})
+    return jsonify({'erro': 'Link não encontrado.'}), 404
+
+
+# ══════════════════════════════════════════════════════════════
 # Aprovação / Reprovação (farmacêutica via email)
 # ══════════════════════════════════════════════════════════════
 
@@ -255,6 +447,10 @@ def confirmar_acao():
 
     if not resume_url:
         return "Parâmetro resumeUrl ausente.", 400
+
+    # Anti-SSRF (V-04): só seguimos se a resume_url for do N8N oficial.
+    if not resume_url_confiavel(resume_url):
+        return "Parâmetro resumeUrl inválido.", 400
 
     try:
         if acao == 'aprovar':
@@ -353,8 +549,20 @@ def api_monitor_cadastros():
 @clientes_bp.route('/download_doc/<uuid>/<doc_nome>')
 @permissao_required('monitor')
 def download_doc(uuid, doc_nome):
-    pasta_cliente = os.path.join(os.getcwd(), 'uploads_fichas', uuid)
-    if os.path.exists(pasta_cliente):
+    # O 'uuid' vem da URL e é usado para montar um caminho de pasta.
+    # Sem validar, alguém poderia passar algo como "../../etc" e escapar
+    # da pasta de uploads (path traversal). Exigimos um UUID bem-formado.
+    if not eh_uuid_valido(uuid):
+        return "❌ Documento não encontrado.", 404
+
+    base = os.path.join(os.getcwd(), 'uploads_fichas')
+    pasta_cliente = os.path.join(base, uuid)
+    # Defesa extra: garante que o caminho final está realmente dentro da
+    # pasta de uploads, mesmo que algo escape da validação acima.
+    if os.path.commonpath([os.path.realpath(pasta_cliente), os.path.realpath(base)]) != os.path.realpath(base):
+        return "❌ Documento não encontrado.", 404
+
+    if os.path.isdir(pasta_cliente):
         for arquivo in os.listdir(pasta_cliente):
             nome_sem_extensao = os.path.splitext(arquivo)[0]
             if nome_sem_extensao == doc_nome:
@@ -520,17 +728,23 @@ def exportar_fichas():
 # ══════════════════════════════════════════════════════════════
 
 @clientes_bp.route('/fila_cadastro/entrar', methods=['POST'])
+@exigir_token_n8n
 def fila_cadastro_entrar():
     dados      = request.get_json()
     resume_url = dados.get('resume_url', '')
     if not resume_url:
         return jsonify({'erro': 'resume_url obrigatório'}), 400
 
+    # Anti-SSRF (V-04): a URL é guardada e depois "visitada" pelo Hub.
+    if not resume_url_confiavel(resume_url):
+        return jsonify({'erro': 'resume_url inválida'}), 400
+
     novo_id, posicao, sua_vez = cadastro_entrar(resume_url)
     return jsonify({'id': novo_id, 'posicao': posicao, 'sua_vez': sua_vez})
 
 
 @clientes_bp.route('/fila_cadastro/liberar_proximo', methods=['POST'])
+@exigir_token_n8n
 def fila_cadastro_liberar():
     cadastro_liberar_proximo()
     return jsonify({'status': 'ok'})
@@ -543,15 +757,7 @@ def fila_cadastro_liberar():
 @clientes_bp.route('/fila_cadastro/status', methods=['GET'])
 def fila_cadastro_status():
     """Mostra o estado atual da fila de cadastro — útil pra debug."""
-    from utils.fila import _fila_cadastro, _cadastro_em_execucao
-    return jsonify({
-        "em_execucao": _cadastro_em_execucao,
-        "tamanho_fila": len(_fila_cadastro),
-        "itens": [
-            {"id": item["id"], "resume_url": item["resume_url"][:80] + "..."}
-            for item in _fila_cadastro
-        ]
-    })
+    return jsonify(fila_cadastro_status_dict())
 
 
 @clientes_bp.route('/fila_cadastro/reset', methods=['POST'])
@@ -562,20 +768,12 @@ def fila_cadastro_reset():
       - Tem execuções fantasma que nunca vão terminar
 
     O que faz:
-      1. Limpa toda a fila (remove todos os itens pendentes)
-      2. Reseta a flag _cadastro_em_execucao pra False
-      3. NÃO acorda nenhum Wait node do N8N (as execuções
+      1. Remove TODAS as linhas da fila de cadastro no banco
+         (pendentes e a que estava executando)
+      2. NÃO acorda nenhum Wait node do N8N (as execuções
          pendentes no N8N vão expirar sozinhas pelo timeout)
     """
-    from utils.fila import _fila_cadastro, _fila_cadastro_lock
-    import utils.fila as fila_module
-
-    with _fila_cadastro_lock:
-        qtd_removidos = len(_fila_cadastro)
-        _fila_cadastro.clear()
-        fila_module._cadastro_em_execucao = False
-
-    logger.warning(f"[FILA] ⚠️ RESET forçado! {qtd_removidos} item(ns) removido(s) da fila.")
+    qtd_removidos = _fila_cadastro_reset()
 
     return jsonify({
         "status": "ok",
@@ -594,6 +792,7 @@ def fila_cadastro_reset():
 # ══════════════════════════════════════════════════════════════
 
 @clientes_bp.route('/n8n_iniciar_cadastro', methods=['POST'])
+@exigir_token_n8n
 def n8n_iniciar_cadastro():
     dados_n8n = request.json or {}
 
@@ -734,6 +933,7 @@ def n8n_iniciar_cadastro():
 # ══════════════════════════════════════════════════════════════
 
 @clientes_bp.route('/n8n_iniciar_reativacao', methods=['POST'])
+@exigir_token_n8n
 def n8n_iniciar_reativacao():
     dados_n8n = request.json or {}
 

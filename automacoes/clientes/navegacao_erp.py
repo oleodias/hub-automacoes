@@ -112,7 +112,7 @@ def navegar_via_favoritos(driver):
         xpath_link = "//ul[@id='header-menu-favoritos']//a[contains(text(), 'Pessoas geral')]"
         link_pessoasgeral = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_link)))
         link_pessoasgeral.click()
-        time.sleep(4) 
+        time.sleep(1.5) 
         
         print("📍 Chegamos na tela de Pessoas Geral!")
         return True

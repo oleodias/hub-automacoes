@@ -102,7 +102,72 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     });
   }
+
+  // ── Máscara de CNPJ no campo do cliente ──
+  const inputCnpjCliente = document.getElementById("linkCnpjCliente");
+  if (inputCnpjCliente) {
+    inputCnpjCliente.addEventListener("input", (e) => {
+      let v = e.target.value.replace(/\D/g, "").substring(0, 14);
+      v = v.replace(/^(\d{2})(\d)/, "$1.$2");
+      v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+      v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
+      v = v.replace(/(\d{4})(\d)/, "$1-$2");
+      e.target.value = v;
+
+      // Quando completar 14 dígitos, consulta a Receita (cnpj.ws).
+      const digits = v.replace(/\D/g, "");
+      const info = document.getElementById("linkCnpjInfo");
+      if (digits.length === 14) {
+        if (digits !== cnpjLinkUltimo) {
+          cnpjLinkUltimo = digits;
+          consultarCnpjLink(digits);
+        }
+      } else {
+        cnpjLinkUltimo = "";
+        cnpjLinkState = "idle";
+        if (info) info.style.display = "none";
+      }
+    });
+  }
 });
+
+// ════════════════════════════════════════════════════════════════════
+// CONSULTA AUTOMÁTICA DO CNPJ (na geração do link)
+// ════════════════════════════════════════════════════════════════════
+let cnpjLinkState = "idle"; // idle | consultando | ok | notfound | erro
+let cnpjLinkUltimo = "";
+
+async function consultarCnpjLink(digits) {
+  const info = document.getElementById("linkCnpjInfo");
+  if (!info) return;
+  cnpjLinkState = "consultando";
+  info.style.display = "block";
+  info.style.color = "#94a3b8";
+  info.textContent = "🔎 Consultando CNPJ na Receita...";
+  try {
+    const res = await fetch("/consulta_cnpj/" + digits);
+    const data = await res.json();
+    if (res.ok && !data.erro) {
+      cnpjLinkState = "ok";
+      info.style.color = "#10b981";
+      info.textContent = "✓ " + (data.razao_social || "CNPJ encontrado");
+    } else if (res.status === 429 || res.status >= 500) {
+      // API instável/limite: não bloqueia a geração do link
+      cnpjLinkState = "erro";
+      info.style.color = "#f59e0b";
+      info.textContent =
+        "⚠️ " + (data.message || "Não foi possível consultar agora.");
+    } else {
+      cnpjLinkState = "notfound";
+      info.style.color = "#ef4444";
+      info.textContent = "✗ CNPJ não encontrado. Verifique os números.";
+    }
+  } catch (e) {
+    cnpjLinkState = "erro";
+    info.style.color = "#f59e0b";
+    info.textContent = "⚠️ Não foi possível consultar o CNPJ agora.";
+  }
+}
 
 // ════════════════════════════════════════════════════════════════════
 // MODAL DE SELEÇÃO
@@ -186,7 +251,7 @@ function filtrarListaModal(filtro) {
 // ════════════════════════════════════════════════════════════════════
 // GERAÇÃO DO LINK MÁGICO
 // ════════════════════════════════════════════════════════════════════
-function gerarLinkCliente() {
+async function gerarLinkCliente() {
   const vendedor = document.getElementById("linkVendedor").value.trim();
   const representante = document
     .getElementById("linkRepresentante")
@@ -194,10 +259,27 @@ function gerarLinkCliente() {
   const captacao = document.getElementById("linkCaptacao").value;
   const tipo = document.getElementById("linkTipoCadastro").value;
   const codigoNl = document.getElementById("linkCodigoNl").value.trim();
+  const cnpjCliente = document
+    .getElementById("linkCnpjCliente")
+    .value.replace(/\D/g, "");
 
   // ── Validação básica ──
   if (!vendedor || !representante || !captacao || !tipo) {
     alert("⚠️ Preencha todos os campos antes de gerar o link!");
+    return;
+  }
+
+  // ── CNPJ do cliente é obrigatório e deve ter 14 dígitos ──
+  if (cnpjCliente.length !== 14) {
+    alert("⚠️ Informe um CNPJ válido do cliente (14 dígitos).");
+    document.getElementById("linkCnpjCliente").focus();
+    return;
+  }
+
+  // ── Se a Receita não encontrou o CNPJ, não gera o link ──
+  if (cnpjLinkState === "notfound") {
+    alert("⚠️ O CNPJ informado não foi encontrado na Receita. Verifique os números.");
+    document.getElementById("linkCnpjCliente").focus();
     return;
   }
 
@@ -216,17 +298,35 @@ function gerarLinkCliente() {
     return;
   }
 
-  // ── Monta a URL ──
-  const baseUrl = window.location.origin + "/ficha_cliente";
-  let urlCompleta =
-    `${baseUrl}?vendedor=${encodeURIComponent(vendedor)}` +
-    `&rep=${encodeURIComponent(representante)}` +
-    `&cap=${encodeURIComponent(captacao)}` +
-    `&tipo=${encodeURIComponent(tipo)}`;
-
-  if (tipo === "REATIVACAO") {
-    urlCompleta += `&codigo_nl=${encodeURIComponent(codigoNl)}`;
+  // ── Pede ao servidor um token assinado e monta a URL ──
+  // O link agora carrega um "selo" assinado pelo Hub, válido por 7 dias.
+  let token;
+  try {
+    const resp = await fetch("/api/gerar_link_ficha", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        vendedor,
+        rep: representante,
+        cap: captacao,
+        tipo,
+        codigo_nl: tipo === "REATIVACAO" ? codigoNl : "",
+        cnpj_cliente: cnpjCliente,
+      }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      alert("⚠️ " + (data.erro || "Não foi possível gerar o link."));
+      return;
+    }
+    token = data.token;
+  } catch (e) {
+    alert("❌ Erro de conexão ao gerar o link. Tente novamente.");
+    return;
   }
+
+  const urlCompleta =
+    window.location.origin + "/ficha_cliente?t=" + encodeURIComponent(token);
 
   // Mostra o link na tela
   document.getElementById("urlMágica").value = urlCompleta;

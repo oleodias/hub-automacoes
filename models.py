@@ -20,6 +20,7 @@ MODULOS_HUB = {
     'fornecedor':  'Cadastro de Fornecedor',
     'clientes':    'Cadastro de Clientes',
     'cnpj':        'Consulta CNPJ',
+    'cep':         'Cadastro de CEP',
     'monitor':     'Monitor de Cadastros',
     'notas':       'Controle de Notas Fiscais',
     'lancamento_notas': 'Lançamento de Notas',
@@ -29,6 +30,22 @@ MODULOS_HUB = {
 def permissoes_padrao():
     """Retorna dict com todos os módulos liberados (padrão para novos usuários)."""
     return {modulo: True for modulo in MODULOS_HUB}
+
+
+# ── ROBÔS DO HUB (lista central p/ filtros de histórico) ─────
+# Chaves são EXATAMENTE os nomes passados em iniciar_execucao_robo(...).
+# Ao criar um robô novo, adicione aqui e o filtro do histórico
+# (admin e meu_historico) já passa a listá-lo automaticamente.
+
+ROBOS_HUB = {
+    'itens_fase1':        'Itens — Fase 1',
+    'itens_fase2':        'Itens — Fase 2',
+    'mdf':                'Relatório MDF-e',
+    'fornecedor':         'Fornecedor',
+    'cliente_novo':       'Cliente Novo',
+    'cliente_reativacao': 'Cliente Reativação',
+    'cadastro_cep':       'Cadastro de CEP',
+}
 
 SETORES_CIAMED = [
     'TI',
@@ -158,11 +175,68 @@ class Submissao(db.Model):
     docs_enviados = db.Column(db.JSON, default=list)
     motivos_reprovacao = db.Column(db.JSON, default=list)
     erro_robo = db.Column(db.JSON, nullable=True)
+
+    # Controle do envio ao N8N (C2/A-05). A ficha é salva ANTES de chamar o
+    # N8N; se o webhook falha (N8N fora do ar), a ficha ficaria "órfã" — salva
+    # mas nunca processada. Estes campos deixam isso visível no Monitor para o
+    # operador reenviar com 1 clique. 'enviado' é o estado normal; 'falhou'
+    # sinaliza que precisa reenviar. n8n_payload guarda o que enviar de novo.
+    envio_n8n   = db.Column(db.String(20), default='enviado', server_default='enviado')
+    n8n_erro    = db.Column(db.Text, nullable=True)
+    n8n_payload = db.Column(db.JSON, nullable=True)
+
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
     def __repr__(self):
         return f'<Submissao {self.uuid[:8]}... | {self.razao_social} | {self.status}>'
+
+
+# ══════════════════════════════════════════════════════════════
+# MODELO: Link de Ficha gerado (controle/rastreio de links)
+# ══════════════════════════════════════════════════════════════
+
+class LinkFicha(db.Model):
+    """
+    Registra cada link de ficha gerado no Hub, para controle e auditoria.
+
+    Permite responder: quem gerou o link, para qual cliente (CNPJ), quando,
+    qual a validade e se já foi usado. O 'token' é o segredo que vai na URL
+    (?t=token) — sem ele não dá para abrir nem enviar uma ficha nova.
+
+    Status (derivado): 'ativo' | 'usado' | 'expirado'.
+    """
+
+    __tablename__ = 'links_ficha'
+
+    id    = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.String(64), unique=True, nullable=False, index=True)
+
+    # Cliente para quem o link foi gerado (CNPJ só com dígitos)
+    cnpj_cliente = db.Column(db.String(14), nullable=False)
+
+    # Quem gerou (operador logado) — pode ser diferente do vendedor
+    gerado_por_id   = db.Column(db.Integer)
+    gerado_por_nome = db.Column(db.String(150))
+
+    # Dados de rastreio que o link carrega
+    vendedor      = db.Column(db.String(255))
+    representante = db.Column(db.String(255))
+    captacao      = db.Column(db.String(50))
+    tipo          = db.Column(db.String(20))   # 'NOVO' | 'REATIVACAO'
+    codigo_nl     = db.Column(db.String(50))
+
+    # Validade e uso
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    expira_em  = db.Column(db.DateTime, nullable=False)
+    usado_em   = db.Column(db.DateTime, nullable=True)
+    submission_uuid = db.Column(db.String(36), nullable=True)
+
+    # Alerta: o CNPJ preenchido na ficha não bateu com o do link
+    cnpj_divergente = db.Column(db.Boolean, default=False)
+
+    def __repr__(self):
+        return f'<LinkFicha {self.token[:8]}... | {self.cnpj_cliente} | por {self.gerado_por_nome}>'
     
 
 # ══════════════════════════════════════════════════════════════
@@ -224,7 +298,55 @@ class Execucao(db.Model):
 
     def __repr__(self):
         return f'<Execucao {self.id} | {self.robo} | {self.status}>'
-    
+
+
+# ══════════════════════════════════════════════════════════════
+# MODELO: Fila de Execução (controle "um robô por vez")
+# ══════════════════════════════════════════════════════════════
+
+class FilaExecucao(db.Model):
+    """
+    Fila persistente no banco para garantir "um robô por vez", mesmo com
+    vários workers/containers (resolve A-01).
+
+    Há duas filas, separadas pela coluna 'recurso':
+      - 'rpa'      → robôs de itens / MDF / fornecedor
+      - 'cadastro' → fluxo de cadastro de clientes (N8N)
+
+    Como a "vez" é definida no banco (e não na memória de um processo),
+    qualquer worker enxerga a mesma fila. A coluna 'iniciado_em' alimenta
+    o watchdog: uma execução parada além do tempo-limite é considerada
+    travada e liberada automaticamente.
+    """
+
+    __tablename__ = 'fila_execucao'
+
+    # id autoincrement define a ORDEM (FIFO) de chegada.
+    id = db.Column(db.BigInteger, primary_key=True)
+
+    # token: identificador público entregue a quem entra na fila.
+    token = db.Column(db.String(36), nullable=False, unique=True)
+
+    # recurso disputado: 'rpa' ou 'cadastro'
+    recurso = db.Column(db.String(30), nullable=False)
+
+    # status: 'aguardando' ou 'executando'
+    status = db.Column(db.String(20), nullable=False, default='aguardando')
+
+    # usado só pela fila de cadastro (URL que acorda o Wait node do N8N)
+    resume_url = db.Column(db.Text, nullable=True)
+
+    criado_em   = db.Column(db.DateTime, default=datetime.now, nullable=False)
+    iniciado_em = db.Column(db.DateTime, nullable=True)
+
+    # Índice para achar rápido "quem está aguardando/executando neste recurso".
+    __table_args__ = (
+        db.Index('ix_fila_execucao_recurso_status', 'recurso', 'status'),
+    )
+
+    def __repr__(self):
+        return f'<FilaExecucao {self.token} | {self.recurso} | {self.status}>'
+
 
 # ══════════════════════════════════════════════════════════════
 # MODELO: Lançamento de Nota
@@ -249,8 +371,21 @@ class LancamentoNota(db.Model):
 
     __tablename__ = 'lancamentos_notas'
 
+    # Índice único PARCIAL: impede duas notas ATIVAS com a mesma chave de
+    # acesso (na_fila/executando/concluida/a_rever). Notas 'cancelada' ficam
+    # de fora, então é possível reenviar uma nota depois de cancelar a antiga.
+    # O filtro é específico do PostgreSQL (postgresql_where).
+    __table_args__ = (
+        db.Index(
+            'uq_lancamentos_notas_chave_ativa',
+            'chave_acesso',
+            unique=True,
+            postgresql_where=db.text("status <> 'cancelada' AND chave_acesso IS NOT NULL"),
+        ),
+    )
+
     id              = db.Column(db.Integer, primary_key=True)
-    chave_acesso    = db.Column(db.String(44), index=True)   # SEM unique, index só para busca rápida
+    chave_acesso    = db.Column(db.String(44), index=True)   # índice de busca; unicidade via índice parcial acima
     numero_nota     = db.Column(db.String(20))
     serie           = db.Column(db.String(5))
     tipo_nota       = db.Column(db.String(20), default='danfe')
@@ -424,6 +559,9 @@ class NotasFornecedor(db.Model):
 
     # ── Campos v2 ──────────────────────────────────────────────
     retencao_padrao = db.Column(db.Boolean, default=False)
+    # Lista de TIPOS de retenção marcados como padrão (ex: ["inss", "iss"]).
+    # O código em routes/notas.py lê/grava isto como lista JSON.
+    retencoes_padrao = db.Column(db.JSON, default=list)
     valor_medio     = db.Column(db.Numeric(12, 2), nullable=True)
     iniciado_em     = db.Column(db.String(7), nullable=True)   # "2026-05"
     observacoes     = db.Column(db.Text, nullable=True)

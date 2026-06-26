@@ -25,7 +25,9 @@ uploads_fichas/
 
 # ── LOGS: gerados em runtime, não são código ─────────────────
 Logs/
+logs/
 *.log
+*.log.*
 
 # ── SELENIUM: perfil do Chrome gerado pelo robô ─────────────
 # (essa pasta sozinha tem centenas de MB de lixo)
@@ -34,6 +36,13 @@ chrome_perfil/
 # ── XMLS DE ENTRADA: dados temporários do robô ──────────────
 XML_Entrada/*.xml
 XML_Entrada/*.json
+
+# ── EXPORTS DE WORKFLOW DO N8N ───────────────────────────────
+# Esses .json expoem IPs internos e a estrutura dos fluxos.
+# Guarde-os num local privado, NUNCA no repositorio.
+Cadastro e Reativação de Clientes*.json
+*workflow*.json
+*n8n*.json
 
 # ── DOCKER: volumes locais (se existirem) ────────────────────
 docker-data/

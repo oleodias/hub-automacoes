@@ -69,7 +69,7 @@ def executar(dados_cliente):
 
         btn_pesquisar = driver.find_element(By.ID, "subFrmPsPesquisaPessoa:btnPesquisar")
         driver.execute_script("arguments[0].click();", btn_pesquisar)
-        time.sleep(3)
+        time.sleep(1.5) # Respiro para o ERP processar a pesquisa
 
         # ── FASE 1: DADOS BÁSICOS ──────────────────────────
         print("> ✍️ Preenchendo a Ficha Cadastral (Fase 1/4 - Dados Básicos)...")

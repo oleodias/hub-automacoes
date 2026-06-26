@@ -1,0 +1,161 @@
+{% extends "base.html" %} {% block title %}Links Gerados — Hub Ciamed{% endblock
+%} {% block css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/monitor_links.css') }}"
+/>
+{% endblock %} {% block navbar_title %}Hub de Automações{% endblock %} {% block
+content %}
+<div id="tela-links">
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="left">
+      <button
+        class="btn-back"
+        onclick="window.location.href = '/'"
+        title="Voltar"
+      >
+        <i class="fa-solid fa-arrow-left" style="font-size: 13px"></i>
+      </button>
+      <div class="page-title">
+        Links Gerados
+        <span>Controle dos links de ficha gerados</span>
+      </div>
+    </div>
+    <button class="btn-refresh" onclick="carregarLinks()" title="Atualizar">
+      <i class="fa-solid fa-rotate-right"></i> Atualizar
+    </button>
+  </div>
+
+  <!-- STATS ROW -->
+  <div class="stats-row">
+    <div class="stat-item">
+      <div
+        class="stat-icon"
+        style="background: var(--teal-dim); color: var(--teal)"
+      >
+        <i class="fa-solid fa-link"></i>
+      </div>
+      <div>
+        <div class="stat-value" id="stTotal">—</div>
+        <div class="stat-label">Total</div>
+      </div>
+    </div>
+    <div class="stat-item">
+      <div
+        class="stat-icon"
+        style="background: var(--green-dim); color: var(--green)"
+      >
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <div>
+        <div class="stat-value" id="stAtivo">—</div>
+        <div class="stat-label">Ativos</div>
+      </div>
+    </div>
+    <div class="stat-item">
+      <div
+        class="stat-icon"
+        style="background: var(--blue-dim); color: var(--blue)"
+      >
+        <i class="fa-solid fa-paper-plane"></i>
+      </div>
+      <div>
+        <div class="stat-value" id="stUsado">—</div>
+        <div class="stat-label">Usados</div>
+      </div>
+    </div>
+    <div class="stat-item">
+      <div
+        class="stat-icon"
+        style="background: rgba(148, 163, 184, 0.12); color: var(--faint)"
+      >
+        <i class="fa-solid fa-clock"></i>
+      </div>
+      <div>
+        <div class="stat-value" id="stExpirado">—</div>
+        <div class="stat-label">Expirados</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="filtros-card">
+    <div class="filtros-row">
+      <div class="filtro-group" style="flex: 2; min-width: 220px">
+        <label>Buscar</label>
+        <div class="search-wrap">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input
+            id="fBusca"
+            type="text"
+            placeholder="CNPJ, vendedor ou quem gerou"
+            onkeydown="if(event.key==='Enter') carregarLinks()"
+          />
+        </div>
+      </div>
+      <div class="filtro-group">
+        <label>Status</label>
+        <select id="fStatus">
+          <option value="">Todos os status</option>
+          <option value="ativo">Ativos</option>
+          <option value="usado">Usados</option>
+          <option value="expirado">Expirados</option>
+        </select>
+      </div>
+      <div class="filtro-group">
+        <label>Data de</label>
+        <input id="fDataDe" type="date" />
+      </div>
+      <div class="filtro-group">
+        <label>Data até</label>
+        <input id="fDataAte" type="date" />
+      </div>
+      <button class="btn-filtrar" onclick="carregarLinks()">
+        <i class="fa-solid fa-filter"></i> Filtrar
+      </button>
+      <button class="btn-limpar" onclick="limparFiltros()">
+        <i class="fa-solid fa-eraser"></i> Limpar
+      </button>
+    </div>
+  </div>
+
+  <!-- TABELA -->
+  <div class="tabela-card">
+    <div class="tabela-header-row">
+      <div class="titulo">Histórico de links</div>
+      <div class="contador" id="contador">—</div>
+    </div>
+    <div class="tabela-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Gerado em</th>
+            <th>Gerado por</th>
+            <th>CNPJ Cliente</th>
+            <th>Vendedor</th>
+            <th>Tipo</th>
+            <th>Validade</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="linksBody">
+          <tr>
+            <td colspan="8" class="loading-cell">
+              <i class="fa-solid fa-circle-notch fa-spin"></i> Carregando…
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  // Só o admin do Hub pode excluir links de fato (operador vê o botão,
+  // mas recebe orientação para contatar o admin).
+  window.IS_ADMIN = {{ is_admin | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/monitor_links.js') }}"></script>
+{% endblock %}

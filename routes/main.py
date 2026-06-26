@@ -7,7 +7,7 @@
 import os
 from flask import Blueprint, render_template, request, jsonify, session
 from utils.auth import get_usuario_logado
-from utils.fila import entrar_na_fila, posicao_na_fila, sair_da_fila, _em_execucao
+from utils.fila import entrar_na_fila, posicao_na_fila, sair_da_fila, recurso_em_execucao
 
 main_bp = Blueprint('main', __name__)
 
@@ -58,10 +58,11 @@ def fila_entrar():
 @main_bp.route('/fila/status/<meu_id>')
 def fila_status(meu_id):
     pos = posicao_na_fila(meu_id)
+    ocupado = recurso_em_execucao()
     return jsonify({
         'posicao':     pos,
-        'minha_vez':   pos == 1 and _em_execucao is None,
-        'em_execucao': _em_execucao is not None
+        'minha_vez':   pos == 1 and not ocupado,
+        'em_execucao': ocupado
     })
 
 
@@ -77,7 +78,8 @@ def fila_sair(meu_id):
 
 @main_bp.route('/meu_historico')
 def meu_historico():
-    return render_template('meu_historico.html')
+    from models import ROBOS_HUB
+    return render_template('meu_historico.html', robos=ROBOS_HUB)
 
 
 @main_bp.route('/api/meu_historico')

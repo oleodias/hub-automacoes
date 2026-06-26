@@ -1,25 +1,32 @@
 {% extends "base.html" %} {% block title %}Lançar Nota{% endblock %} {% block
-css %}
+navbar_title %}Hub de Automações{% endblock %} {% block css %}
 <link
   rel="stylesheet"
   href="{{ url_for('static', filename='css/lancar_nota.css') }}"
 />
 {% endblock %} {% block content %}
 <div class="ln-container">
-  <!-- ── Cabeçalho ─────────────────────────────────────── -->
-  <div class="ln-header">
-    <div>
-      <h1><i class="fas fa-file-invoice"></i> Lançamento de Nota</h1>
-      <p class="ln-subtitle">
-        Upload do XML, revisão e envio para a fila de lançamento
-      </p>
-    </div>
-    <div class="ln-header-actions">
-      <a href="/notas_a_rever" class="btn-secondary">
-        <i class="fas fa-exclamation-triangle"></i> Notas a Rever
+  <!-- ── Cabeçalho padrão (page-header) ─────────────────── -->
+  <div class="page-header">
+    <div class="left">
+      <a
+        class="btn-back"
+        href="/"
+        title="Voltar ao Painel"
+      >
+        <i class="fa-solid fa-arrow-left" style="font-size: 13px"></i>
       </a>
-      <a href="/monitor_notas" class="btn-secondary">
-        <i class="fas fa-chart-line"></i> Monitor
+      <div class="page-title">
+        Lançamento de Nota
+        <span>Módulo Fiscal · Upload de XML e envio para a fila</span>
+      </div>
+    </div>
+    <div class="page-header-actions">
+      <a href="/notas_a_rever" class="btn-ghost">
+        <i class="fa-solid fa-triangle-exclamation"></i> Notas a Rever
+      </a>
+      <a href="/monitor_notas" class="btn-ghost">
+        <i class="fa-solid fa-chart-line"></i> Monitor
       </a>
     </div>
   </div>
@@ -52,7 +59,7 @@ css %}
   <!-- ══════════════════════════════════════════════════ -->
   <section class="ln-aba ativa" id="aba-1">
     <div class="ln-card">
-      <h2><i class="fas fa-upload"></i> Anexar XML da nota</h2>
+      <h2><i class="fa-solid fa-upload"></i> Anexar XML da nota</h2>
       <p class="ln-instrucao">
         Arraste o arquivo XML aqui ou clique na área abaixo para selecionar. O
         sistema vai ler automaticamente os dados da nota.
@@ -60,7 +67,7 @@ css %}
 
       <div class="upload-zona" id="upload-zona">
         <input type="file" id="input-xml" accept=".xml" hidden />
-        <div class="upload-icon"><i class="fas fa-file-code"></i></div>
+        <div class="upload-icon"><i class="fa-solid fa-file-code"></i></div>
         <div class="upload-titulo">Solte o XML aqui</div>
         <div class="upload-subtitulo">
           ou clique para selecionar do computador
@@ -111,7 +118,7 @@ css %}
   <!-- ══════════════════════════════════════════════════ -->
   <section class="ln-aba" id="aba-2">
     <div class="ln-card">
-      <h2><i class="fas fa-boxes"></i> Centro de custo por item</h2>
+      <h2><i class="fa-solid fa-boxes-stacked"></i> Centro de custo por item</h2>
       <p class="ln-instrucao">
         Selecione o centro de custo apropriado para cada item da nota.
         <span id="contador-cc" class="ln-contador"
@@ -125,7 +132,7 @@ css %}
           <option value="">— selecione —</option>
         </select>
         <button id="btn-aplicar-todos" class="btn-secondary">
-          <i class="fas fa-paste"></i> Aplicar
+          <i class="fa-solid fa-paste"></i> Aplicar
         </button>
       </div>
 
@@ -153,15 +160,15 @@ css %}
   <!-- ══════════════════════════════════════════════════ -->
   <section class="ln-aba" id="aba-3">
     <div class="ln-card">
-      <h2><i class="fas fa-money-check-alt"></i> Parcelamento</h2>
+      <h2><i class="fa-solid fa-money-check-dollar"></i> Parcelamento</h2>
 
       <div id="parcelas-info" class="parcelas-info">
         <div class="info-banner" id="info-auto">
-          <i class="fas fa-info-circle"></i>
+          <i class="fa-solid fa-circle-info"></i>
           Parcelas foram pré-preenchidas a partir do XML.
         </div>
         <div class="info-banner amarelo oculto" id="info-manual">
-          <i class="fas fa-edit"></i>
+          <i class="fa-solid fa-pen"></i>
           Modo manual ativo. A soma das parcelas precisa bater exatamente com o
           valor total da nota.
         </div>
@@ -169,7 +176,7 @@ css %}
 
       <div class="parcelas-acoes">
         <button id="btn-editar-parcelas" class="btn-secondary">
-          <i class="fas fa-edit"></i> Editar parcelas manualmente
+          <i class="fa-solid fa-pen"></i> Editar parcelas manualmente
         </button>
         <div class="parcelas-distribuir oculto" id="distribuir-area">
           <label>Distribuir em:</label>
@@ -199,7 +206,7 @@ css %}
             style="width: 80px"
           />
           <button id="btn-distribuir" class="btn-secondary">
-            <i class="fas fa-calculator"></i> Distribuir
+            <i class="fa-solid fa-calculator"></i> Distribuir
           </button>
         </div>
       </div>
@@ -240,7 +247,7 @@ css %}
   <!-- ══════════════════════════════════════════════════ -->
   <section class="ln-aba" id="aba-4">
     <div class="ln-card">
-      <h2><i class="fas fa-calendar-check"></i> Datas e operação</h2>
+      <h2><i class="fa-solid fa-calendar-check"></i> Datas e operação</h2>
       <p class="ln-instrucao">
         Última etapa: informe as datas e selecione a operação que vai ser usada
         no lançamento.
@@ -281,7 +288,7 @@ css %}
           <div class="operacao-selecionada oculto" id="op-selecionada">
             <span id="op-selecionada-texto"></span>
             <button type="button" class="btn-limpar-op">
-              <i class="fas fa-times"></i>
+              <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
         </div>
@@ -308,13 +315,13 @@ css %}
   <!-- ══════════════════════════════════════════════════ -->
   <div class="ln-nav">
     <button id="btn-anterior" class="btn-secondary" disabled>
-      <i class="fas fa-arrow-left"></i> Anterior
+      <i class="fa-solid fa-arrow-left"></i> Anterior
     </button>
     <button id="btn-proximo" class="btn-primario" disabled>
-      Próximo <i class="fas fa-arrow-right"></i>
+      Próximo <i class="fa-solid fa-arrow-right"></i>
     </button>
     <button id="btn-lancar" class="btn-primario oculto">
-      <i class="fas fa-paper-plane"></i> Lançar Nota
+      <i class="fa-solid fa-paper-plane"></i> Lançar Nota
     </button>
   </div>
 </div>
@@ -326,6 +333,6 @@ css %}
     <div id="ln-loading-msg">Processando...</div>
   </div>
 </div>
-{% endblock %} {% block extra_js %}
+{% endblock %} {% block scripts %}
 <script src="{{ url_for('static', filename='js/lancar_nota.js') }}"></script>
 {% endblock %}

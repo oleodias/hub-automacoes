@@ -43,6 +43,8 @@ def _submissao_to_dict(sub):
         'docs_enviados':      sub.docs_enviados or [],
         'motivos_reprovacao': sub.motivos_reprovacao or [],
         'erro_robo':          sub.erro_robo,
+        'envio_n8n':          sub.envio_n8n or 'enviado',
+        'n8n_erro':           sub.n8n_erro,
         'created_at':         sub.created_at.strftime('%d/%m/%Y %H:%M') if sub.created_at else '',
         'updated_at':         sub.updated_at.strftime('%d/%m/%Y %H:%M') if sub.updated_at else '',
     }
@@ -239,6 +241,48 @@ def reprocessar_submissao(uuid):
     return True
 
 
+# ══════════════════════════════════════════════════════════════
+# CONTROLE DE ENVIO AO N8N (C2/A-05)
+# ══════════════════════════════════════════════════════════════
+
+def salvar_payload_n8n(uuid, payload):
+    """Guarda o payload que (re)enviaremos ao N8N para esta submissão."""
+    sub = db.session.get(Submissao, uuid)
+    if not sub:
+        return False
+    sub.n8n_payload = payload
+    db.session.commit()
+    return True
+
+
+def marcar_envio_n8n(uuid, status, erro=None):
+    """
+    Marca o resultado do envio ao N8N.
+        status='enviado' → deu certo (limpa o erro)
+        status='falhou'  → webhook falhou; guarda a mensagem de erro
+    """
+    sub = db.session.get(Submissao, uuid)
+    if not sub:
+        return False
+    sub.envio_n8n = status
+    sub.n8n_erro = None if status == 'enviado' else (erro or 'Falha ao enviar ao N8N')
+    db.session.commit()
+    if status == 'falhou':
+        logger.warning(f"[N8N] Envio FALHOU | UUID: {uuid} | {sub.n8n_erro}")
+    return True
+
+
+def buscar_payload_n8n(uuid):
+    """Retorna o payload guardado para reenvio, ou None."""
+    sub = db.session.get(Submissao, uuid)
+    return sub.n8n_payload if sub else None
+
+
+def contar_envios_falhos():
+    """Quantas submissões estão com o envio ao N8N pendente (falhou)."""
+    return Submissao.query.filter(Submissao.envio_n8n == 'falhou').count()
+
+
 def listar_submissoes(status=None, tipo=None, busca=None, data_de=None, data_ate=None):
     """
     Retorna lista de todas as submissões com filtros opcionais.
@@ -339,5 +383,8 @@ def stats_submissoes():
         if chave in contagem:
             contagem[chave] = qtd
         contagem['total'] += qtd
+
+    # Quantas fichas falharam no envio ao N8N (alerta do Monitor)
+    contagem['envio_falhou'] = contar_envios_falhos()
 
     return contagem
