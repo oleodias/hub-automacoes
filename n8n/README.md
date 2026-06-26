@@ -88,6 +88,38 @@ mais claro que 10 nós nativos encadeados:
 | 17a | **Gmail: Bayer / CSL / … / United** | **Gmail** (send), 1 por lab | To `{{$json.to}}` · BCC (options→bccList) `{{$json.bcc}}` · Subject `{{$json.subject}}` · **Attachments** (Attachment Binary→property) `{{ Object.keys($binary).join(',') }}` · **On Error: Continue (using error output)** |
 | 17b | **Aviso: Bayer / … / United** | **Gmail** (send), 1 por lab | Avisa a colega (`leonardodiascaumo@gmail.com`) do resultado. Recebe as **duas saídas** (sucesso+erro) do Gmail do lab; Subject `[OK]/[FALHA] Relatório — <lab>` e corpo adaptam via `{{ $json.error ? … : … }}` |
 
+#### Aviso com status de dados (formato limpo)
+O robô marca, por lab, **rótulos amigáveis** dos relatórios que vieram **com dados**
+(`com_dados`, ex.: "Estoque", "Mapa de Venda") e dos que vieram **sem dados**
+(`vazios`). Esses campos fluem pelos Code nodes (`preparar_envios`/
+`explodir_arquivos`/`juntar_binarios`) até o nó **`Juntar Binários`**. Assim o aviso
+lista rótulos legíveis (sem nome de arquivo cru).
+
+**Subject** (mesma expressão nos 12 nós "Aviso: \<lab\>"):
+```
+={{ ($json.error ? '[FALHA] ' : '[OK] ') + $('Juntar Binários').item.json.lab_nome + ' — relatórios enviados' }}
+```
+
+**Message** (campo *Message*, emailType **text**; mesma expressão nos 12 nós):
+```
+={{ (() => {
+  const g = $('Juntar Binários').item.json;
+  if ($json.error) return '❌ FALHA ao enviar o relatório de ' + g.lab_nome + ':\n' + ($json.error.message || JSON.stringify($json.error));
+  const ok  = (g.com_dados || []).map(r => '  ✅ ' + r);
+  const vaz = (g.vazios   || []).map(r => '  ⚠️ ' + r + ' — SEM dados (não anexado)');
+  const rodape = (g.vazios || []).length
+    ? '\n\n⚠️ ' + g.vazios.length + ' relatório(s) sem dados — confira se é esperado.'
+    : '\n\n✔️ Todos os ' + (g.com_dados || []).length + ' relatórios vieram com dados.';
+  return 'Laboratório: ' + g.lab_nome
+       + '\nE-mail:      ✅ enviado aos destinatários'
+       + '\n\nRelatórios:\n' + ok.concat(vaz).join('\n') + rodape;
+})() }}
+```
+
+> Usa `$('Juntar Binários').item` (linkagem de item) p/ pegar o lab certo após o
+> Gmail. Se não resolver, troque por `.itemMatching($itemIndex)` ou referencie o nó
+> **Rotear por lab** (Switch).
+
 ### Bloco 5 — Aviso interno
 | # | Nó | Tipo | Config |
 |---|----|------|--------|
@@ -99,7 +131,8 @@ mais claro que 10 nós nativos encadeados:
   `/liberar_proximo` libera o próximo.
 - O `/iniciar` responde **sempre 200**; o nó 9 (**IF Robô OK?**) separa
   `sucesso` de erro.
-- Arquivos = **vários `.xlsx` soltos** por lab (Sun Geral = 4, demais = 2).
+- Arquivos = **vários `.xlsx` soltos** por lab (Sun Geral = 4, Sun Ilumya = 3, demais = 2).
+  Pode vir **menos** se algum relatório estiver vazio — os que faltam aparecem em `vazios`.
 - Fuso: o Code "Agenda" assume o servidor do n8n em **America/Sao_Paulo**.
 
 #### Nota — alternativa 100% nativa ao "Juntar binários"

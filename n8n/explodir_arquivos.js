@@ -21,6 +21,8 @@ for (const it of $input.all()) {
         exec: j.exec,
         arquivo: j.arquivos[idx],
         idx,
+        com_dados: j.com_dados || [],   // carrega adiante p/ o aviso (mesmo valor em todos os itens do lab)
+        vazios: j.vazios || [],
       },
     });
   }

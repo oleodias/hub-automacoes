@@ -69,6 +69,8 @@ for (let i = 0; i < downloads.length; i++) {
         bcc: meta.bcc,
         subject: meta.subject,
         arquivos: [],
+        com_dados: meta.com_dados || [],   // rótulos amigáveis COM dados (p/ o aviso)
+        vazios: meta.vazios || [],         // rótulos amigáveis SEM dados (p/ o aviso)
       },
       binary: {},
     };

@@ -40,6 +40,8 @@ for (const it of itens) {
       subject: `Relatório Vendas/Estoque — ${it.nome || env.lab_nome || it.lab_id} (${periodo})`,
       exec,
       arquivos: it.arquivos || [],
+      com_dados: it.com_dados || [],   // rótulos amigáveis COM dados (p/ o aviso)
+      vazios: it.vazios || [],         // rótulos amigáveis SEM dados (p/ o aviso)
     },
   });
 }
