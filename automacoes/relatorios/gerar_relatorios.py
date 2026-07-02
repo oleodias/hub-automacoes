@@ -502,37 +502,41 @@ def _estilizar_xlsx(caminho, titulo="", subtitulo=""):
 def gerar_analise_estoque(driver, setor, modelo_value, modelo_label, nome_base, pasta):
     """Tela A — gera a Análise de Estoque para (modelo, setor).
 
-    Espelha a Demanda: setor com transição FORÇADA (igual ao Público/Privado da
-    venda) e o modelo (saved report) por ÚLTIMO antes do Consultar. `nome_base` é
-    o nome amigável do arquivo, já montado pelo orquestrador (ex.: "Estoque -
-    Bayer - Privado").
+    Ordem CRÍTICA: **modelo → Consultar → setor → Consultar → baixar**. Selecionar
+    o saved report (modelo) RESETA o filtro P366_FILTRO para branco; por isso o
+    setor é definido DEPOIS do modelo (e de um Consultar), senão o relatório vinha
+    com os dois setores misturados. `nome_base` é o nome amigável do arquivo, já
+    montado pelo orquestrador (ex.: "Estoque - Bayer - Privado").
     """
     rotulo = modelo_value or modelo_label
     print(f"> 📦 Análise de Estoque — modelo {rotulo} | setor: {setor}")
     wait = WebDriverWait(driver, TIMEOUT_PADRAO)
     wait.until(EC.presence_of_element_located((By.ID, ESTOQUE["item_marcador"])))
 
-    # 1) Setor PRIMEIRO, com transição real (wiggle) — garante que Público/Privado
-    #    realmente alternem entre arquivos (antes, com _set_valor, o 2º podia ficar
-    #    "preso" no setor do 1º — bug visível na Sun, que gera os dois).
-    _definir_select(driver, ESTOQUE["item_filtro"], ESTOQUE["filtro_setor"][setor], rotulo="Setor")
-    _sleep(0.5)
-
-    # 2) DEPOIS troca o modelo (saved report) — última ação antes do Consultar —
-    #    e espera a IR recarregar (igual à Demanda).
+    # 1) Modelo PRIMEIRO (selecionar o saved report zera o filtro de setor).
     _selecionar_modelo(driver, ESTOQUE["saved_reports"], value=modelo_value, label=modelo_label)
     _esperar_apex_pronto(driver)
-    _sleep(1.0)
+    _sleep(0.8)
 
-    # Diagnóstico: captura o NOME do relatório salvo ativo agora.
+    # Diagnóstico: nome do relatório salvo ativo.
     try:
         sel = Select(driver.find_element(By.ID, ESTOQUE["saved_reports"]))
-        print(f"> 🔖 Relatório salvo ativo agora: '{sel.first_selected_option.text.strip()}'"
+        print(f"> 🔖 Relatório salvo ativo: '{sel.first_selected_option.text.strip()}'"
               f" (value={sel.first_selected_option.get_attribute('value')})")
     except Exception as e:  # noqa: BLE001
         print(f"> ⚠️ Não consegui ler o relatório salvo ativo: {e}")
 
-    # 3) SÓ ENTÃO Consulta.
+    # 2) Consultar com o modelo — deixa a IR assentar ANTES de mexer no setor
+    #    (o reset do filtro pela troca de modelo já aconteceu neste ponto).
+    _js_click(driver, driver.find_element(By.ID, ESTOQUE["btn_consultar"]))
+    _esperar_apex_pronto(driver)
+    _sleep(1.0)
+
+    # 3) SÓ AGORA o setor (Público/Privado) — depois do modelo, p/ não ser resetado.
+    _definir_select(driver, ESTOQUE["item_filtro"], ESTOQUE["filtro_setor"][setor], rotulo="Setor")
+    _sleep(0.5)
+
+    # 4) Consultar de novo, aplicando o setor.
     _js_click(driver, driver.find_element(By.ID, ESTOQUE["btn_consultar"]))
     _esperar_apex_pronto(driver)
     _sleep(1.5)
@@ -774,16 +778,15 @@ def executar(job):
             _abrir_favorito(driver, ESTOQUE["favorito_invoker"], ESTOQUE["item_marcador"])
             for e in envios:
                 lab = LABS[e["lab_id"]]
-                nome_est = lab.get("nome_arquivo", lab["nome"])
+                nome_disp = lab["nome"]                   # exibição (subtítulo/manifesto)
+                nome_fs = nome_disp.replace("/", "-")     # nome de arquivo (sanitiza a "/")
                 for s in lab["estoque"]:
                     chave = (lab["modelo_estoque"], s)
                     if chave not in estoque_paths:
-                        # rotulo vazio quando setor == "geral" (filtro em branco):
-                        # o arquivo/subtítulo ficam SEM o sufixo Público/Privado.
-                        rotulo = SETOR_LABEL[s]
-                        ctx["etapa"] = f"Análise de Estoque — {nome_est}" + (f" / {rotulo}" if rotulo else "")
-                        ctx["lab"], ctx["periodo"] = nome_est, ""
-                        nome_base = f"Estoque - {nome_est}" + (f" - {rotulo}" if rotulo else "")
+                        rotulo = SETOR_LABEL[s]           # "Privado"/"Público" (sempre no nome)
+                        ctx["etapa"] = f"Análise de Estoque — {nome_disp} / {rotulo}"
+                        ctx["lab"], ctx["periodo"] = nome_disp, ""
+                        nome_base = f"Estoque - {nome_fs} - {rotulo}"
                         # Tolerante a relatório vazio/falha: não derruba o lote.
                         # gerar_analise_estoque devolve None quando o setor não tem
                         # dados (ex.: Sun Ilumya sem Público num mês).
@@ -806,9 +809,7 @@ def executar(job):
                             else:
                                 avisos.append(f"Estoque '{nome_base}' sem dados nesse setor — não anexado.")
                             continue
-                        subtitulo = (f"{nome_est} · {rotulo} · posição atual" if rotulo
-                                     else f"{nome_est} · posição atual")
-                        estilos[p] = ("Análise de Estoque", subtitulo)
+                        estilos[p] = ("Análise de Estoque", f"{nome_disp} · {rotulo} · posição atual")
 
         # ---- 2) DEMANDA FORNECEDOR (gera cada combo único 1x) ----
         # Conta os combos únicos só para o "progresso" no aviso de erro.
@@ -833,7 +834,7 @@ def executar(job):
                     ctx["periodo"] = f'{e["periodo_ini"]} a {e["periodo_fim"]}'
                     # Nome amigável do arquivo de venda (igual ao estoque). Inclui o
                     # rótulo da operação só quando o lab tem as duas (Sun) — p/ distinguir.
-                    nome_v = lab.get("nome_arquivo", lab["nome"])
+                    nome_v = lab["nome"].replace("/", "-")   # sanitiza a "/" (Sandoz RS/SC)
                     periodo_arq = f"{e['periodo_ini'].replace('/', '-')} a {e['periodo_fim'].replace('/', '-')}"
                     if len(lab["operacoes"]) > 1:
                         nome_base_v = f"Mapa de Venda - {nome_v} - {OP_LABEL.get(operacao, operacao)} - {periodo_arq}"
@@ -875,8 +876,7 @@ def executar(job):
             # com_dados / vazios = RÓTULOS amigáveis (p/ o e-mail de aviso ler bonito).
             arquivos, com_dados, vazios = [], [], []
             for s in lab["estoque"]:
-                rot = SETOR_LABEL[s]
-                label = "Estoque" + (f" ({rot})" if rot else "")
+                label = f"Estoque ({SETOR_LABEL[s]})"   # ex.: "Estoque (Privado)"
                 caminho_est = estoque_paths.get((lab["modelo_estoque"], s))
                 if caminho_est:
                     arquivos.append(os.path.basename(caminho_est))

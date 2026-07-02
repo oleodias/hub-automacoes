@@ -72,10 +72,11 @@ uma colega interna recebe um aviso de cada envio (sucesso/erro).
 
 ### 3.3 Otimização (dedup)
 Cada combinação única é gerada **uma vez**:
-- **Estoque** por (`modelo + setor`): cada lab tem o SEU modelo. **Labs comuns** usam
-  o filtro Público/Privado **em branco** → 1 arquivo. **Os dois labs Sun** geram
-  Público **e** Privado (2 arquivos cada). Sandoz RS/SC e SP (mesmo modelo) saem 1x.
-- **Venda** por (`modelo + operação + período`) → Sandoz RS/SC e SP (mesmo modelo) saem 1x.
+- **Estoque** por (`modelo + setor`): cada lab tem o SEU modelo. **Labs comuns** filtram
+  **Privado** → 1 arquivo. **Os dois labs Sun** geram Privado **e** Público (2 arquivos,
+  separados). Cada lab tem modelo próprio (Sandoz RS/SC e SP **não** compartilham mais).
+- **Venda** por (`modelo + operação + período`) → cada lab tem modelo próprio (Sandoz
+  RS/SC e SP agora têm modelos dedicados → 2 arquivos separados).
 
 ### 3.4 Funções (todas em `gerar_relatorios.py`)
 | Função | O que faz |
@@ -94,7 +95,7 @@ Cada combinação única é gerada **uma vez**:
 | `_baixar_csv` | Ações → Download (por texto) → CSV → fecha diálogo → espera baixar. **CSV de 0 byte = relatório vazio → devolve `None`** (não vira anexo). |
 | `_esperar_download` | Espera o `.csv`/`.xlsx` estável; **ignora artefatos** (`downloads.htm`, `.tmp`, `.crdownload`); **à prova de corrida**. **Aceita 0 byte** (estável + sem `.crdownload`) — é o que o APEX baixa quando não há dados. |
 | `_csv_para_xlsx` | Converte CSV (detecta separador/encoding) p/ `.xlsx` (pandas). |
-| `gerar_analise_estoque` | Tela A: **setor (forçado, `_definir_select`) → modelo (por lab) → Consultar** → baixa (vazio → `None`, via 0 byte no `_baixar_csv`). Comuns: setor em branco → `Estoque - {Lab}`. Sun: `Estoque - {Lab} - {Público\|Privado}`. |
+| `gerar_analise_estoque` | Tela A, ordem CRÍTICA: **modelo → Consultar → setor → Consultar → baixar** (selecionar o modelo RESETA o filtro de setor; por isso o setor vem DEPOIS). Vazio → `None` (0 byte). Nome sempre `Estoque - {Lab} - {Privado\|Público}` ("/" do nome vira "-"). |
 | `gerar_demanda` | Tela B: **datas → operação → modelo → Consultar** → baixa (vazio → `None`, via 0 byte). Nome amigável = `Mapa de Venda - {Lab} - {período}` (Sun ganha `(Público\|Privado)`). |
 | `aplicar_pos_processamento` | Roda hooks do lab **in-place** sobre o .xlsx de venda (preserva o nome), 1x por combo. Ver §4.1. |
 | `executar(job)` | Orquestra: login → estoques (dedup) → vendas (dedup) → manifesto. |
@@ -111,28 +112,29 @@ Cada combinação única é gerada **uma vez**:
 
 | lab_id | Nome | modelo_venda (saved report) | Estoque | Operações | E-mails de produção |
 |---|---|---|---|---|---|
-| `bayer` | Bayer | `103052508672357463` | branco | 11 | operacoescomerciaisbhp@bayer.com; elias.zanatta@bayer.com; paula.yokomizo@bayer.com |
-| `csl` | CSL | `103030134957924372` | branco | 11 | csl@wfbconsultoria.com.br; Rafael.Esteves@csl.com.au |
-| `fresenius` | Fresenius | **por nome** `MAPA DE VENDA FRESENIUS` | branco | 11 | jailton.silva@fresenius-kabi.com |
-| `glaxo` | Glaxo | `103036051703963152` | branco | 11 | alexandre.x.mitsuda@gsk.com |
-| `organon` | Organon | `103037225680969181` | branco | 11 | rodrigo.blas@organon.com |
-| `roche` | Roche | `103031583388937239` | branco | 11 | brasil.operacoescomerciais@roche.com; joao.pessoa@roche.com |
-| `sandoz_rs_sc` | Sandoz RS/SC | `103032823287941952` | branco | 11 | marcelo.novelli@sandoz.com; isaque.fedrigo@sandoz.com |
-| `sandoz_sp` | Sandoz SP | `103032823287941952` (mesmo da RS/SC) | branco | 11 | roger.damian@sandoz.com |
-| `sankyo` | Sankyo | `103034120207945481` | branco | 11 | marcio.honorati@daiichisankyo.com; pedro.mota@daiichisankyo.com; alexandre.jesus@daiichisankyo.com |
+| `bayer` | Bayer | `103052508672357463` | privado | 11 | operacoescomerciaisbhp@bayer.com; elias.zanatta@bayer.com; paula.yokomizo@bayer.com |
+| `csl` | CSL | `103030134957924372` | privado | 11 | csl@wfbconsultoria.com.br; Rafael.Esteves@csl.com.au |
+| `fresenius` | Fresenius | `118673391603879778` | privado | 11 | jailton.silva@fresenius-kabi.com |
+| `glaxo` | Glaxo | `103036051703963152` | privado | 11 | alexandre.x.mitsuda@gsk.com |
+| `organon` | Organon | `103037225680969181` | privado | 11 | rodrigo.blas@organon.com |
+| `roche` | Roche | `103031583388937239` | privado | 11 | brasil.operacoescomerciais@roche.com; joao.pessoa@roche.com |
+| `sandoz_rs_sc` | Sandoz RS/SC | `136574346184500748` | privado | 11 | marcelo.novelli@sandoz.com; isaque.fedrigo@sandoz.com |
+| `sandoz_sp` | Sandoz SP | `136575483055504796` | privado | 11 | roger.damian@sandoz.com |
+| `sankyo` | Sankyo | `103034120207945481` | privado | 11 | marcio.honorati@daiichisankyo.com; pedro.mota@daiichisankyo.com; alexandre.jesus@daiichisankyo.com |
 | `sun_geral` | Sun Geral | `124266373295785439` | privado + **publico** | **11 + 17** | Gisele.Lemos@sunpharma.com; Ana.ferreira@sunpharma.com |
-| `sun_13082` | Sun Item 13082 | `103087407870276850` | **público + privado** | 11 | Cecilia.Castro@sunpharma.com; Edgar.Lopes@sunpharma.com |
-| `united` | United (M) | `103039329135977606` | branco | 11 | leonardo.rossi@knighttx.com |
+| `sun_13082` | Sun Item 13082 | `103087407870276850` | **privado + público** | 11 | Cecilia.Castro@sunpharma.com; Edgar.Lopes@sunpharma.com |
+| `united` | United (M) | `103039329135977606` | privado | 11 | leonardo.rossi@knighttx.com |
 
 - **Operações:** `11` = VENDA FATURAMENTO LÍQUIDO **PRIVADO** · `17` = **PÚBLICO** (só Sun Geral).
-- **Estoque:** **modelo POR LABORATÓRIO** (`modelo_estoque`, tabela abaixo). O filtro de
-  setor (`P366_FILTRO`) tem 3 estados: **em branco** (padrão dos labs comuns → 1 arquivo
-  `Estoque - {Lab}`), **Público** e **Privado**. **Só a Sun aciona o filtro:** os dois labs
-  Sun (`sun_geral` e `sun_13082`) geram Público **e** Privado. O setor é aplicado com
-  transição **forçada** (`_definir_select`) — sem isso o 2º setor da Sun saía "preso" no
-  1º. O modelo fixo antigo `153738614031239522` ("ESTOQUE PARA MAPA") foi **aposentado**.
-- **Arquivos por lab:** Sun Geral = **4** (estoque pub+priv + venda 11+17); Sun Ilumya = **3**
-  (estoque pub+priv + venda 11); demais = **2** (estoque + venda).
+- **Estoque:** **modelo POR LABORATÓRIO** (`modelo_estoque`, tabela abaixo). **Ordem dos
+  cliques CRÍTICA:** modelo → Consultar → setor → Consultar → baixar. Selecionar o modelo
+  (saved report) **RESETA** o filtro `P366_FILTRO`; por isso o setor é definido DEPOIS do
+  modelo (senão o relatório vinha com os dois setores misturados). **Labs comuns filtram
+  Privado** (1 arquivo); **só a Sun** gera os dois (`sun_geral` e `sun_13082` → Privado +
+  Público, em arquivos SEPARADOS). O modelo fixo antigo `153738614031239522` ("ESTOQUE
+  PARA MAPA") está aposentado.
+- **Arquivos por lab:** Sun Geral = **4** (estoque priv+pub + venda 11+17); Sun Ilumya = **3**
+  (estoque priv+pub + venda 11); demais = **2** (estoque + venda).
 - **Relatório vazio (estoque OU venda)** — ex.: Ilumya sem Público num mês, ou um lab
   sem vendas numa semana: nesse caso a tela mostra "Item não encontrado" e o APEX baixa
   um **CSV de 0 byte**. O `_baixar_csv` reconhece o 0 byte como "sem dados", **devolve
@@ -144,7 +146,10 @@ Cada combinação única é gerada **uma vez**:
   (**rótulos amigáveis** — ex.: "Estoque", "Mapa de Venda", "Estoque (Público)"). O e-mail
   de aviso lista `com_dados` (✅) e `vazios` (⚠️) — texto limpo, sem nome de arquivo cru
   (ver `n8n/README.md` → "Aviso com status de dados"). Os campos fluem pelos Code nodes.
-- **Fresenius**: venda por **nome** (`modelo_label`); estoque por **value** (veio no HTML).
+- **Fresenius**: venda **e** estoque por **value** (ambos vieram no HTML). Mantém o hook
+  de pós-processamento `fresenius_desconto`.
+- **Sandoz RS/SC e SP**: modelos PRÓPRIOS de venda e estoque (não compartilham mais). No
+  nome de arquivo a "/" vira "-" → "Sandoz RS-SC".
 
 **Modelos de estoque por lab** (`modelo_estoque` — saved report da Tela A):
 
@@ -156,7 +161,8 @@ Cada combinação única é gerada **uma vez**:
 | `glaxo` | ESTOQUE GLAXO | `127947392953704118` |
 | `organon` | ESTOQUE ORGANON | `127948686117719839` |
 | `roche` | ESTOQUE ROCHE | `127949750666724717` |
-| `sandoz_rs_sc` / `sandoz_sp` | ESTOQUE SANDOZ (compartilhado) | `127951377532739678` |
+| `sandoz_rs_sc` | ESTOQUE SANDOZ - RS/SC | `141893254261950275` |
+| `sandoz_sp` | ESTOQUE SANDOZ - SP | `141893746925953898` |
 | `sankyo` | ESTOQUE SANKYO | `127953567883773259` |
 | `united` | ESTOQUE UNITED | `127959262106822214` |
 | `sun_geral` | ESTOQUE SUN PHARMA (MENOS ITEM 13082) | `127955843879806991` |
@@ -449,10 +455,10 @@ b06a6ff refactor(n8n): centraliza e-mail da colega (email_colega na Agenda)
 ```
 
 ## 17. Pontos a confirmar / observações
-- **Fresenius**: `modelo_label="MAPA DE VENDA FRESENIUS"`; quando tiverem o
-  `value`, preencher `modelo_venda` (mais estável). Pós-processamento **ligado**
+- **Fresenius**: venda e estoque por `value` (já preenchidos). Pós-processamento **ligado**
   (`fresenius_desconto` — soma `Vlr Desconto` em `Pr Cx`; ver §4.1).
-- **Sandoz RS/SC vs SP**: mesmo `modelo_venda` → venda gerada 1x (dedup).
+- **Sandoz RS/SC vs SP**: agora têm modelos **próprios** (venda E estoque) → cada uma gera
+  seus arquivos (não compartilham mais). No nome de arquivo a "/" vira "-" ("Sandoz RS-SC").
 - **Pasta `exec`** no Hub persiste até limpeza — necessária p/ reenvio só-e-mail.
 - **Histórico**: as 45 planilhas saíram do tip, mas **continuam no histórico** do
   Git (scrub completo = reescrita de histórico + force-push, se desejarem).
