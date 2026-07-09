@@ -47,7 +47,7 @@ DEMANDA = {
 
 # Operações de Venda (select P117_OPERACOES_VENDA)
 OPERACAO_PRIVADO = "11"   # 11 - VENDA FATURAMENTO LIQUIDO PRIVADO (padrão)
-OPERACAO_PUBLICO = "17"   # 17 - VENDA FATURAMENTO LIQUIDO PÚBLICO (só Sun Geral)
+OPERACAO_PUBLICO = "17"   # 17 - VENDA FATURAMENTO LIQUIDO PÚBLICO (Sun Geral, Apsen, Mappel/Quifa)
 
 # Rótulo da operação — entra no nome do arquivo de venda só quando o lab tem as
 # duas operações (Sun Geral), p/ distinguir os arquivos de 11 e 17.
@@ -84,4 +84,12 @@ LABS = {
     # Estoque da Ilumya também sai Público+Privado (filtro acionado); a VENDA dela
     # continua só privado (operacoes=[11]) — estoque e venda são independentes.
     "sun_13082":    {"nome": "Sun Pharma (Ilumya)",   "modelo_venda": "103087407870276850", "modelo_estoque": "127957403756813800", "estoque": ["privado", "publico"], "operacoes": [OPERACAO_PRIVADO]},
+    # ── Labs do SETOR PÚBLICO (adicionados 2026-07) ──────────────
+    # Apsen: SÓ VENDA (sem estoque → estoque=[]), operação Público(17). Envio mensal.
+    #        Modelo de venda "MAPA PÚBLICO - APSEN".
+    "apsen":        {"nome": "Apsen",             "modelo_venda": "151161973987373936", "modelo_estoque": None, "estoque": [], "operacoes": [OPERACAO_PUBLICO]},
+    # Mappel / Quifa: estoque SÓ Público; venda Privado(11)+Público(17) → 2 arquivos de venda.
+    #        Modelos "ESTOQUE MAPPEL / QUIFA" e "MAPA PÚBLICO - MAPPEL / QUIFA".
+    #        A "/" do nome vira "-" no nome de arquivo ("Mappel - Quifa"). Envio mensal.
+    "mappel_quifa": {"nome": "Mappel / Quifa",    "modelo_venda": "151162540967387633", "modelo_estoque": "151170092479457151", "estoque": ["publico"], "operacoes": [OPERACAO_PRIVADO, OPERACAO_PUBLICO]},
 }

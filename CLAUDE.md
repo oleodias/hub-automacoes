@@ -71,7 +71,7 @@ python -m automacoes.relatorios.gerar_relatorios automacoes/relatorios/job_teste
 
 ## Documentação detalhada
 
-- **[docs/handoff_relatorios.md](docs/handoff_relatorios.md)** — handoff EXAUSTIVO da automação de relatórios aos laboratórios (robô RPA + Hub + n8n): arquitetura, todos os arquivos/funções, dados dos 12 labs, seletores APEX, regras da agenda, bugs/correções, pendências e checklist de produção.
+- **[docs/handoff_relatorios.md](docs/handoff_relatorios.md)** — handoff EXAUSTIVO da automação de relatórios aos laboratórios (robô RPA + Hub + n8n): arquitetura, todos os arquivos/funções, dados dos 14 labs, seletores APEX, regras da agenda, bugs/correções, pendências e checklist de produção.
 - **[ESTRUTURA_BANCO_ORACLE.md](ESTRUTURA_BANCO_ORACLE.md)** — estrutura do banco Oracle (ERP).
 - **[SETUP_BANCO_NOVO.md](SETUP_BANCO_NOVO.md)** — setup do banco.
 - **[n8n/README.md](n8n/README.md)** — guia de montagem dos workflows n8n.

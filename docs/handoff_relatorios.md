@@ -14,7 +14,7 @@
 ## 1. Objetivo
 
 Automatizar a rotina (hoje manual) de **gerar relatórios de Vendas e Estoque** no
-NL para **12 laboratórios** e **enviá-los por e-mail**, em datas definidas por
+NL para **14 laboratórios** e **enviá-los por e-mail**, em datas definidas por
 regras de calendário. Cada laboratório recebe seus arquivos `.xlsx` por e-mail;
 uma colega interna recebe um aviso de cada envio (sucesso/erro).
 
@@ -50,7 +50,7 @@ uma colega interna recebe um aviso de cada envio (sucesso/erro).
 | Arquivo | Papel |
 |---|---|
 | `gerar_relatorios.py` | Robô principal (Selenium). Gera Estoque + Demanda, baixa CSV, converte p/ `.xlsx`, devolve manifesto. |
-| `labs_config.py` | Mapa dos 12 labs + seletores das telas APEX. |
+| `labs_config.py` | Mapa dos 14 labs + seletores das telas APEX. |
 | `pos_processamento.py` | Hooks de pós-processamento por lab. **Fresenius ligado** (`fresenius_desconto`) — ver §4.1. |
 | `testar_endpoint.py` | Testa `POST /relatorios/iniciar` via HTTP. |
 | `job_teste.json` / `job_sun_geral.json` / `job_fresenius.json` / `job_multi.json` | Jobs de teste. |
@@ -124,17 +124,25 @@ Cada combinação única é gerada **uma vez**:
 | `sun_geral` | Sun Geral | `124266373295785439` | privado + **publico** | **11 + 17** | Gisele.Lemos@sunpharma.com; Ana.ferreira@sunpharma.com |
 | `sun_13082` | Sun Item 13082 | `103087407870276850` | **privado + público** | 11 | Cecilia.Castro@sunpharma.com; Edgar.Lopes@sunpharma.com |
 | `united` | United (M) | `103039329135977606` | privado | 11 | leonardo.rossi@knighttx.com |
+| `apsen` | Apsen | `151161973987373936` | **— (sem estoque)** | **17** | airton.lima@apsen.com.br; Gabriela.Teixeira@apsen.com.br |
+| `mappel_quifa` | Mappel / Quifa | `151162540967387633` | **só público** | **11 + 17** | jeferson.squefi@interplayers.com.br |
 
-- **Operações:** `11` = VENDA FATURAMENTO LÍQUIDO **PRIVADO** · `17` = **PÚBLICO** (só Sun Geral).
+- **Labs do setor público (adicionados 2026-07):** `apsen` e `mappel_quifa`. **Apsen** manda
+  **só venda** (sem estoque), operação **17 (Público)**. **Mappel / Quifa** manda estoque **só
+  Público** e venda **Privado + Público** (11 + 17). Modelos: "MAPA PÚBLICO - APSEN", "MAPA
+  PÚBLICO - MAPPEL / QUIFA" e "ESTOQUE MAPPEL / QUIFA". Envio **mensal** (dia 1º, mês anterior).
+- **Operações:** `11` = VENDA FATURAMENTO LÍQUIDO **PRIVADO** · `17` = **PÚBLICO** (Sun Geral, Apsen, Mappel/Quifa).
 - **Estoque:** **modelo POR LABORATÓRIO** (`modelo_estoque`, tabela abaixo). **Ordem dos
   cliques CRÍTICA:** modelo → Consultar → setor → Consultar → baixar. Selecionar o modelo
   (saved report) **RESETA** o filtro `P366_FILTRO`; por isso o setor é definido DEPOIS do
   modelo (senão o relatório vinha com os dois setores misturados). **Labs comuns filtram
   Privado** (1 arquivo); **só a Sun** gera os dois (`sun_geral` e `sun_13082` → Privado +
   Público, em arquivos SEPARADOS). O modelo fixo antigo `153738614031239522` ("ESTOQUE
-  PARA MAPA") está aposentado.
+  PARA MAPA") está aposentado. **Mappel / Quifa** é um caso novo: estoque **só Público**
+  (`estoque=["publico"]`, sem privado).
 - **Arquivos por lab:** Sun Geral = **4** (estoque priv+pub + venda 11+17); Sun Ilumya = **3**
-  (estoque priv+pub + venda 11); demais = **2** (estoque + venda).
+  (estoque priv+pub + venda 11); Mappel/Quifa = **3** (estoque público + venda 11+17);
+  Apsen = **1** (só venda 17); demais = **2** (estoque + venda).
 - **Relatório vazio (estoque OU venda)** — ex.: Ilumya sem Público num mês, ou um lab
   sem vendas numa semana: nesse caso a tela mostra "Item não encontrado" e o APEX baixa
   um **CSV de 0 byte**. O `_baixar_csv` reconhece o 0 byte como "sem dados", **devolve
@@ -167,7 +175,10 @@ Cada combinação única é gerada **uma vez**:
 | `united` | ESTOQUE UNITED | `127959262106822214` |
 | `sun_geral` | ESTOQUE SUN PHARMA (MENOS ITEM 13082) | `127955843879806991` |
 | `sun_13082` | ESTOQUE SUN PHARMA (ILUMYA) | `127957403756813800` |
+| `mappel_quifa` | ESTOQUE MAPPEL / QUIFA (só Público) | `151170092479457151` |
 
+> **Apsen** não tem estoque (só venda), por isso não aparece nesta tabela.
+>
 > ⚠️ **Pré-requisito operacional:** esses saved reports precisam existir no NL/APEX
 > (select `R117088519510763187_saved_reports`) com esses values; senão o robô não
 > acha o modelo.
@@ -251,10 +262,10 @@ Todos exigem header **`X-Hub-Token`** = `N8N_HUB_TOKEN` (`.env`). Registrados em
 3·Monta e-mails  Preparar Envios → Arquivos do lab → Download → Juntar Binários
 4·Envio          Rotear por lab (Switch) ─┬→ Gmail: Bayer ──→ Aviso: Bayer
                                           ├→ Gmail: CSL ────→ Aviso: CSL
-                                          └→ ... (12 labs) ...
+                                          └→ ... (14 labs) ...
 5·Erro do robô   Robô OK? (false) → Avisos (erro) → TI
 ```
-- **Switch "Rotear por lab"**: 1 saída por `lab_id` (12).
+- **Switch "Rotear por lab"**: 1 saída por `lab_id` (14).
 - **Gmail: \<lab\>**: envia HTML + anexos. **On Error: Continue (using error output)** → 2 saídas.
 - **Aviso: \<lab\>**: recebe as **duas** saídas e avisa a colega `[OK]`/`[FALHA]` (detecta `$json.error`).
 - **Avisos (erro)**: falha do robô (não gerou nada) → e-mail p/ TI (`email_avisos`).
@@ -287,7 +298,7 @@ Todos exigem header **`X-Hub-Token`** = `N8N_HUB_TOKEN` (`.env`). Registrados em
 | `SEMANA_ANTERIOR` | `"seg_sex"` | "Semana anterior" = segunda a sexta. |
 
 ### 8.2 Tipos de disparo
-- **Tipo 1 — dia 1º** (qualquer dia da semana): **os 12 labs**, venda = **mês anterior** inteiro.
+- **Tipo 1 — dia 1º** (qualquer dia da semana): **os 14 labs** (inclui Apsen e Mappel/Quifa), venda = **mês anterior** inteiro.
 - **Tipo 2 — segundas**:
   - `bayer`, `roche` → `semana_anterior` (segunda a sexta da semana passada).
   - `csl`, `fresenius`, `glaxo`, `sun_geral` → `mes_ate_ultima_sexta` (dia 1º do mês vigente até a última sexta).

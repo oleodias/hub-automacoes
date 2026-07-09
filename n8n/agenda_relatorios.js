@@ -34,6 +34,9 @@ const EMAILS = {
   sun_geral:    ["Gisele.Lemos@sunpharma.com", "Ana.ferreira@sunpharma.com"],
   sun_13082:    ["Cecilia.Castro@sunpharma.com", "Edgar.Lopes@sunpharma.com"],
   united:       ["leonardo.rossi@knighttx.com"],
+  // Labs do setor público (adicionados 2026-07):
+  apsen:        ["airton.lima@apsen.com.br", "Gabriela.Teixeira@apsen.com.br"],
+  mappel_quifa: ["jeferson.squefi@interplayers.com.br"],
 };
 
 const NOMES = {
@@ -41,6 +44,7 @@ const NOMES = {
   organon: "Organon", roche: "Roche", sandoz_rs_sc: "Sandoz RS/SC",
   sandoz_sp: "Sandoz SP", sankyo: "Sankyo", sun_geral: "Sun Geral",
   sun_13082: "Sun Item 13082", united: "United",
+  apsen: "Apsen", mappel_quifa: "Mappel / Quifa",
 };
 
 // Responsáveis internos que recebem CÓPIA OCULTA (BCC) de cada envio.
@@ -65,9 +69,10 @@ const FORCAR_TESTE = false;
 
 // ── Quem dispara em cada tipo + qual a regra de período da VENDA ──
 // regra_periodo ∈ {mes_anterior, semana_anterior, mes_ate_ultima_sexta, mes_ate_ultima_quarta}
-const TIPO1_PRIMEIRO_DIA_UTIL = [   // todos os 12, venda = todo mês anterior
+const TIPO1_PRIMEIRO_DIA_UTIL = [   // todos os 14, venda = todo mês anterior
   "bayer", "csl", "fresenius", "glaxo", "organon", "roche",
   "sandoz_rs_sc", "sandoz_sp", "sankyo", "sun_geral", "sun_13082", "united",
+  "apsen", "mappel_quifa",          // labs do setor público (mensais, mês anterior)
 ];
 const TIPO2_SEGUNDA = {
   bayer: "semana_anterior", roche: "semana_anterior",

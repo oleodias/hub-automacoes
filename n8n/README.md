@@ -95,12 +95,12 @@ O robô marca, por lab, **rótulos amigáveis** dos relatórios que vieram **com
 `explodir_arquivos`/`juntar_binarios`) até o nó **`Juntar Binários`**. Assim o aviso
 lista rótulos legíveis (sem nome de arquivo cru).
 
-**Subject** (mesma expressão nos 12 nós "Aviso: \<lab\>"):
+**Subject** (mesma expressão nos 14 nós "Aviso: \<lab\>"):
 ```
 ={{ ($json.error ? '[FALHA] ' : '[OK] ') + $('Juntar Binários').item.json.lab_nome + ' — relatórios enviados' }}
 ```
 
-**Message** (campo *Message*, emailType **text**; mesma expressão nos 12 nós):
+**Message** (campo *Message*, emailType **text**; mesma expressão nos 14 nós):
 ```
 ={{ (() => {
   const g = $('Juntar Binários').item.json;
