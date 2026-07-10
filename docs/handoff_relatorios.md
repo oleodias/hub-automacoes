@@ -86,8 +86,11 @@ Cada combinação única é gerada **uma vez**:
 | `_set_valor` | **Robusto:** `scrollIntoView` + foco/mouse + `apex.item().setValue()` + `input`/`change` + `jQuery.trigger('change')` + fallback `Select`. |
 | `_definir_select` | Garante um `<select>` no valor alvo forçando transição REAL; se já estiver no alvo, faz **"wiggle"** (vai na outra e volta) p/ forçar o `change`. Usado na **Operação** (Demanda) e no **Setor** Público/Privado (Estoque). `rotulo` só cosmético no log. |
 | `_selecionar_modelo` | Troca o "saved report" por **value** (preferido) ou **label** (nome); aplica via `_set_valor`. |
-| `_entrar_na_tela` | Posiciona o Selenium no contexto certo: **nova aba → topo → iframe** (procura o marcador). |
+| `_entrar_na_tela` | Posiciona o Selenium no contexto certo: **nova aba → topo → iframe** (procura o marcador). Se o NL abrir a **página de erro do navegador** (`ERR_TOO_MANY_REDIRECTS` / "Redirecionamento em excesso") no lugar da tela, levanta `ErroRedirecionamentoNL` **na hora** (sem esperar o timeout). |
+| `_eh_pagina_erro_chrome` | Detecta se o contexto atual é a página de erro do Chrome de redirecionamento (por id `sub-frame-error`/`main-frame-error` e por texto, como salvaguarda). |
 | `_abrir_favorito` | Abre a estrela de favoritos, clica no atalho pelo `invoker_code` e chama `_entrar_na_tela`. |
+| `_recuperar_sessao_nl` | Recuperação após erro do NL: **refaz o login** (re-navega e reautentica), limpando o loop de redirecionamento por sessão velha. |
+| `_abrir_favorito_resiliente` | Envolve `_abrir_favorito` com **retry** (padrão **3 tentativas**): a cada falha (`ErroRedirecionamentoNL`/`TimeoutException`) refaz o login e tenta de novo; **só desiste** (levanta o erro → aviso ao TI) após esgotar. Trata o erro intermitente do NL na 1ª execução do dia. |
 | `_esperar_apex_pronto` | Espera o overlay de processamento do APEX sumir (best-effort). |
 | `_clicar_real` | Clique robusto p/ `a-Menu`/diálogos: sequência `mouseover→mousedown→mouseup→click`. |
 | `_clicar_item_menu` | Acha item do menu Ações **pelo texto** (id numérico muda) + `_clicar_real`. |
@@ -374,6 +377,7 @@ hoje = última semana do mês passado (seg→sexta/quarta). Implementado em `per
 | 9 | 45 planilhas foram pro GitHub | pasta não ignorada | `.gitignore downloads_relatorios/` + `git rm --cached` (`c991c52`) |
 | 10 | n8n `401 não autorizado` | header com placeholder `TROQUE_PELO_...` | trocar o token nos 4 HTTP (config do usuário) |
 | 11 | Logo "inline" não viável direto | node Gmail não marca imagem como inline (CID) | pausado; alternativa = API Gmail (MIME) — ver §12 |
+| 12 | NL abre página de erro do Chrome (`ERR_TOO_MANY_REDIRECTS` / "Redirecionamento em excesso") ao abrir a tela — intermitente, comum na **1ª execução do dia** | loop de redirecionamento por sessão/cookie velha no `nlwebprod.ciamed.com.br` | `_entrar_na_tela` detecta a página de erro na hora e levanta `ErroRedirecionamentoNL`; `_abrir_favorito_resiliente` **refaz o login e tenta de novo (3x)**; só vira aviso ao TI se persistir. Tradução dedicada em `_explicar_erro`. |
 
 ## 12. Pendências / próximos passos
 

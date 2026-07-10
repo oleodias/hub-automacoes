@@ -179,6 +179,30 @@ def _selecionar_modelo(driver, item_id, value=None, label=None):
     return value
 
 
+class ErroRedirecionamentoNL(Exception):
+    """O NL abriu a página de erro do navegador (ERR_TOO_MANY_REDIRECTS /
+    'Redirecionamento em excesso') no lugar da tela — o iframe do APEX não
+    carregou. É intermitente (costuma ocorrer na 1ª execução do dia); o robô
+    trata refazendo o login e tentando de novo (ver _abrir_favorito_resiliente)."""
+
+
+def _eh_pagina_erro_chrome(driver):
+    """True se o CONTEXTO ATUAL é a página de erro do Chrome de redirecionamento
+    em excesso (a do print: ícone de documento quebrado + 'Redirecionamento em
+    excesso'). Casa pelo id interno do Chrome e, por segurança, pelo texto."""
+    try:
+        if (driver.find_elements(By.ID, "sub-frame-error")
+                or driver.find_elements(By.ID, "main-frame-error")):
+            return True
+        corpo = driver.find_elements(By.TAG_NAME, "body")
+        txt = (corpo[0].text if corpo else "").lower()
+        return ("redirecionamento em excesso" in txt
+                or "err_too_many_redirects" in txt
+                or "too many redirects" in txt)
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def _entrar_na_tela(driver, marker_id, timeout=TIMEOUT_PADRAO):
     """Posiciona o Selenium no contexto onde o marcador da tela existe.
 
@@ -189,6 +213,10 @@ def _entrar_na_tela(driver, marker_id, timeout=TIMEOUT_PADRAO):
       2) procura o marcador no documento principal;
       3) se não achar, entra em cada <iframe> (1 nível) até encontrá-lo.
     Deixa o driver JÁ posicionado no contexto certo e diz onde achou.
+
+    Se em vez da tela o NL abrir a página de erro do navegador
+    (ERR_TOO_MANY_REDIRECTS), levanta ErroRedirecionamentoNL NA HORA — sem
+    esperar o timeout inteiro — para o retry entrar em ação rápido.
     """
     fim = time.time() + timeout
     while time.time() < fim:
@@ -197,6 +225,10 @@ def _entrar_na_tela(driver, marker_id, timeout=TIMEOUT_PADRAO):
         driver.switch_to.default_content()                  # 2) documento principal
         if driver.find_elements(By.ID, marker_id):
             return "topo"
+        if _eh_pagina_erro_chrome(driver):                  # topo virou página de erro
+            raise ErroRedirecionamentoNL(
+                "O NL abriu a página de erro do navegador (redirecionamento em "
+                "excesso) no lugar da tela.")
         for fr in driver.find_elements(By.TAG_NAME, "iframe"):  # 3) iframes
             driver.switch_to.default_content()
             try:
@@ -205,6 +237,11 @@ def _entrar_na_tela(driver, marker_id, timeout=TIMEOUT_PADRAO):
                 continue
             if driver.find_elements(By.ID, marker_id):
                 return "iframe"
+            if _eh_pagina_erro_chrome(driver):              # iframe virou página de erro
+                driver.switch_to.default_content()
+                raise ErroRedirecionamentoNL(
+                    "O NL abriu a página de erro do navegador (redirecionamento em "
+                    "excesso) no lugar da tela.")
         driver.switch_to.default_content()
         _sleep(0.5)
     raise TimeoutException(
@@ -228,6 +265,54 @@ def _abrir_favorito(driver, invoker_code, marker_id):
     _sleep(2.5)
     onde = _entrar_na_tela(driver, marker_id)
     print(f"> 🧭 Tela carregada (marcador em: {onde}).")
+
+
+def _recuperar_sessao_nl(driver):
+    """Recuperação após o NL abrir a página de erro: refaz o login (re-navega
+    do zero e reautentica), o que limpa o loop de redirecionamento por sessão
+    velha. Best-effort — devolve True se o login voltou a valer."""
+    try:
+        ok = fazer_login(driver)
+    except Exception as e:  # noqa: BLE001
+        print(f"> ⚠️ Recuperação: erro ao refazer login: {type(e).__name__}: {e}")
+        return False
+    if not ok:
+        print("> ⚠️ Recuperação: re-login não confirmou o carregamento do menu.")
+    return ok
+
+
+def _abrir_favorito_resiliente(driver, invoker_code, marker_id, tentativas=3):
+    """Abre o favorito TOLERANDO o erro intermitente do NL de 'Redirecionamento
+    em excesso' (ERR_TOO_MANY_REDIRECTS), comum na 1ª execução do dia.
+
+    Em caso de falha (página de erro do navegador OU a tela não carregou),
+    refaz o login e tenta de novo, até `tentativas` vezes. Só desiste — e aí
+    levanta o erro, que vira aviso ao TI — depois de esgotar as tentativas."""
+    ultimo = None
+    for tentativa in range(1, tentativas + 1):
+        try:
+            _abrir_favorito(driver, invoker_code, marker_id)
+            if tentativa > 1:
+                print(f"> ✅ NL recuperado na tentativa {tentativa}/{tentativas}.")
+            return
+        except (ErroRedirecionamentoNL, TimeoutException) as e:
+            ultimo = e
+            motivo = ("redirecionamento em excesso"
+                      if isinstance(e, ErroRedirecionamentoNL) else "a tela não carregou")
+            print(f"> ⚠️ NL falhou ao abrir a tela ({motivo}) — "
+                  f"tentativa {tentativa}/{tentativas}.")
+            if tentativa < tentativas:
+                print("> 🔄 Recuperando (refazendo login) e tentando novamente...")
+                _recuperar_sessao_nl(driver)
+                _sleep(3)
+    # Esgotou as tentativas → erro claro (mantém o tipo p/ a tradução no aviso).
+    resumo = (f"O NL continuou com erro de redirecionamento ao abrir a tela após "
+              f"{tentativas} tentativas (marcador '{marker_id}').")
+    if isinstance(ultimo, ErroRedirecionamentoNL):
+        raise ErroRedirecionamentoNL(resumo) from ultimo
+    raise TimeoutException(
+        f"A tela do NL não carregou após {tentativas} tentativas "
+        f"(marcador '{marker_id}').") from ultimo
 
 
 def _esperar_apex_pronto(driver, timeout=TIMEOUT_PADRAO):
@@ -614,6 +699,13 @@ def _explicar_erro(exc):
     msg = (str(exc) or "").lower()
 
     # 1) Por mensagem (casos mais específicos primeiro)
+    if ("redirecionamento em excesso" in msg or "err_too_many_redirects" in msg
+            or "too many redirects" in msg or "página de erro do navegador" in msg):
+        return ("O NL abriu a página de erro do navegador (redirecionamento em excesso) "
+                "ao carregar a tela — costuma acontecer na 1ª execução do dia. O robô "
+                "refez o login e tentou de novo algumas vezes, mas o erro persistiu.",
+                "Rode novamente em alguns minutos. Se continuar, a TI deve verificar o NL "
+                "(nlwebprod.ciamed.com.br) — provável loop de redirecionamento/sessão.")
     if "only supports chrome version" in msg or "this version of chromedriver" in msg:
         return ("A versão do Chrome e a do ChromeDriver estão incompatíveis.",
                 "TI: atualizar o ChromeDriver para a mesma versão do Chrome da máquina do robô.")
@@ -684,15 +776,30 @@ def _explicar_erro(exc):
             "Rode novamente. Se persistir, encaminhe o detalhe técnico ao desenvolvedor.")
 
 
-def _resultado_erro(ctx, pasta, avisos, exc=None, explicacao=None, sugestao=None, detalhe=None, msg=None):
+def _erro_retriavel(exc):
+    """Diz se vale a pena o n8n RE-EXECUTAR o robô inteiro (Chrome novo) para
+    este erro. `True` p/ falhas TRANSITÓRIAS (NL/rede/sessão/redirecionamento,
+    lentidão, navegador caído) — uma nova execução do zero costuma resolver.
+    `False` p/ erros que uma re-execução NÃO conserta (config de lab, arquivo
+    de planilha travado no Excel, dado em formato inesperado)."""
+    if type(exc).__name__ in ("KeyError", "PermissionError", "ValueError"):
+        return False
+    return True
+
+
+def _resultado_erro(ctx, pasta, avisos, exc=None, explicacao=None, sugestao=None,
+                    detalhe=None, msg=None, retriavel=None):
     """Monta o resultado de erro ESTRUTURADO que o n8n usa para o e-mail de aviso:
-    o quê (explicação), onde (etapa/lab/período/progresso) e o detalhe técnico."""
+    o quê (explicação), onde (etapa/lab/período/progresso) e o detalhe técnico.
+    `retriavel` diz ao n8n se ele deve re-executar o robô (rede de segurança)."""
     if exc is not None:
         nome = type(exc).__name__
         det = (str(exc) or "").strip().splitlines()[0] if str(exc).strip() else "(sem mensagem)"
         detalhe = f"{nome}: {det}"
         explicacao, sugestao = _explicar_erro(exc)
         msg = detalhe
+        if retriavel is None:
+            retriavel = _erro_retriavel(exc)
     return {
         "status": "Erro",
         "msg": msg or detalhe or "Erro na execução.",
@@ -703,6 +810,8 @@ def _resultado_erro(ctx, pasta, avisos, exc=None, explicacao=None, sugestao=None
         "explicacao": explicacao or "Ocorreu um erro inesperado durante a execução do robô.",
         "sugestao": sugestao or "Rode novamente; se persistir, avise o desenvolvedor.",
         "detalhe_tecnico": detalhe or msg or "",
+        # Rede de segurança do n8n: só re-executa o robô se o erro for transitório.
+        "retriavel": bool(retriavel) if retriavel is not None else False,
         "pasta": pasta,
         "itens": [],
         "avisos": avisos,
@@ -734,13 +843,15 @@ def executar(job):
             msg=f"lab_id desconhecido(s): {desconhecidos}",
             detalhe=f"lab_id desconhecido(s): {desconhecidos}",
             explicacao=f"O(s) laboratório(s) {desconhecidos} não existe(m) na configuração.",
-            sugestao="Confira o lab_id no Disparo Manual/Agenda (precisa casar com a lista de labs).")
+            sugestao="Confira o lab_id no Disparo Manual/Agenda (precisa casar com a lista de labs).",
+            retriavel=False)  # erro de config: re-executar não resolve
     if not envios:
         return _resultado_erro(ctx, "", avisos,
             msg="Nenhum envio informado no job.",
             detalhe="Nenhum envio informado no job.",
             explicacao="O robô foi acionado sem nenhum envio para processar.",
-            sugestao="Verifique se a Agenda/Disparo Manual gerou algum envio válido para hoje.")
+            sugestao="Verifique se a Agenda/Disparo Manual gerou algum envio válido para hoje.",
+            retriavel=False)  # nada a processar: re-executar não resolve
 
     pasta = os.path.join(PASTA_BASE, datetime.now().strftime("exec_%Y%m%d_%H%M%S"))
     os.makedirs(pasta, exist_ok=True)
@@ -760,7 +871,8 @@ def executar(job):
                 msg="Falha no login do NL.",
                 detalhe="fazer_login(driver) retornou False.",
                 explicacao="O robô não conseguiu entrar no NL (login não concluído).",
-                sugestao="Confira usuário/senha do NL e se o sistema está no ar; depois rode novamente.")
+                sugestao="Confira usuário/senha do NL e se o sistema está no ar; depois rode novamente.",
+                retriavel=True)  # login pode falhar por instabilidade momentânea do NL
 
         # ---- 1) ANÁLISE DE ESTOQUE (gera cada (modelo, setor) único 1x) ----
         # Cada lab tem o SEU modelo de estoque → a unidade é (modelo, setor),
@@ -775,7 +887,8 @@ def executar(job):
         estoque_paths = {}  # (modelo_estoque, setor) -> caminho
         estilos = {}  # caminho -> (titulo, subtitulo) p/ a estilização final
         if combos_est_alvo:
-            _abrir_favorito(driver, ESTOQUE["favorito_invoker"], ESTOQUE["item_marcador"])
+            ctx["etapa"] = "Abrindo a tela de Análise de Estoque no NL"
+            _abrir_favorito_resiliente(driver, ESTOQUE["favorito_invoker"], ESTOQUE["item_marcador"])
             for e in envios:
                 lab = LABS[e["lab_id"]]
                 nome_disp = lab["nome"]                   # exibição (subtítulo/manifesto)
@@ -822,7 +935,8 @@ def executar(job):
         total_venda, feito_venda = len(combos_alvo), 0
 
         combos = {}  # (modelo_id, operacao, ini, fim) -> caminho (None se vazio/falhou)
-        _abrir_favorito(driver, DEMANDA["favorito_invoker"], DEMANDA["item_marcador"])
+        ctx["etapa"] = "Abrindo a tela de Demanda Fornecedor no NL"
+        _abrir_favorito_resiliente(driver, DEMANDA["favorito_invoker"], DEMANDA["item_marcador"])
         for e in envios:
             lab = LABS[e["lab_id"]]
             modelo_id = lab["modelo_venda"] or lab.get("modelo_label")

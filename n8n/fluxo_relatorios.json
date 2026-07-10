@@ -126,7 +126,7 @@
       "typeVersion": 4.2,
       "position": [
         -1872,
-        448
+        464
       ]
     },
     {
@@ -140,7 +140,7 @@
       "typeVersion": 1.1,
       "position": [
         -1616,
-        448
+        464
       ],
       "webhookId": "e91fe844-f9bc-4a25-8d68-4b2764bb7fea"
     },
@@ -1399,8 +1399,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        -112,
-        832
+        192,
+        848
       ],
       "webhookId": "b3ea3637-bd57-4b38-8996-f467c1b92284",
       "credentials": {
@@ -1494,7 +1494,7 @@
       "parameters": {
         "content": "## 5 · Erro do robô\nSe o robô falhar (não gerou nada), avisa a TI (`email_avisos`) com o detalhe.",
         "height": 316,
-        "width": 580,
+        "width": 1076,
         "color": 2
       },
       "id": "c67d7411-f40b-4efc-b75d-7d6056d21c86",
@@ -1502,8 +1502,8 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -448,
-        704
+        -656,
+        720
       ]
     },
     {
@@ -1611,8 +1611,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -352,
-        832
+        -16,
+        848
       ]
     },
     {
@@ -1734,6 +1734,64 @@
           "name": "Gmail account"
         }
       }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "094f62e0-5b82-478d-9b69-56dc6d291332",
+              "leftValue": "={{ ($('Iniciar Robo').item.json.resultado || {}).retriavel === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "c2b41a02-748f-4fd7-b07e-4193005bf4b9",
+              "leftValue": "={{ $runIndex }}",
+              "rightValue": 1,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f8fddf5e-1d13-45ad-af4b-cad23458b360",
+      "name": "Re-tentar robô?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "minutes"
+      },
+      "id": "7a43331e-abf0-4d64-8873-d63fe3f5f938",
+      "name": "Aguardar re-tentativa",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -256,
+        816
+      ],
+      "webhookId": "2da51416-f50d-4dbf-ae55-ad5ab57d9152"
     }
   ],
   "pinData": {},
@@ -1837,7 +1895,7 @@
         ],
         [
           {
-            "node": "Formatar Erro",
+            "node": "Re-tentar robô?",
             "type": "main",
             "index": 0
           }
@@ -2263,6 +2321,35 @@
           }
         ]
       ]
+    },
+    "Re-tentar robô?": {
+      "main": [
+        [
+          {
+            "node": "Aguardar re-tentativa",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Formatar Erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aguardar re-tentativa": {
+      "main": [
+        [
+          {
+            "node": "Iniciar Robo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
@@ -2270,7 +2357,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "ab1dd721-5e82-4aea-81e2-e599b69583ad",
+  "versionId": "9a295379-fc2c-44f7-9929-1837ab1e88fa",
   "meta": {
     "instanceId": "e6ba50edb8442a5e57d53b1fde783d26f4d173325ee71f811fed3dbe4c4df42d"
   },
