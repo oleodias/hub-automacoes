@@ -194,15 +194,20 @@ compartilha esse arquivo com outro lab).
 
 | Lab | Hook | Regra |
 |---|---|---|
-| `fresenius` | `fresenius_desconto` | Soma a coluna **`Vlr Desconto`** de volta na coluna **`Pr Cx`**, linha a linha (o relatório traz o `Pr Cx` *líquido* do desconto; a Fresenius quer o preço *cheio*). Linhas com desconto `0` ficam intactas. |
+| `fresenius` | `fresenius_desconto` | **(1)** Soma a coluna **`Vlr Desconto`** de volta na coluna **`Pr Cx`**, linha a linha (o relatório traz o `Pr Cx` *líquido* do desconto; a Fresenius quer o preço *cheio*). Linhas com desconto `0` ficam intactas. **(2)** Depois, **REMOVE a coluna `Vlr Desconto`** do arquivo final — o desconto é acordo interno Ciamed↔cliente e **não pode chegar ao laboratório**. |
 
 **Cuidados técnicos** (já tratados no hook):
 - Números são **texto pt-BR** no xlsx (`2.898,5729`). O hook converte pt-BR →
   float p/ somar e devolve em pt-BR (4 casas), só nas linhas alteradas.
-- Colunas achadas por nome (ignora caixa/espaços). Se não achar `Vlr Desconto`/
-  `Pr Cx`, **não arrisca**: copia sem alterar e loga `⚠️`.
-- Log na execução: `✏️ [pos] fresenius_desconto: desconto somado em 'Pr Cx' em N de M linha(s)`.
-- **Validado** contra arquivo real (16/112 linhas com desconto, somas conferidas).
+- Colunas achadas por nome (ignora caixa/espaços). Se **não achar `Vlr Desconto`**,
+  não há o que somar/esconder: copia sem alterar e loga `⚠️`.
+- **Confidencialidade:** a coluna `Vlr Desconto` **sempre** sai do arquivo final quando
+  existe — inclusive no caso de borda em que o `Pr Cx` não é encontrado (aí não soma, mas
+  remove mesmo assim e loga `⚠️` alto: preços podem ficar líquidos → conferir).
+- Logs na execução: `✏️ ...desconto somado em 'Pr Cx' em N de M linha(s)` e
+  `🗑️ ...coluna 'Vlr Desconto' removida do arquivo final`.
+- **Validado** contra arquivo real (somas conferidas) e por teste unitário dos 3 casos
+  (normal · sem `Vlr Desconto` · sem `Pr Cx`).
 
 > Para adicionar um ajuste a outro lab: crie a função em `pos_processamento.py`,
 > registre em `HOOKS`, e some o nome em `"pos": [...]` do lab no `labs_config.py`.

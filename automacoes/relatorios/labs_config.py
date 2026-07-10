@@ -66,7 +66,8 @@ LABS = {
     "csl":          {"nome": "CSL",              "modelo_venda": "103030134957924372", "modelo_estoque": "127945131004674976", "estoque": ["privado"], "operacoes": [OPERACAO_PRIVADO]},
     # Fresenius: venda E estoque por VALUE (ambos já vieram no HTML).
     # PÓS-PROCESSAMENTO: o relatório traz "Pr Cx" líquido + coluna "Vlr Desconto";
-    # o hook fresenius_desconto soma o desconto de volta no Pr Cx (preço cheio).
+    # o hook fresenius_desconto soma o desconto de volta no Pr Cx (preço cheio) e
+    # DEPOIS remove a coluna "Vlr Desconto" (acordo interno — não vai ao laboratório).
     "fresenius":    {"nome": "Fresenius",        "modelo_venda": "118673391603879778", "modelo_estoque": "127946236241699626", "estoque": ["privado"], "operacoes": [OPERACAO_PRIVADO], "pos": ["fresenius_desconto"]},
     "glaxo":        {"nome": "Glaxo",            "modelo_venda": "103036051703963152", "modelo_estoque": "127947392953704118", "estoque": ["privado"], "operacoes": [OPERACAO_PRIVADO]},
     "organon":      {"nome": "Organon",          "modelo_venda": "103037225680969181", "modelo_estoque": "127948686117719839", "estoque": ["privado"], "operacoes": [OPERACAO_PRIVADO]},
