@@ -23,7 +23,6 @@ MODULOS_HUB = {
     'cep':         'Cadastro de CEP',
     'monitor':     'Monitor de Cadastros',
     'notas':       'Controle de Notas Fiscais',
-    'lancamento_notas': 'Lançamento de Notas',
 }
 
 
@@ -249,7 +248,6 @@ ROBOS_HUB = {
     'mdf':          'Relatório MDF-e',
     'fornecedor':   'Cadastro de Fornecedor',
     'cliente_novo': 'Cadastro de Cliente (Novo)',
-    'lancamento_notas_danfe':   'Lançamento de Notas — DANFE',
 }
 
 
@@ -347,130 +345,6 @@ class FilaExecucao(db.Model):
     def __repr__(self):
         return f'<FilaExecucao {self.token} | {self.recurso} | {self.status}>'
 
-
-# ══════════════════════════════════════════════════════════════
-# MODELO: Lançamento de Nota
-# ══════════════════════════════════════════════════════════════
-
-class LancamentoNota(db.Model):
-    """
-    Representa um lançamento de nota fiscal no Hub.
-
-    Ciclo de vida do status:
-        'na_fila'    → usuário enviou XML e preencheu, esperando robô
-        'executando' → robô RPA está rodando agora
-        'concluida'  → robô finalizou com sucesso no NLWeb
-        'a_rever'    → robô falhou, usuário precisa decidir o que fazer
-        'cancelada'  → usuário desistiu na aba "A Rever"
-
-    Tipos de nota (preparando para os futuros):
-        'danfe'   → nota fiscal eletrônica (modelo 55) — começamos por este
-        'servico' → nota de serviço
-        'cupom'   → cupom fiscal
-    """
-
-    __tablename__ = 'lancamentos_notas'
-
-    # Índice único PARCIAL: impede duas notas ATIVAS com a mesma chave de
-    # acesso (na_fila/executando/concluida/a_rever). Notas 'cancelada' ficam
-    # de fora, então é possível reenviar uma nota depois de cancelar a antiga.
-    # O filtro é específico do PostgreSQL (postgresql_where).
-    __table_args__ = (
-        db.Index(
-            'uq_lancamentos_notas_chave_ativa',
-            'chave_acesso',
-            unique=True,
-            postgresql_where=db.text("status <> 'cancelada' AND chave_acesso IS NOT NULL"),
-        ),
-    )
-
-    id              = db.Column(db.Integer, primary_key=True)
-    chave_acesso    = db.Column(db.String(44), index=True)   # índice de busca; unicidade via índice parcial acima
-    numero_nota     = db.Column(db.String(20))
-    serie           = db.Column(db.String(5))
-    tipo_nota       = db.Column(db.String(20), default='danfe')
-    fornecedor_cnpj = db.Column(db.String(20))
-    fornecedor_nome = db.Column(db.String(255))
-
-    # Numeric(15,2) garante precisão de centavos. Nunca use Float pra dinheiro
-    # — Float é binário e perde precisão (0.1 + 0.2 != 0.3 em float).
-    valor_total = db.Column(db.Numeric(15, 2))
-
-    # Caminho do XML salvo em xmls/lancamento_notas/recebidos/AAAA/MM/
-    xml_path = db.Column(db.String(500))
-
-    # JSON com o resultado do parser (itens, duplicatas, totais, etc).
-    # PostgreSQL armazena isso como JSONB nativo — pode até queryar dentro do JSON depois.
-    dados_xml = db.Column(db.JSON, default=dict)
-
-    # JSON com o que o USUÁRIO preencheu nas 4 abas:
-    # { centros_custo: [{item_idx, codigo}], parcelas: [...],
-    #   data_recebimento, data_base, operacao_codigo }
-    dados_complementares = db.Column(db.JSON, default=dict)
-
-    status          = db.Column(db.String(20), default='na_fila')
-    mensagem_erro   = db.Column(db.Text)
-    screenshot_erro = db.Column(db.String(500))
-
-    # Quem disparou o lançamento (operador no Hub)
-    usuario_id   = db.Column(db.Integer)
-    usuario_nome = db.Column(db.String(150))
-
-    created_at = db.Column(db.DateTime, default=datetime.now)
-    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
-
-    def __repr__(self):
-        return f'<LancamentoNota {self.numero_nota} | {self.fornecedor_nome} | {self.status}>'
-
-
-# ══════════════════════════════════════════════════════════════
-# MODELO: Centro de Custo
-# ══════════════════════════════════════════════════════════════
-
-class CentroCusto(db.Model):
-    """
-    Centros de custo selecionáveis pelo usuário ao lançar uma nota
-    (um por item). Tabela populada via scripts/seed_dados_notas.py.
-
-    Campo 'empresa' é usado para agrupar no <optgroup> do dropdown.
-    """
-
-    __tablename__ = 'centros_custo'
-
-    id        = db.Column(db.Integer, primary_key=True)
-    # String, não Integer: o código tem zero à esquerda (ex: '01100001')
-    codigo    = db.Column(db.String(20), unique=True, nullable=False, index=True)
-    descricao = db.Column(db.String(255), nullable=False)
-    empresa   = db.Column(db.String(50))   # 'Ciamed RS', 'Ciamed SP', etc.
-    ativo     = db.Column(db.Boolean, default=True)
-
-    def __repr__(self):
-        return f'<CentroCusto {self.codigo} | {self.descricao}>'
-
-
-# ══════════════════════════════════════════════════════════════
-# MODELO: Operação de Nota
-# ══════════════════════════════════════════════════════════════
-
-class OperacaoNota(db.Model):
-    """
-    Operações disponíveis no NLWeb para lançar uma nota.
-    Tabela populada via scripts/seed_dados_notas.py.
-
-    Usada no autocomplete do campo "Operação" da aba 4.
-    """
-
-    __tablename__ = 'operacoes_nota'
-
-    id        = db.Column(db.Integer, primary_key=True)
-    # String para preservar formatos como "1.000", "9.999"
-    codigo    = db.Column(db.String(20), unique=True, nullable=False, index=True)
-    descricao = db.Column(db.String(500), nullable=False)
-    ativo     = db.Column(db.Boolean, default=True)
-
-    def __repr__(self):
-        return f'<OperacaoNota {self.codigo} | {self.descricao[:40]}>'
-    
 
 # ══════════════════════════════════════════════════════════════
 # MÓDULO: Controle de Notas Fiscais

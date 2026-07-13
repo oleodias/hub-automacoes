@@ -77,20 +77,6 @@ FAQ_SEED = [
         'ordem': 2,
     },
 
-    # ── Lançamento de Notas ───────────────────────────────────
-    {
-        'modulo': 'lancamento_notas',
-        'pergunta': 'O que significa o status "a rever"?',
-        'resposta': '"A rever" indica que o robô encontrou inconsistências (ex: NCM divergente, CFOP suspeito) e a nota precisa de validação manual antes de seguir para o ERP.',
-        'ordem': 1,
-    },
-    {
-        'modulo': 'lancamento_notas',
-        'pergunta': 'Posso relançar uma nota cancelada?',
-        'resposta': 'Sim, mas a nota cancelada precisa ser excluída primeiro do sistema. Use a opção "Limpar lançamento" antes de tentar novamente.',
-        'ordem': 2,
-    },
-
     # ── Geral ─────────────────────────────────────────────────
     {
         'modulo': 'geral',

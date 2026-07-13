@@ -105,7 +105,6 @@ from routes.cnpj import cnpj_bp
 from routes.cep import cep_bp
 from routes.admin import admin_bp
 from routes.notas import notas_bp
-from routes.lancamento_notas import lancamento_notas_bp
 from routes.suporte import suporte_bp
 from routes.relatorios import relatorios_bp
 
@@ -119,7 +118,6 @@ app.register_blueprint(cnpj_bp)
 app.register_blueprint(cep_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(notas_bp)
-app.register_blueprint(lancamento_notas_bp)
 app.register_blueprint(suporte_bp)
 app.register_blueprint(relatorios_bp)
 

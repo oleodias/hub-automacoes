@@ -29,7 +29,7 @@ load_dotenv()
 # O Alembic precisa conhecer TODOS os modelos para poder comparar
 # o que está no código com o que está no banco e gerar as migrations.
 from extensions import db
-from models import Submissao, Usuario, Execucao, FilaExecucao, LancamentoNota, CentroCusto, OperacaoNota, NotasCategoria, NotasUnidade, NotasFornecedor, Nota, Chamado, ChamadoAnexo, ChamadoHistorico, Notificacao, FaqPergunta  # noqa: F401
+from models import Submissao, Usuario, Execucao, FilaExecucao, NotasCategoria, NotasUnidade, NotasFornecedor, Nota, Chamado, ChamadoAnexo, ChamadoHistorico, Notificacao, FaqPergunta  # noqa: F401
 
 # ── Configuração do Alembic ───────────────────────────────────
 config = context.config

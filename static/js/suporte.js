@@ -17,7 +17,6 @@
     cnpj: "fa-magnifying-glass",
     monitor: "fa-chart-line",
     notas: "fa-file-lines",
-    lancamento_notas: "fa-file-invoice",
     geral: "fa-circle-info",
   };
 

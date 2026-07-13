@@ -30,8 +30,8 @@ relatórios) por uma interface web, com execução monitorável.
 | Caminho | Papel |
 |---|---|
 | `app.py` | Cria o Flask, configura segurança/banco, registra blueprints, exige login. |
-| `routes/` | Blueprints (um por área): `auth`, `main`, `itens`, `mdf`, `fornecedor`, `clientes`, `cnpj`, `admin`, `notas`, `lancamento_notas`, `suporte`, `relatorios`. |
-| `automacoes/` | Robôs Selenium: `clientes/`, `lancamento_notas/`, `relatorios/`, `cadastro_item.py`, `cadastro_ncm.py`, `robo_fornecedor.py`, `robo_mdf.py`, `login_navegacao.py`, `motor_xml.py`… |
+| `routes/` | Blueprints (um por área): `auth`, `main`, `itens`, `mdf`, `fornecedor`, `clientes`, `cnpj`, `admin`, `notas`, `suporte`, `relatorios`. |
+| `automacoes/` | Robôs Selenium: `clientes/`, `relatorios/`, `cadastro_item.py`, `cadastro_ncm.py`, `robo_fornecedor.py`, `robo_mdf.py`, `login_navegacao.py`, `motor_xml.py`… |
 | `models.py` | Modelos SQLAlchemy. |
 | `extensions.py` | `db` (SQLAlchemy), `limiter` (rate-limit). |
 | `utils/` | `auth`, `fila` (fila de execução), `n8n_security` (anti-SSRF), `cnpj_ws`, `cebas`, `rastreio`, `validacao`, `logging_config`. |
