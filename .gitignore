@@ -65,3 +65,7 @@ desktop.ini
 
 # Saidas do robo de relatorios (planilhas geradas em runtime — nao versionar)
 downloads_relatorios/
+
+# ── EXPORT DE DADOS P/ ORACLE (migração de servidor) ─────────
+# Contém hashes de senha e dados de clientes — NUNCA versionar.
+scripts/export_oracle/

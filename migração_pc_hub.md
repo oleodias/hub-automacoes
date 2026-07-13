@@ -46,9 +46,6 @@ Conferir (deve entrar no prompt `hub_automacoes=>`; saia com `\q`):
 ## 3. Pegar o código
 
 - [ ] Clonar/copiar o projeto para o PC novo.
-- [ ] Copiar a pasta **`scripts/dados/`** do PC antigo (contém `lista_cc.txt` e
-      `lista_operacoes.txt`). Essa pasta é ignorada pelo Git, então **não vem no clone** —
-      sem ela, o seed de centros de custo/operações é pulado.
 
 ---
 
@@ -80,7 +77,8 @@ pip install -r requirements.txt
 
 ## 6. Criar o schema do banco (migrations)
 
-Com o banco vazio criado no passo 2, isto cria as **15 tabelas**:
+Com o banco vazio criado no passo 2, isto cria as **14 tabelas do Hub**
+(+ a `alembic_version` de controle):
 
 ```powershell
 alembic upgrade head
@@ -97,9 +95,8 @@ alembic upgrade head
 python scripts/seed_tudo.py
 ```
 
-Popula unidades, categorias, centros de custo, operações e o FAQ. É **idempotente** — pode
-rodar de novo sem duplicar. (O passo de centros de custo/operações só roda se a pasta
-`scripts/dados/` existir — veja passo 3.)
+Popula unidades, categorias e o FAQ da Central de Suporte. É **idempotente** — pode
+rodar de novo sem duplicar.
 
 ---
 
@@ -173,7 +170,7 @@ No `http://localhost:5678` aparecerá de novo a tela de cadastro do dono — def
 - [ ] PostgreSQL instalado + banco `hub_automacoes` criado
 - [ ] `.env` preenchido (DATABASE_URL, FLASK_SECRET_KEY, N8N, NLWEB)
 - [ ] `pip install -r requirements.txt`
-- [ ] `alembic upgrade head` (15 tabelas)
+- [ ] `alembic upgrade head` (14 tabelas do Hub)
 - [ ] `python scripts/seed_tudo.py`
 - [ ] `python criar_admin.py`
 - [ ] `python app.py` → login OK em http://localhost:5000

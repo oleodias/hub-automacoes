@@ -19,7 +19,7 @@ O **Alembic** (a ferramenta de "migrations") cuida **só do PostgreSQL**. Ele
 aplica no Postgres e depois **avisa a TI** para aplicar a mesma coisa no Oracle.
 
 > Antes de qualquer comando: abra o terminal na pasta do projeto e **ative o
-> ambiente Python** (igual ao `SETUP_BANCO_NOVO.md`):
+> ambiente Python** (igual ao `migração_pc_hub.md`):
 > ```powershell
 > venv\Scripts\activate
 > ```
@@ -148,7 +148,7 @@ ALTER TABLE usuarios ADD telefone VARCHAR2(20 CHAR);
 - **"command not found: alembic"** → você esqueceu de ativar o ambiente:
   `venv\Scripts\activate`.
 - **Erro de conexão / "could not connect"** → a `DATABASE_URL` não está
-  configurada no `.env` (veja `SETUP_BANCO_NOVO.md`, passo 4).
+  configurada no `.env` (veja `migração_pc_hub.md`, passo 4).
 - **A migration não apareceu** → você criou uma tabela nova mas esqueceu de
   adicionar o nome dela no `import` do `migrations/env.py`.
 - **Funcionou no seu PC mas sumiu depois** → você esqueceu de **commitar** o
@@ -158,5 +158,6 @@ ALTER TABLE usuarios ADD telefone VARCHAR2(20 CHAR);
 
 ### Arquivos relacionados
 - **`ESTRUTURA_BANCO_ORACLE.md`** — schema completo em Oracle (referência da TI)
-- **`SETUP_BANCO_NOVO.md`** — instalar o Hub e o banco do zero
+- **`docs/migracao_oracle.md`** — plano da migração do Hub para o servidor (Oracle 19c)
+- **`migração_pc_hub.md`** — instalar o Hub e o banco do zero
 - **`scripts/consultar_estrutura_postgres.sql`** — consultas para inspecionar o banco no pgAdmin
