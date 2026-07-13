@@ -37,13 +37,14 @@ def permissoes_padrao():
 # (admin e meu_historico) já passa a listá-lo automaticamente.
 
 ROBOS_HUB = {
-    'itens_fase1':        'Itens — Fase 1',
-    'itens_fase2':        'Itens — Fase 2',
+    'itens_fase1':        'Cadastro de Itens — Fase 1 (NCM)',
+    'itens_fase2':        'Cadastro de Itens — Fase 2 (ERP)',
     'mdf':                'Relatório MDF-e',
-    'fornecedor':         'Fornecedor',
-    'cliente_novo':       'Cliente Novo',
+    'fornecedor':         'Cadastro de Fornecedor',
+    'cliente_novo':       'Cadastro de Cliente (Novo)',
     'cliente_reativacao': 'Cliente Reativação',
     'cadastro_cep':       'Cadastro de CEP',
+    'relatorios':         'Relatórios aos Laboratórios',
 }
 
 SETORES_CIAMED = [
@@ -236,19 +237,6 @@ class LinkFicha(db.Model):
 
     def __repr__(self):
         return f'<LinkFicha {self.token[:8]}... | {self.cnpj_cliente} | por {self.gerado_por_nome}>'
-    
-
-# ══════════════════════════════════════════════════════════════
-# ROBÔS DO HUB (lista central para rastreamento)
-# ══════════════════════════════════════════════════════════════
-
-ROBOS_HUB = {
-    'itens_fase1':  'Cadastro de Itens — Fase 1 (NCM)',
-    'itens_fase2':  'Cadastro de Itens — Fase 2 (ERP)',
-    'mdf':          'Relatório MDF-e',
-    'fornecedor':   'Cadastro de Fornecedor',
-    'cliente_novo': 'Cadastro de Cliente (Novo)',
-}
 
 
 # ══════════════════════════════════════════════════════════════
@@ -477,6 +465,11 @@ class Nota(db.Model):
     nf_numero     = db.Column(db.String(50),     nullable=True)
     valor_liquido = db.Column(db.Numeric(12, 2), nullable=True)
     retencao      = db.Column(db.Boolean,        default=False)
+    # Lista de TIPOS de retenção da nota (ex: ["inss", "iss"]). Espelha o
+    # retencoes_padrao do fornecedor; lida/gravada em routes/notas.py.
+    # (A migration 'a0773d001063 adicionar retencoes' ficou vazia e esta
+    #  coluna nunca chegou ao banco — corrigida na b7c8d9e0f1a2.)
+    retencoes     = db.Column(db.JSON,           default=list)
     observacoes   = db.Column(db.Text,           nullable=True)
 
     # Flag de avulsa (não vem de fornecedor recorrente)
