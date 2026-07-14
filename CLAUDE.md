@@ -76,6 +76,7 @@ python -m automacoes.relatorios.gerar_relatorios automacoes/relatorios/job_teste
 - **[ESTRUTURA_BANCO_ORACLE.md](ESTRUTURA_BANCO_ORACLE.md)** — schema do banco DO HUB traduzido para Oracle 19c (DDL pronto p/ a TI, prefixo `cm_hub_aut_`). *Não confundir com o Oracle do ERP.*
 - **[COMO_ALTERAR_O_BANCO.md](COMO_ALTERAR_O_BANCO.md)** — fluxo para mudanças de schema (Alembic no dev + SQL traduzido para a TI aplicar no Oracle).
 - **[migração_pc_hub.md](migração_pc_hub.md)** — setup do Hub do zero em um PC novo (Postgres de dev).
+- **[docs/deploy_linux.md](docs/deploy_linux.md)** — deploy do Hub em um servidor Linux (Gunicorn + Nginx + Postgres): obter o projeto, `.env` sem vazar segredos, `alembic upgrade`/`stamp head`, serviço systemd e checklist.
 - **[n8n/README.md](n8n/README.md)** — guia de montagem dos workflows n8n.
 
 > Ao concluir uma frente grande de trabalho, registrar um handoff em `docs/` e

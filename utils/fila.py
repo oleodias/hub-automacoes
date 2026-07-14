@@ -3,7 +3,7 @@
 # ══════════════════════════════════════════════════════════════
 # Garante "um robô por vez". Antes a fila vivia na memória de UM
 # processo (quebrava com vários workers/containers — item A-01).
-# Agora a fila vive no banco (tabela fila_execucao), então TODOS os
+# Agora a fila vive no banco (tabela cm_hub_aut_fila_execucao), então TODOS os
 # workers enxergam a mesma fila.
 #
 # Há duas filas, separadas pela coluna 'recurso':
@@ -72,7 +72,7 @@ def _expirar_travadas(conn, recurso):
     """Watchdog: remove execuções 'executando' paradas além do tempo-limite."""
     limite = datetime.now() - timedelta(minutes=_timeout_min())
     res = conn.execute(text("""
-        DELETE FROM fila_execucao
+        DELETE FROM cm_hub_aut_fila_execucao
         WHERE recurso = :r AND status = 'executando' AND iniciado_em < :limite
     """), {"r": recurso, "limite": limite})
     if res.rowcount:
@@ -85,7 +85,7 @@ def _expirar_travadas(conn, recurso):
 def _recurso_do_token(token):
     with _get_engine().connect() as conn:
         return conn.execute(
-            text("SELECT recurso FROM fila_execucao WHERE token = :t"),
+            text("SELECT recurso FROM cm_hub_aut_fila_execucao WHERE token = :t"),
             {"t": token}
         ).scalar()
 
@@ -99,7 +99,7 @@ def entrar_na_fila(recurso=RECURSO_RPA):
     token = uuid_lib.uuid4().hex
     with _get_engine().begin() as conn:
         conn.execute(text("""
-            INSERT INTO fila_execucao (token, recurso, status, criado_em)
+            INSERT INTO cm_hub_aut_fila_execucao (token, recurso, status, criado_em)
             VALUES (:t, :r, 'aguardando', :agora)
         """), {"t": token, "r": recurso, "agora": datetime.now()})
     return token
@@ -120,7 +120,7 @@ def _tentar_assumir(token):
         _expirar_travadas(conn, recurso)
 
         atual = conn.execute(
-            text("SELECT status FROM fila_execucao WHERE token = :t"), {"t": token}
+            text("SELECT status FROM cm_hub_aut_fila_execucao WHERE token = :t"), {"t": token}
         ).scalar()
         if atual is None:
             return False
@@ -128,21 +128,21 @@ def _tentar_assumir(token):
             return True
 
         ja_executando = conn.execute(text("""
-            SELECT 1 FROM fila_execucao
+            SELECT 1 FROM cm_hub_aut_fila_execucao
             WHERE recurso = :r AND status = 'executando' LIMIT 1
         """), {"r": recurso}).first()
         if ja_executando:
             return False
 
         mais_antigo = conn.execute(text("""
-            SELECT token FROM fila_execucao
+            SELECT token FROM cm_hub_aut_fila_execucao
             WHERE recurso = :r AND status = 'aguardando'
             ORDER BY id LIMIT 1
         """), {"r": recurso}).scalar()
 
         if mais_antigo == token:
             conn.execute(text("""
-                UPDATE fila_execucao
+                UPDATE cm_hub_aut_fila_execucao
                 SET status = 'executando', iniciado_em = :agora
                 WHERE token = :t
             """), {"t": token, "agora": datetime.now()})
@@ -169,10 +169,10 @@ def finalizar_execucao(token=None, recurso=RECURSO_RPA):
     """Encerra a execução atual, liberando a vez para o próximo da fila."""
     with _get_engine().begin() as conn:
         if token:
-            conn.execute(text("DELETE FROM fila_execucao WHERE token = :t"), {"t": token})
+            conn.execute(text("DELETE FROM cm_hub_aut_fila_execucao WHERE token = :t"), {"t": token})
         else:
             conn.execute(text("""
-                DELETE FROM fila_execucao
+                DELETE FROM cm_hub_aut_fila_execucao
                 WHERE recurso = :r AND status = 'executando'
             """), {"r": recurso})
 
@@ -180,7 +180,7 @@ def finalizar_execucao(token=None, recurso=RECURSO_RPA):
 def sair_da_fila(token):
     """Remove o token da fila (desistência / timeout no front)."""
     with _get_engine().begin() as conn:
-        conn.execute(text("DELETE FROM fila_execucao WHERE token = :t"), {"t": token})
+        conn.execute(text("DELETE FROM cm_hub_aut_fila_execucao WHERE token = :t"), {"t": token})
 
 
 def posicao_na_fila(token):
@@ -190,7 +190,7 @@ def posicao_na_fila(token):
         return -1
     with _get_engine().connect() as conn:
         info = conn.execute(
-            text("SELECT id, status FROM fila_execucao WHERE token = :t"), {"t": token}
+            text("SELECT id, status FROM cm_hub_aut_fila_execucao WHERE token = :t"), {"t": token}
         ).first()
         if info is None:
             return -1
@@ -199,7 +199,7 @@ def posicao_na_fila(token):
         # Posição = quantos itens há na frente (inclui quem está executando)
         # + ele mesmo. Itens já finalizados são removidos da tabela.
         return conn.execute(text("""
-            SELECT COUNT(*) FROM fila_execucao
+            SELECT COUNT(*) FROM cm_hub_aut_fila_execucao
             WHERE recurso = :r AND id <= :id
         """), {"r": recurso, "id": info.id}).scalar()
 
@@ -209,7 +209,7 @@ def recurso_em_execucao(recurso=RECURSO_RPA):
     with _get_engine().begin() as conn:
         _expirar_travadas(conn, recurso)
         return conn.execute(text("""
-            SELECT 1 FROM fila_execucao
+            SELECT 1 FROM cm_hub_aut_fila_execucao
             WHERE recurso = :r AND status = 'executando' LIMIT 1
         """), {"r": recurso}).first() is not None
 
@@ -226,7 +226,7 @@ def cadastro_entrar(resume_url, recurso=RECURSO_CADASTRO):
     token = uuid_lib.uuid4().hex
     with _get_engine().begin() as conn:
         conn.execute(text("""
-            INSERT INTO fila_execucao (token, recurso, status, resume_url, criado_em)
+            INSERT INTO cm_hub_aut_fila_execucao (token, recurso, status, resume_url, criado_em)
             VALUES (:t, :r, 'aguardando', :url, :agora)
         """), {"t": token, "r": recurso, "url": resume_url, "agora": datetime.now()})
 
@@ -243,7 +243,7 @@ def cadastro_liberar_proximo(recurso=RECURSO_CADASTRO):
     with _get_engine().begin() as conn:
         conn.execute(text("SELECT pg_advisory_xact_lock(hashtext(:r))"), {"r": recurso})
         res = conn.execute(text("""
-            DELETE FROM fila_execucao
+            DELETE FROM cm_hub_aut_fila_execucao
             WHERE recurso = :r AND status = 'executando'
         """), {"r": recurso})
         if res.rowcount:
@@ -262,13 +262,13 @@ def _liberar_proximo_cadastro(recurso=RECURSO_CADASTRO):
         _expirar_travadas(conn, recurso)
 
         if conn.execute(text("""
-            SELECT 1 FROM fila_execucao
+            SELECT 1 FROM cm_hub_aut_fila_execucao
             WHERE recurso = :r AND status = 'executando' LIMIT 1
         """), {"r": recurso}).first():
             return None
 
         proximo = conn.execute(text("""
-            SELECT id, token, resume_url FROM fila_execucao
+            SELECT id, token, resume_url FROM cm_hub_aut_fila_execucao
             WHERE recurso = :r AND status = 'aguardando'
             ORDER BY id LIMIT 1
         """), {"r": recurso}).first()
@@ -276,7 +276,7 @@ def _liberar_proximo_cadastro(recurso=RECURSO_CADASTRO):
             return None
 
         conn.execute(text("""
-            UPDATE fila_execucao
+            UPDATE cm_hub_aut_fila_execucao
             SET status = 'executando', iniciado_em = :agora
             WHERE id = :id
         """), {"id": proximo.id, "agora": datetime.now()})
@@ -312,11 +312,11 @@ def fila_cadastro_status_dict(recurso=RECURSO_CADASTRO):
     with _get_engine().begin() as conn:
         _expirar_travadas(conn, recurso)
         em_exec = conn.execute(text("""
-            SELECT 1 FROM fila_execucao
+            SELECT 1 FROM cm_hub_aut_fila_execucao
             WHERE recurso = :r AND status = 'executando' LIMIT 1
         """), {"r": recurso}).first() is not None
         pendentes = conn.execute(text("""
-            SELECT token, resume_url FROM fila_execucao
+            SELECT token, resume_url FROM cm_hub_aut_fila_execucao
             WHERE recurso = :r AND status = 'aguardando'
             ORDER BY id
         """), {"r": recurso}).fetchall()
@@ -336,8 +336,8 @@ def fila_cadastro_reset(recurso=RECURSO_CADASTRO):
     with _get_engine().begin() as conn:
         conn.execute(text("SELECT pg_advisory_xact_lock(hashtext(:r))"), {"r": recurso})
         qtd = conn.execute(text("""
-            SELECT COUNT(*) FROM fila_execucao WHERE recurso = :r
+            SELECT COUNT(*) FROM cm_hub_aut_fila_execucao WHERE recurso = :r
         """), {"r": recurso}).scalar()
-        conn.execute(text("DELETE FROM fila_execucao WHERE recurso = :r"), {"r": recurso})
+        conn.execute(text("DELETE FROM cm_hub_aut_fila_execucao WHERE recurso = :r"), {"r": recurso})
     logger.warning(f"[FILA] ⚠️ RESET forçado da fila '{recurso}'! {qtd} item(ns) removido(s).")
     return qtd
