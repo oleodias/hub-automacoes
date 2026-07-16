@@ -704,7 +704,15 @@ def executar(dados_cliente):
         # Monta a lista de contatos a partir do payload
         # (mesma estrutura usada no cadastro_novo.py: contatos_da_tela)
         email_nfe = dados_cliente.get('email_xml', '')
-        contatos_para_cadastrar = dados_cliente.get('contatos_da_tela', [])
+        # Contatos OBRIGATÓRIOS (mesma regra do cadastro_novo): a FASE A apagou
+        # TODOS os contatos, então recriamos SEMPRE o SIMFRETE (e-mail fixo) e o
+        # ENVIO NFE ELETRONICA (com o e-mail da NF-e do cliente) antes de
+        # acrescentar os contatos vindos do payload.
+        contatos_para_cadastrar = [
+            {"nome": "SIMFRETE", "email_xml": "ciamed@simfrete.com", "email_danfe": "ciamed@simfrete.com"},
+            {"nome": "ENVIO NFE ELETRONICA", "email_xml": email_nfe, "email_danfe": email_nfe},
+        ]
+        contatos_para_cadastrar.extend(dados_cliente.get('contatos_da_tela', []))
 
         if not contatos_para_cadastrar:
             print("   ℹ️ Nenhum contato novo no payload. Pulando recadastro.")
