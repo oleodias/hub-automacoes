@@ -56,7 +56,7 @@ def executar_fase_1():
     lista_ncms = list(set([item['ncm'] for item in lista_itens]))
     
     # --- MUDANÇA AQUI: Pedindo para o login abrir no Modo Fantasma ---
-    driver = login_navegacao.iniciar_navegador()
+    driver = login_navegacao.iniciar_navegador(modo_fantasma=True)
     
     try:
         login_navegacao.fazer_login(driver)

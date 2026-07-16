@@ -46,6 +46,13 @@ def executar(dados_cliente):
 
     options = webdriver.ChromeOptions()
     options.add_argument('--start-maximized')
+    # Headless + flags obrigatórias em Docker/servidor sem tela.
+    # Comente as 5 linhas abaixo se quiser rodar visível no PC (debug).
+    options.add_argument("--headless=new")
+    options.add_argument("--window-size=1920,1080")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-gpu")
 
     driver = webdriver.Chrome(options=options)
     wait = WebDriverWait(driver, 20)
@@ -1170,8 +1177,9 @@ def executar(dados_cliente):
         return {"status": "Erro", "msg": str(e)}
 
     finally:
-        # Comente a linha abaixo se quiser que o navegador fique aberto para conferir
-        # driver.quit()
+        # Fecha o Chrome SEMPRE (evita processo zumbi no servidor).
+        # Comente a linha do quit se quiser conferir o navegador aberto no PC.
+        driver.quit()
         print("> 🏁 Fim da execução.")
 
 

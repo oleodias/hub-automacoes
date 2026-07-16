@@ -30,18 +30,19 @@ data_fim_global = sys.argv[2] if len(sys.argv) > 2 else "31/01/2026"
 
 # --- 1. CONFIGURAÇÃO ---
 chrome_options = Options()
-chrome_options.add_experimental_option("detach", True)
 
-# 👻 --- ADICIONE O MODO FANTASMA AQUI ---
+# --- 👻 HEADLESS + flags obrigatórias em Docker/servidor sem tela ---
 chrome_options.add_argument("--headless=new")
-chrome_options.add_argument("--window-size=1920,1080")
-# ----------------------------------------
+chrome_options.add_argument("--window-size=1920,1080")   # sem isso o APEX esconde botões
+chrome_options.add_argument("--no-sandbox")              # ESSENCIAL em contêiner (Chrome roda como root)
+chrome_options.add_argument("--disable-dev-shm-usage")   # evita crash por /dev/shm pequeno no Docker
+chrome_options.add_argument("--disable-gpu")
+# -------------------------------------------------------------------
 
 dados_para_planilha = []
 
 # Inicia o Navegador
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
-driver.maximize_window()
 
 # --- FUNÇÕES DE APOIO E LOGIN ---
 

@@ -822,10 +822,10 @@ def _resultado_erro(ctx, pasta, avisos, exc=None, explicacao=None, sugestao=None
 def executar(job):
     """Ponto de entrada chamado pelo Hub (síncrono). Ver contrato no topo."""
     envios = job.get("envios", []) or []
-    # Padrão FALSE p/ observar o robô durante os testes (Chrome visível).
-    # ⚠️ PRODUÇÃO/servidor sem tela: volte para True (headless) ou mande
-    # "modo_fantasma": true no job — senão o Chrome não sobe sem display.
-    modo_fantasma = job.get("modo_fantasma", False)
+    # Padrão TRUE (headless) p/ rodar no servidor sem tela / Docker.
+    # Para observar o robô visível num PC de teste, mande
+    # "modo_fantasma": false no job.
+    modo_fantasma = job.get("modo_fantasma", True)
     avisos = []
     # Contexto da execução: alimenta o aviso de erro com ONDE o robô parou.
     ctx = {"etapa": "Inicialização", "lab": "", "periodo": "", "progresso": ""}

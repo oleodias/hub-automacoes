@@ -282,10 +282,16 @@ def executar(dados):
 
     options = webdriver.ChromeOptions()
     options.add_argument('--start-maximized')
-    # "detach" mantém o Chrome aberto mesmo após o script Python terminar.
-    # Só ligamos quando manter_navegador=True (teste de bancada). Em produção
-    # (chamado pelo Hub), o navegador FECHA no fim para não acumular janelas.
-    manter_navegador = bool(dados.get('manter_navegador', True))
+    # Headless + flags obrigatórias em Docker/servidor sem tela.
+    # Comente as 5 linhas abaixo se quiser rodar visível no PC (debug).
+    options.add_argument("--headless=new")
+    options.add_argument("--window-size=1920,1080")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-gpu")
+    # "detach" mantém o Chrome aberto após o script terminar (só p/ teste de
+    # bancada). Em produção (Hub/servidor) fica DESLIGADO por padrão.
+    manter_navegador = bool(dados.get('manter_navegador', False))
     if manter_navegador:
         options.add_experimental_option("detach", True)
 

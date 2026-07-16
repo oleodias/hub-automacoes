@@ -390,31 +390,34 @@ itens_processar = ler_fila_json()
 
 if itens_processar:
     options = webdriver.ChromeOptions()
-    options.add_experimental_option("detach", True)
-    
-    # --- 👻 MODO INVISÍVEL (HEADLESS) ATIVADO ---
-    # options.add_argument("--headless=new") 
-    options.add_argument("--window-size=1920,1080") # Garante que o robô "enxergue" a tela inteira
-    # --------------------------------------------
-    
+
+    # --- 👻 MODO INVISÍVEL (HEADLESS) — obrigatório no servidor sem tela ---
+    options.add_argument("--headless=new")
+    options.add_argument("--window-size=1920,1080")  # sem isso o APEX esconde botões
+    options.add_argument("--disable-gpu")
+    options.add_argument("--no-sandbox")             # necessário no servidor Linux
+    options.add_argument("--disable-dev-shm-usage")
+    # ---------------------------------------------------------------------
+
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-    driver.maximize_window() # No modo headless isso não faz muita diferença, mas pode deixar aí!
-    
-    if fazer_login(driver):
-        navegar_para_cadastro_inicial(driver, usar_mouse=False)
 
-        # MUDANÇA: USANDO ENUMERATE PARA CONTAR OS ITENS (i)
-        # --- MUDANÇA: ENSINANDO O ROBÔ A CONTAR ---
-        total_itens = len(itens_processar) # Conta o total de itens na fila
+    try:
+        if fazer_login(driver):
+            navegar_para_cadastro_inicial(driver, usar_mouse=False)
 
-        for i, item in enumerate(itens_processar, 1):
-            is_ultimo = (i == total_itens) # Se o número atual for igual ao total, é o último!
+            total_itens = len(itens_processar)  # Conta o total de itens na fila
 
-            print("-" * 50)
-            print(f"🚀 PROCESSANDO ITEM {i}/{total_itens}: {item.get('desc', 'N/A')}")
-            print(f"🔢 EAN: {item.get('ean', 'N/A')} | NCM: {item.get('ncm', 'N/A')}")
-            
-            # Agora passamos a informação 'is_ultimo' para a função
-            executar_cadastro(driver, item, is_ultimo)
-        
-        registrar("🏁 PROCESSO CONCLUÍDO.")
+            for i, item in enumerate(itens_processar, 1):
+                is_ultimo = (i == total_itens)  # Se for igual ao total, é o último
+
+                print("-" * 50)
+                print(f"🚀 PROCESSANDO ITEM {i}/{total_itens}: {item.get('desc', 'N/A')}")
+                print(f"🔢 EAN: {item.get('ean', 'N/A')} | NCM: {item.get('ncm', 'N/A')}")
+
+                executar_cadastro(driver, item, is_ultimo)
+
+            registrar("🏁 PROCESSO CONCLUÍDO.")
+    finally:
+        # Fecha o Chrome SEMPRE — mesmo se der erro no meio do cadastro.
+        # Sem isso, cada execução deixaria um Chrome "zumbi" na memória.
+        driver.quit()
