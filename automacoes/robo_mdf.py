@@ -91,7 +91,7 @@ def fazer_login(driver):
 
     try:
         print("🌐 Acessando sistema...")
-        driver.get('NLWEB_URL')
+        driver.get(url)
 
         # 1. Login Inicial
         wait.until(EC.element_to_be_clickable((By.ID, "txtUsername"))).send_keys(usuario)
