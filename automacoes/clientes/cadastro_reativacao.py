@@ -13,6 +13,7 @@ from selenium.common.exceptions import NoSuchElementException, TimeoutException,
 from selenium.webdriver.support.ui import Select
 
 from automacoes.clientes.navegacao_erp import fazer_login, navegar_via_favoritos
+from automacoes.navegador import criar_driver
 
 sys.stdout.reconfigure(encoding='utf-8')
 
@@ -122,7 +123,7 @@ def executar(dados_cliente):
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
 
-    driver = webdriver.Chrome(options=options)
+    driver = criar_driver(options)
     wait = WebDriverWait(driver, 20)
 
     try:

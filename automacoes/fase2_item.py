@@ -9,7 +9,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
+import navegador
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -399,7 +399,7 @@ if itens_processar:
     options.add_argument("--disable-dev-shm-usage")
     # ---------------------------------------------------------------------
 
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    driver = navegador.criar_driver(options)
 
     try:
         if fazer_login(driver):

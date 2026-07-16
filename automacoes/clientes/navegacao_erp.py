@@ -5,7 +5,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
+from automacoes.navegador import criar_driver
 import os
 from dotenv import load_dotenv
 
@@ -28,8 +28,7 @@ def iniciar_navegador(modo_fantasma=False):
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
     
-    servico = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=servico, options=options)
+    driver = criar_driver(options)
     
     if not modo_fantasma:
         driver.maximize_window()

@@ -11,6 +11,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 
 from automacoes.clientes.navegacao_erp import fazer_login
+from automacoes.navegador import criar_driver
 from utils.cep_api import consultar_cep
 
 sys.stdout.reconfigure(encoding='utf-8')
@@ -295,7 +296,7 @@ def executar(dados):
     if manter_navegador:
         options.add_experimental_option("detach", True)
 
-    driver = webdriver.Chrome(options=options)
+    driver = criar_driver(options)
     wait = WebDriverWait(driver, 20)
 
     try:

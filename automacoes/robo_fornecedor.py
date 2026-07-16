@@ -10,6 +10,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from dotenv import load_dotenv
 
+import navegador
+
 load_dotenv()
 
 # Evita problemas de acentuação no console do Windows
@@ -123,7 +125,7 @@ def main():
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
 
-    driver = webdriver.Chrome(options=options)
+    driver = navegador.criar_driver(options)
     wait = WebDriverWait(driver, 20)
 
     # 3. Fazer Login

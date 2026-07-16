@@ -5,7 +5,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
+import navegador
 import os
 from dotenv import load_dotenv
 
@@ -36,9 +36,8 @@ def iniciar_navegador(modo_fantasma= False):
         # Opcional: Define um "User-Agent" falso para o sistema achar que é um PC normal
         options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
     
-    # Inicia o serviço
-    servico = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=servico, options=options)
+    # Inicia o navegador (Chromium+driver do sistema no servidor; webdriver-manager no dev)
+    driver = navegador.criar_driver(options)
     
     # Só maximiza se não estiver no modo fantasma (no fantasma o window-size já resolve)
     if not modo_fantasma:

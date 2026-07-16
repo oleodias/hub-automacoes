@@ -7,7 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
+import navegador
 
 # --- CONFIGURAÇÃO DE CAMINHOS ---
 PATH_BASE = os.path.dirname(os.path.abspath(__file__))
@@ -145,7 +145,7 @@ ncms_para_processar = ler_ncms_do_xml()
 if ncms_para_processar:
     options = webdriver.ChromeOptions()
     options.add_experimental_option("detach", True)
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    driver = navegador.criar_driver(options)
     driver.maximize_window()
 
     iniciar_sistema(driver)

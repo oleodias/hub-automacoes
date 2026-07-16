@@ -8,7 +8,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
+import navegador
 import os
 from dotenv import load_dotenv
 
@@ -42,7 +42,7 @@ chrome_options.add_argument("--disable-gpu")
 dados_para_planilha = []
 
 # Inicia o Navegador
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+driver = navegador.criar_driver(chrome_options)
 
 # --- FUNÇÕES DE APOIO E LOGIN ---
 
