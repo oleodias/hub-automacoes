@@ -134,7 +134,7 @@ body::before {
   overflow: hidden;
 }
 .brand-logo {
-  height: 28px;
+  height: 56px;
   flex-shrink: 0;
   filter: brightness(0) invert(1);
 }

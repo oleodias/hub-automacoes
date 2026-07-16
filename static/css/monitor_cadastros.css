@@ -135,7 +135,7 @@ body::before {
   z-index: 99;
 }
 .brand-logo {
-  height: 28px;
+  height: 56px;
   flex-shrink: 0;
   filter: brightness(0) invert(1);
 }

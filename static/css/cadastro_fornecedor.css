@@ -127,7 +127,7 @@ body::before {
 }
 
 .brand-logo {
-  height: 28px;
+  height: 56px;
   flex-shrink: 0; /* ← logo não encolhe */
   filter: brightness(0) invert(1);
 }
