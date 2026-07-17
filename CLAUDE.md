@@ -71,6 +71,7 @@ python -m automacoes.relatorios.gerar_relatorios automacoes/relatorios/job_teste
 
 ## Documentação detalhada
 
+- **[docs/handoff_migracao_robos.md](docs/handoff_migracao_robos.md)** — handoff da estabilização pós-migração ao servidor Linux (Docker): correções dos robôs (driver Selenium, timeout do gunicorn, webhook do n8n), a feature "ficha sem documentos", as regras de deploy (curl do GitHub, divergência servidor↔repo) e as tarefas pendentes.
 - **[docs/handoff_relatorios.md](docs/handoff_relatorios.md)** — handoff EXAUSTIVO da automação de relatórios aos laboratórios (robô RPA + Hub + n8n): arquitetura, todos os arquivos/funções, dados dos 14 labs, seletores APEX, regras da agenda, bugs/correções, pendências e checklist de produção.
 - **[docs/migracao_oracle.md](docs/migracao_oracle.md)** — plano da migração do Hub para o servidor da empresa (PostgreSQL → Oracle 19c): fases, synonyms, carga de dados, adaptações da aplicação (`utils/fila.py`), validação e checklist.
 - **[ESTRUTURA_BANCO_ORACLE.md](ESTRUTURA_BANCO_ORACLE.md)** — schema do banco DO HUB traduzido para Oracle 19c (DDL pronto p/ a TI, prefixo `cm_hub_aut_`). *Não confundir com o Oracle do ERP.*
