@@ -329,6 +329,7 @@ def receber_ficha():
         'docs_ja_existentes': nomes(docs_ja_existentes),
         'docs_substituidos':  nomes(docs_substituidos),
         'docs_adicionados':   nomes(docs_adicionados),
+        'qtd_documentos':     len(docs_finais),
     }
 
     # ── 8. Disparar para o N8N (com controle anti-ficha-órfã) ──
@@ -343,6 +344,13 @@ def receber_ficha():
         # A ficha JÁ está salva no banco. Marcamos o envio como falho para o
         # operador reenviar pelo Monitor — assim a ficha não fica "órfã".
         banco_cadastros.marcar_envio_n8n(submission_uuid, 'falhou', erro)
+
+    # Ficha sem documentos anexados: o n8n (via nó IF) vai avisar o vendedor
+    # pra reenviar. Marcamos como "aguardando_documentos" pra dar visibilidade
+    # no Monitor. (salvar_submissao/incrementar_tentativa já deixaram 'pendente';
+    # aqui sobrescrevemos apenas quando faltam documentos.)
+    if not docs_finais:
+        banco_cadastros.atualizar_status(submission_uuid, 'aguardando_documentos')
 
     # Para o vendedor, a ficha foi recebida nos dois casos (ela está salva).
     # Se o N8N estiver fora do ar, a equipe reenvia internamente pelo Monitor.
@@ -1123,7 +1131,7 @@ def reprocessar_cadastro():
     payload_str = {k: str(v) for k, v in payload_n8n.items()}
 
     arquivos_abertos = {}
-    pasta = os.path.join('uploads_fiches', uuid_ficha)
+    pasta = os.path.join('uploads_fichas', uuid_ficha)
 
     # Identificar e abrir os arquivos físicos salvos localmente para enviar ao N8N
     if os.path.exists(pasta):
